@@ -1,4 +1,5 @@
 #include <boost/asio.hpp>
+#include <boost/beast.hpp>
 #include <boost/system/error_code.hpp>
 #include <iomanip>
 #include <iostream>
@@ -25,28 +26,53 @@ int main()
               << "] main\n";
 
     boost::asio::io_context io_context;
-    tcp::socket socket(boost::asio::make_strand(io_context));
     boost::system::error_code error_code;
 
     tcp::resolver resolver(io_context);
-    auto endpoint{resolver.resolve("google.com", "80", error_code)};
+    auto endpoint{resolver.resolve("echo.websocket.org", "80", error_code)};
     if (error_code) {
         log(error_code);
         return -1;
     }
 
-    size_t number_of_threads{4};
-    for (size_t index{0}; index < number_of_threads; ++index) {
-        socket.async_connect(*endpoint, on_connect);
+    tcp::socket socket(boost::asio::make_strand(io_context));
+    socket.connect(*endpoint, error_code);
+    if (error_code) {
+        log(error_code);
+        return -1;
     }
 
-    std::vector<std::thread> threads;
-    threads.reserve(number_of_threads);
-    for (size_t index{0}; index < number_of_threads; ++index) {
-        threads.emplace_back([&io_context]() { io_context.run(); });
+    boost::beast::websocket::stream<boost::beast::tcp_stream> websocket(
+        std::move(socket));
+
+    //    boost::beast::get_lowest_layer(websocket).connect(
+    //        resolver.resolve("echo.websocket.org", "80", error_code));
+
+    boost::beast::websocket::response_type response;
+    websocket.handshake(response, "echo.websocket.org", "/", error_code);
+    if (error_code) {
+        log(error_code);
+        return -1;
+    }
+    std::cout << "HANDSHAKE RESPONSE:\n" << response << "\n";
+    std::cout << "----------------------------------\n";
+
+    websocket.text(true);
+
+    std::string message("Hello, world!");
+    boost::asio::const_buffer write_buffer(message.data(), message.size());
+    websocket.write(write_buffer, error_code);
+    if (error_code) {
+        log(error_code);
+        return -1;
     }
 
-    for (auto& thread : threads) {
-        thread.join();
+    boost::beast::flat_buffer read_buffer;
+    websocket.read(read_buffer, error_code);
+    if (error_code) {
+        log(error_code);
+        return -1;
     }
+    std::cout << "ECHO:\n" << boost::beast::buffers_to_string(read_buffer.data()) << "\n";
+    read_buffer.consume(read_buffer.size());
 }
