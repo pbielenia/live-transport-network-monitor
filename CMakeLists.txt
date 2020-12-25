@@ -3,9 +3,14 @@ cmake_minimum_required(VERSION 3.17)
 project(network-monitor)
 
 if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/conaninfo.txt)
-	set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_BINARY_DIR})
+    set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_BINARY_DIR})
 endif()
+find_package(Boost 1.74 REQUIRED COMPONENTS system)
 
 set(SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
-add_executable(network-monitor ${SOURCES})
 
+add_executable(network-monitor ${SOURCES})
+target_link_libraries(network-monitor
+    PRIVATE
+        Boost::Boost
+)
