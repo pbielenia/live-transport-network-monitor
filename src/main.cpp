@@ -1,78 +1,71 @@
+#include "websocket-client.hpp"
+
 #include <boost/asio.hpp>
-#include <boost/beast.hpp>
-#include <boost/system/error_code.hpp>
-#include <iomanip>
 #include <iostream>
-#include <thread>
-#include <vector>
-
-void log(boost::system::error_code error_code)
-{
-    std::cerr << "[" << std::hex << std::setw(12) << std::this_thread::get_id() << "] "
-              << (error_code ? "Error: " : "OK")
-              << (error_code ? error_code.message() : "") << "\n";
-}
-
-void on_connect(boost::system::error_code error_code)
-{
-    log(error_code);
-}
+#include <string>
 
 int main()
 {
-    using tcp = boost::asio::ip::tcp;
-
-    std::cerr << "[" << std::hex << std::setw(12) << std::this_thread::get_id()
-              << "] main\n";
+    const std::string url{"echo.websocket.org"};
+    const std::string port{"80"};
+    const std::string message{"Hello WebSocket"};
 
     boost::asio::io_context io_context;
-    boost::system::error_code error_code;
 
-    tcp::resolver resolver(io_context);
-    auto endpoint{resolver.resolve("echo.websocket.org", "80", error_code)};
-    if (error_code) {
-        log(error_code);
-        return -1;
+    network_monitor::WebSocketClient websocket_client(url, port, io_context);
+
+    bool connected{false};
+    bool message_sent{false};
+    bool message_received{false};
+    bool message_matches{false};
+    bool disconnected{false};
+
+    auto on_send = [&message_sent](auto error_code) {
+        message_sent = !error_code; };
+
+    auto on_connect = [&websocket_client, &connected, &on_send,
+                       &message](auto error_code) {
+        connected = !error_code;
+        if (!error_code) {
+            websocket_client.send(message, on_send);
+        }
+    };
+
+    auto on_close = [&disconnected](auto error_code) { disconnected = !error_code; };
+
+    auto on_receive = [&websocket_client, &on_close, &message_received, &message_matches,
+                       &message](auto error_code, auto received) {
+        message_received = !error_code;
+        message_matches = message == received;
+        websocket_client.close(on_close);
+    };
+
+    websocket_client.connect(on_connect, on_receive);
+    io_context.run();
+
+    bool ok =
+        connected & message_sent & message_received & message_matches & disconnected;
+
+    std::cout << "connected: " << std::boolalpha << connected << "\n"
+              << "message_sent: " << std::boolalpha << message_sent << "\n"
+              << "message_received: " << std::boolalpha << message_received << "\n"
+              << "message_matches: " << std::boolalpha << message_matches << "\n"
+              << "disconnected: " << std::boolalpha << disconnected << "\n";
+
+    if (ok) {
+        std::cout << "OK\n";
+        return 0;
+    } else {
+        std::cerr << "Test failed\n";
+        return 1;
     }
 
-    tcp::socket socket(boost::asio::make_strand(io_context));
-    socket.connect(*endpoint, error_code);
-    if (error_code) {
-        log(error_code);
-        return -1;
-    }
-
-    boost::beast::websocket::stream<boost::beast::tcp_stream> websocket(
-        std::move(socket));
-
-    //    boost::beast::get_lowest_layer(websocket).connect(
-    //        resolver.resolve("echo.websocket.org", "80", error_code));
-
-    boost::beast::websocket::response_type response;
-    websocket.handshake(response, "echo.websocket.org", "/", error_code);
-    if (error_code) {
-        log(error_code);
-        return -1;
-    }
-    std::cout << "HANDSHAKE RESPONSE:\n" << response << "\n";
-    std::cout << "----------------------------------\n";
-
-    websocket.text(true);
-
-    std::string message("Hello, world!");
-    boost::asio::const_buffer write_buffer(message.data(), message.size());
-    websocket.write(write_buffer, error_code);
-    if (error_code) {
-        log(error_code);
-        return -1;
-    }
-
-    boost::beast::flat_buffer read_buffer;
-    websocket.read(read_buffer, error_code);
-    if (error_code) {
-        log(error_code);
-        return -1;
-    }
-    std::cout << "ECHO:\n" << boost::beast::buffers_to_string(read_buffer.data()) << "\n";
-    read_buffer.consume(read_buffer.size());
+    //    boost::beast::websocket::response_type response;
+    //    websocket.async_handshake(response, "echo.websocket.org", "/",
+    //                              std::bind(&on_handshake, std::placeholders::_1,
+    //                                        std::ref(websocket), std::cref(message)));
+    //    if (error_code) {
+    //        log(error_code);
+    //        return -1;
+    //    }
 }
