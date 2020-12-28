@@ -44,9 +44,10 @@ target_compile_definitions(network-monitor-tests
         TESTS_CACERT_PEM="${CMAKE_CURRENT_SOURCE_DIR}/tests/cacert.pem"
     )
 target_link_libraries(network-monitor-tests
-    PUBLIC
+    PRIVATE
         network-monitor
         Boost::Boost
+        OpenSSL::OpenSSL
     )
 add_test(
     NAME network-monitor-tests

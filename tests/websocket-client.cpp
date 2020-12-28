@@ -16,12 +16,14 @@ BOOST_AUTO_TEST_CASE(cacert_pem)
 BOOST_AUTO_TEST_CASE(class_WebSocketClient)
 {
     const std::string url{"echo.websocket.org"};
-    const std::string port{"80"};
+    const std::string port{"443"};
     const std::string message{"Hello WebSocket"};
 
     boost::asio::io_context io_context;
+    boost::asio::ssl::context ssl_context{boost::asio::ssl::context::tlsv12_client};
+    ssl_context.load_verify_file(TESTS_CACERT_PEM);
 
-    network_monitor::WebSocketClient websocket_client(url, port, io_context);
+    network_monitor::WebSocketClient websocket_client(url, port, io_context, ssl_context);
 
     bool connected{false};
     bool message_sent{false};
