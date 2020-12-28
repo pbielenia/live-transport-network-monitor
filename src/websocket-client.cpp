@@ -1,5 +1,6 @@
 #include "websocket-client.hpp"
 
+#include <openssl/ssl.h>
 #include <chrono>
 #include <iomanip>
 #include <iostream>
