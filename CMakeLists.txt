@@ -25,7 +25,8 @@ target_link_libraries(network-monitor
     PUBLIC
         Boost::Boost
         OpenSSL::OpenSSL
-        CURL::libcurl
+    PRIVATE
+        CURL::CURL
     )
 target_include_directories(network-monitor
     PUBLIC
