@@ -1,6 +1,7 @@
 #include "file-downloader.hpp"
 
 #include <curl/curl.h>
+#include <fstream>
 
 bool network_monitor::download_file(const std::string& file_url,
                                     const std::filesystem::path& destination,
@@ -29,4 +30,10 @@ bool network_monitor::download_file(const std::string& file_url,
     fclose(file_handler);
 
     return true;
+}
+
+nlohmann::json network_monitor::parse_json_file(const std::filesystem::path& source)
+{
+    std::ifstream ifs(source);
+    return nlohmann::json::parse(ifs);
 }

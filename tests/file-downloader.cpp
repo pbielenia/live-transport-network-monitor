@@ -1,4 +1,3 @@
-#include <boost/asio.hpp>
 #include <boost/test/unit_test.hpp>
 #include <filesystem>
 #include <fstream>
@@ -31,6 +30,23 @@ BOOST_AUTO_TEST_CASE(file_downloader)
     BOOST_CHECK(found_expected_string);
 
     std::filesystem::remove(destination);
+}
+
+BOOST_AUTO_TEST_CASE(json_file_parser)
+{
+    const auto parsed_json = network_monitor::parse_json_file(TESTS_NETWORK_LAYOUT_PATH);
+
+    BOOST_CHECK(parsed_json.contains("lines"));
+    BOOST_CHECK(parsed_json.at("lines").is_array());
+    BOOST_CHECK(parsed_json.at("lines").empty() == false);
+
+    BOOST_CHECK(parsed_json.contains("stations"));
+    BOOST_CHECK(parsed_json.at("stations").is_array());
+    BOOST_CHECK(parsed_json.at("stations").empty() == false);
+
+    BOOST_CHECK(parsed_json.contains("travel_times"));
+    BOOST_CHECK(parsed_json.at("travel_times").is_array());
+    BOOST_CHECK(parsed_json.at("travel_times").empty() == false);
 }
 
 BOOST_AUTO_TEST_SUITE_END();
