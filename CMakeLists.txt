@@ -8,6 +8,7 @@ endif()
 
 find_package(Boost 1.74 REQUIRED COMPONENTS system unit_test_framework)
 find_package(OpenSSL REQUIRED)
+find_package(CURL REQUIRED)
 
 enable_testing()
 
@@ -24,6 +25,7 @@ target_link_libraries(network-monitor
     PUBLIC
         Boost::Boost
         OpenSSL::OpenSSL
+        CURL::libcurl
     )
 target_include_directories(network-monitor
     PUBLIC
