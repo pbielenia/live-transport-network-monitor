@@ -18,6 +18,7 @@ public:
     using OnCloseCallback = std::function<void(boost::system::error_code)>;
 
     WebSocketClient(std::string host_url,
+                    std::string host_endpoint,
                     std::string port,
                     boost::asio::io_context& io_context,
                     boost::asio::ssl::context& ssl_context);
@@ -42,6 +43,7 @@ private:
                             size_t bytes_written);
 
     std::string host_url;
+    std::string host_endpoint;
     std::string port;
 
     boost::asio::ip::tcp::resolver resolver;

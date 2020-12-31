@@ -14,10 +14,12 @@ static void log(const std::string& where, boost::system::error_code error_code)
 }
 
 WebSocketClient::WebSocketClient(std::string host_url,
+                                 std::string host_endpoint,
                                  std::string port,
                                  boost::asio::io_context& io_context,
                                  boost::asio::ssl::context& ssl_context)
     : host_url{std::move(host_url)},
+      host_endpoint{std::move(host_endpoint)},
       port{std::move(port)},
       resolver{boost::asio::make_strand(io_context)},
       websocket{boost::asio::make_strand(io_context), ssl_context}
@@ -89,7 +91,7 @@ void WebSocketClient::handle_tls_handshake_result(
         return;
     }
 
-    websocket.async_handshake(host_url, "/", [this](auto error_code) {
+    websocket.async_handshake(host_url, host_endpoint, [this](auto error_code) {
         handle_websocket_handshake_result(error_code);
     });
 }
