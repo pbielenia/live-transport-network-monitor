@@ -62,7 +62,9 @@ public:
                              const Id& station_b);
 
 private:
-    //
+    bool station_exists(const Station& station);
+
+    std::vector<Station> stations;
 };
 
 } // namespace network_monitor

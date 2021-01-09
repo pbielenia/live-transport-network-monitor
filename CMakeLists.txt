@@ -64,7 +64,7 @@ target_link_libraries(network-monitor-tests
 add_test(
     NAME network-monitor-tests
     COMMAND $<TARGET_FILE:network-monitor-tests>
-)
+    )
 set_tests_properties(network-monitor-tests PROPERTIES
     PASS_REGULAR_EXPRESSION ".*No errors detected"
     )

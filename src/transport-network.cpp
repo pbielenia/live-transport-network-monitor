@@ -1,9 +1,9 @@
-
+#include <algorithm>
 #include <transport-network.hpp>
 
 bool network_monitor::Station::operator==(const Station& other) const
 {
-    return false;
+    return id == other.id;
 }
 bool network_monitor::Route::operator==(const Route& other) const
 {
@@ -35,8 +35,19 @@ network_monitor::TransportNetwork& network_monitor::TransportNetwork::operator=(
 bool network_monitor::TransportNetwork::add_station(
     const network_monitor::Station& station)
 {
-    return false;
+    if (station_exists(station)) {
+        return false;
+    }
+
+    stations.push_back(station);
+    return true;
 }
+
+bool network_monitor::TransportNetwork::station_exists(const Station& station)
+{
+    return std::find(stations.begin(), stations.end(), station) != stations.end();
+}
+
 bool network_monitor::TransportNetwork::add_line(const network_monitor::Line& line)
 {
     return false;
