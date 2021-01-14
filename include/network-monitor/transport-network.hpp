@@ -1,5 +1,6 @@
 #include <string>
 #include <vector>
+#include <map>
 
 namespace network_monitor {
 
@@ -69,6 +70,7 @@ private:
 
     std::vector<Station> stations;
     std::vector<Line> lines;
+    std::map<Id, long long> passenger_counts_at_stations;
 };
 
 } // namespace network_monitor

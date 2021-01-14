@@ -39,6 +39,7 @@ bool network_monitor::TransportNetwork::add_station(
         return false;
     }
     stations.push_back(station);
+    passenger_counts_at_stations.emplace(station.id, 0U);
     return true;
 }
 
@@ -49,8 +50,9 @@ bool network_monitor::TransportNetwork::station_is_in_network(const Station& sta
 
 bool network_monitor::TransportNetwork::station_is_in_network(const Id& id)
 {
-    return std::find_if(stations.begin(), stations.end(),
-                     [&id](const auto& station) { return station.id.compare(id) == 0U; })
+    return std::find_if(
+               stations.begin(), stations.end(),
+               [&id](const auto& station) { return station.id.compare(id) == 0U; })
            != stations.end();
 }
 
@@ -90,12 +92,28 @@ bool network_monitor::TransportNetwork::record_passenger_event(
     const network_monitor::Id& station,
     const network_monitor::TransportNetwork::PassengerEvent& event)
 {
+    if (passenger_counts_at_stations.contains(station)) {
+        if (event == PassengerEvent::In) {
+            passenger_counts_at_stations.at(station)++;
+        } else if (event == PassengerEvent::Out) {
+            passenger_counts_at_stations.at(station)--;
+        } else {
+            return false;
+        }
+
+        return true;
+    }
     return false;
 }
 long long network_monitor::TransportNetwork::get_passenger_count(
     const network_monitor::Id& station) const
 {
-    return 0;
+    if (passenger_counts_at_stations.contains(station)) {
+        return passenger_counts_at_stations.at(station);
+    }
+
+    throw std::runtime_error("Station of id " + station
+                             + " does not exist in the network.");
 }
 std::vector<network_monitor::Id>
 network_monitor::TransportNetwork::get_routes_serving_station(

@@ -20,7 +20,7 @@ add_library(network-monitor STATIC
     )
 target_compile_features(network-monitor
     PUBLIC
-        cxx_std_17
+        cxx_std_20
     )
 
 target_link_libraries(network-monitor
