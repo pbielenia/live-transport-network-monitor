@@ -7,11 +7,11 @@ bool network_monitor::Station::operator==(const Station& other) const
 }
 bool network_monitor::Route::operator==(const Route& other) const
 {
-    return false;
+    return id == other.id;
 }
 bool network_monitor::Line::operator==(const network_monitor::Line& other) const
 {
-    return false;
+    return id == other.id;
 }
 network_monitor::TransportNetwork::TransportNetwork() {}
 network_monitor::TransportNetwork::TransportNetwork(
@@ -35,23 +35,57 @@ network_monitor::TransportNetwork& network_monitor::TransportNetwork::operator=(
 bool network_monitor::TransportNetwork::add_station(
     const network_monitor::Station& station)
 {
-    if (station_exists(station)) {
+    if (station_is_in_network(station)) {
         return false;
     }
-
     stations.push_back(station);
     return true;
 }
 
-bool network_monitor::TransportNetwork::station_exists(const Station& station)
+bool network_monitor::TransportNetwork::station_is_in_network(const Station& station)
 {
     return std::find(stations.begin(), stations.end(), station) != stations.end();
 }
 
+bool network_monitor::TransportNetwork::station_is_in_network(const Id& id)
+{
+    return std::find_if(stations.begin(), stations.end(),
+                     [&id](const auto& station) { return station.id.compare(id) == 0U; })
+           != stations.end();
+}
+
 bool network_monitor::TransportNetwork::add_line(const network_monitor::Line& line)
 {
-    return false;
+    if (line_is_in_network(line) or not all_line_stops_are_in_network(line)) {
+        return false;
+    }
+    lines.push_back(line);
+    return true;
 }
+
+bool network_monitor::TransportNetwork::line_is_in_network(const Line& line)
+{
+    return std::find(lines.begin(), lines.end(), line) != lines.end();
+}
+
+bool network_monitor::TransportNetwork::all_line_stops_are_in_network(const Line& line)
+{
+    for (const auto& route : line.routes) {
+        if (!station_is_in_network(route.start_station_id)
+            or !station_is_in_network(route.end_station_id)) {
+            return false;
+        }
+
+        for (const auto& stop : route.stops) {
+            if (!station_is_in_network(stop)) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 bool network_monitor::TransportNetwork::record_passenger_event(
     const network_monitor::Id& station,
     const network_monitor::TransportNetwork::PassengerEvent& event)

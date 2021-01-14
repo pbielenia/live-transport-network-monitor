@@ -62,9 +62,13 @@ public:
                              const Id& station_b);
 
 private:
-    bool station_exists(const Station& station);
+    bool station_is_in_network(const Station& station);
+    bool station_is_in_network(const Id& id);
+    bool line_is_in_network(const Line& line);
+    bool all_line_stops_are_in_network(const Line& line);
 
     std::vector<Station> stations;
+    std::vector<Line> lines;
 };
 
 } // namespace network_monitor
