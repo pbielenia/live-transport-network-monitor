@@ -187,50 +187,50 @@ BOOST_AUTO_TEST_CASE(basic)
 
 BOOST_AUTO_TEST_SUITE_END(); // passenger_events
 
-//BOOST_AUTO_TEST_SUITE(get_routes_serving_station);
-//
-//BOOST_AUTO_TEST_CASE(basic)
-//{
-//    TransportNetwork network{};
-//    bool is_ok{false};
-//
-//    Station station_0{"station_000", "Station Name 0"};
-//    Station station_1{"station_001", "Station Name 1"};
-//    Station station_2{"station_002", "Station Name 2"};
-//    Station station_3{"station_003", "Station Name 3"};
-//    Route route_0{"route_000",   "Route Name 0",
-//                  "line_000",    "station_000",
-//                  "station_002", {"station_000", "station_001", "station_002"}};
-//    Line line{"line_000", "Line Name", {route_0}};
-//
-//    is_ok = true;
-//    is_ok &= network.add_station(station_0);
-//    is_ok &= network.add_station(station_1);
-//    is_ok &= network.add_station(station_2);
-//    is_ok &= network.add_station(station_3);
-//    BOOST_REQUIRE(is_ok);
-//    is_ok = network.add_line(line);
-//    BOOST_REQUIRE(is_ok);
-//
-//    std::vector<Id> routes;
-//    routes = network.get_routes_serving_station(station_0.id);
-//    BOOST_REQUIRE_EQUAL(routes.size(), 1);
-//    BOOST_CHECK(routes[0] == route_0.id);
-//
-//    routes = network.get_routes_serving_station(station_1.id);
-//    BOOST_REQUIRE_EQUAL(routes.size(), 1);
-//    BOOST_CHECK(routes[0] == route_0.id);
-//
-//    routes = network.get_routes_serving_station(station_2.id);
-//    BOOST_REQUIRE_EQUAL(routes.size(), 1);
-//    BOOST_CHECK(routes[0] == route_0.id);
-//
-//    routes = network.get_routes_serving_station(station_3.id);
-//    BOOST_REQUIRE_EQUAL(routes.size(), 0);
-//}
-//
-//BOOST_AUTO_TEST_SUITE_END(); // get_routes_serving_station
-//
+BOOST_AUTO_TEST_SUITE(get_routes_serving_station);
+
+BOOST_AUTO_TEST_CASE(basic)
+{
+    TransportNetwork network{};
+    bool is_ok{false};
+
+    Station station_0{"station_000", "Station Name 0"};
+    Station station_1{"station_001", "Station Name 1"};
+    Station station_2{"station_002", "Station Name 2"};
+    Station station_3{"station_003", "Station Name 3"};
+    Route route_0{"route_000",   "Route Name 0",
+                  "line_000",    "station_000",
+                  "station_002", {"station_000", "station_001", "station_002"}};
+    Line line{"line_000", "Line Name", {route_0}};
+
+    is_ok = true;
+    is_ok &= network.add_station(station_0);
+    is_ok &= network.add_station(station_1);
+    is_ok &= network.add_station(station_2);
+    is_ok &= network.add_station(station_3);
+    BOOST_REQUIRE(is_ok);
+    is_ok = network.add_line(line);
+    BOOST_REQUIRE(is_ok);
+
+    std::vector<Id> routes;
+    routes = network.get_routes_serving_station(station_0.id);
+    BOOST_REQUIRE_EQUAL(routes.size(), 1);
+    BOOST_CHECK(routes[0] == route_0.id);
+
+    routes = network.get_routes_serving_station(station_1.id);
+    BOOST_REQUIRE_EQUAL(routes.size(), 1);
+    BOOST_CHECK(routes[0] == route_0.id);
+
+    routes = network.get_routes_serving_station(station_2.id);
+    BOOST_REQUIRE_EQUAL(routes.size(), 1);
+    BOOST_CHECK(routes[0] == route_0.id);
+
+    routes = network.get_routes_serving_station(station_3.id);
+    BOOST_REQUIRE_EQUAL(routes.size(), 0);
+}
+
+BOOST_AUTO_TEST_SUITE_END(); // get_routes_serving_station
+
 //BOOST_AUTO_TEST_SUITE(travel_time);
 //
 //BOOST_AUTO_TEST_CASE(basic)

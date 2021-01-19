@@ -63,10 +63,12 @@ public:
                              const Id& station_b);
 
 private:
-    bool station_is_in_network(const Station& station);
-    bool station_is_in_network(const Id& id);
-    bool line_is_in_network(const Line& line);
-    bool all_line_stops_are_in_network(const Line& line);
+    bool station_is_in_network(const Station& station) const;
+    bool station_is_in_network(const Id& id) const;
+    bool line_is_in_network(const Line& line) const;
+    bool all_line_stops_are_in_network(const Line& line) const;
+
+    static bool route_serves_station(const Route& route, const Id& station);
 
     std::vector<Station> stations;
     std::vector<Line> lines;

@@ -43,12 +43,13 @@ bool network_monitor::TransportNetwork::add_station(
     return true;
 }
 
-bool network_monitor::TransportNetwork::station_is_in_network(const Station& station)
+bool network_monitor::TransportNetwork::station_is_in_network(
+    const Station& station) const
 {
     return std::find(stations.begin(), stations.end(), station) != stations.end();
 }
 
-bool network_monitor::TransportNetwork::station_is_in_network(const Id& id)
+bool network_monitor::TransportNetwork::station_is_in_network(const Id& id) const
 {
     return std::find_if(
                stations.begin(), stations.end(),
@@ -65,12 +66,13 @@ bool network_monitor::TransportNetwork::add_line(const network_monitor::Line& li
     return true;
 }
 
-bool network_monitor::TransportNetwork::line_is_in_network(const Line& line)
+bool network_monitor::TransportNetwork::line_is_in_network(const Line& line) const
 {
     return std::find(lines.begin(), lines.end(), line) != lines.end();
 }
 
-bool network_monitor::TransportNetwork::all_line_stops_are_in_network(const Line& line)
+bool network_monitor::TransportNetwork::all_line_stops_are_in_network(
+    const Line& line) const
 {
     for (const auto& route : line.routes) {
         if (!station_is_in_network(route.start_station_id)
@@ -119,8 +121,28 @@ std::vector<network_monitor::Id>
 network_monitor::TransportNetwork::get_routes_serving_station(
     const network_monitor::Id& station) const
 {
-    return std::vector<Id>();
+    std::vector<Id> routes;
+
+    if (station_is_in_network(station)) {
+        for (const auto& line : lines) {
+            for (const auto& route : line.routes) {
+                if (route_serves_station(route, station)) {
+                    routes.push_back(route.id);
+                }
+            }
+        }
+    }
+
+    return routes;
 }
+
+bool network_monitor::TransportNetwork::route_serves_station(const Route& route,
+                                                             const Id& station)
+{
+    return std::find(route.stops.begin(), route.stops.end(), station)
+           != route.stops.end();
+}
+
 bool network_monitor::TransportNetwork::set_travel_time(
     const network_monitor::Id& station_a,
     const network_monitor::Id& station_b,
