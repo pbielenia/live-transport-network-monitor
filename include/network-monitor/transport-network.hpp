@@ -107,6 +107,9 @@ private:
     make_internal_route(const Route& route,
                         const std::shared_ptr<LineInternal>& line) const;
 
+    void update_graph_edges(const std::shared_ptr<LineInternal>& internal_line);
+    static bool route_serves_station(const RouteInternal& route, const Id& station);
+
     std::unordered_map<Id, std::shared_ptr<GraphNode>> stations{};
     std::unordered_map<Id, std::shared_ptr<LineInternal>> lines{};
 };

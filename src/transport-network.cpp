@@ -1,4 +1,5 @@
 
+#include <set>
 #include <transport-network.hpp>
 
 bool network_monitor::Station::operator==(const Station& other) const
@@ -83,6 +84,8 @@ bool network_monitor::TransportNetwork::add_line(const network_monitor::Line& li
     }
 
     lines[line.id] = make_internal_line(line);
+    update_graph_edges(lines.at(line.id));
+
     return true;
 }
 
@@ -110,6 +113,20 @@ auto network_monitor::TransportNetwork::make_internal_route(
         internal_route->stops.push_back(stations.at(stop));
     }
     return internal_route;
+}
+
+void network_monitor::TransportNetwork::update_graph_edges(
+    const std::shared_ptr<LineInternal>& internal_line)
+{
+    for (const auto& [route_id, route] : internal_line->routes) {
+        for (unsigned i = 0; i < route->stops.size() - 1; ++i) {
+            auto& current_station = stations.at(route->stops.at(i)->station.id);
+            auto graph_edge = GraphEdge();
+            graph_edge.route = route;
+            graph_edge.next_stop = route->stops.at(i + 1);
+            current_station->edges.push_back(graph_edge);
+        }
+    }
 }
 
 bool network_monitor::TransportNetwork::record_passenger_event(
@@ -144,7 +161,25 @@ std::vector<network_monitor::Id>
 network_monitor::TransportNetwork::get_routes_serving_station(
     const network_monitor::Id& station) const
 {
-    return std::vector<Id>();
+    std::set<Id> routes;
+    for (const auto& [line_id, line] : lines) {
+        for (const auto& [route_id, route] : line->routes) {
+            if (route_serves_station(*route, station)) {
+                routes.emplace(route_id);
+            }
+        }
+    }
+    return {routes.begin(), routes.end()};
+}
+
+bool network_monitor::TransportNetwork::route_serves_station(const RouteInternal& route,
+                                                             const Id& station)
+{
+    return std::find_if(route.stops.begin(), route.stops.end(),
+                        [&station](const auto& graph_node) {
+                            return graph_node->station.id == station;
+                        })
+           != route.stops.end();
 }
 
 bool network_monitor::TransportNetwork::set_travel_time(
