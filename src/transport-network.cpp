@@ -116,13 +116,28 @@ bool network_monitor::TransportNetwork::record_passenger_event(
     const network_monitor::Id& station,
     const network_monitor::TransportNetwork::PassengerEvent& event)
 {
-    return false;
+    if (!stations.contains(station)) {
+        return false;
+    }
+
+    if (event == PassengerEvent::In) {
+        stations.at(station)->passenger_count++;
+    } else if (event == PassengerEvent::Out) {
+        stations.at(station)->passenger_count--;
+    } else {
+        return false;
+    }
+
+    return true;
 }
 
 long long network_monitor::TransportNetwork::get_passenger_count(
     const network_monitor::Id& station) const
 {
-    return 0;
+    if (stations.contains(station)) {
+        return stations.at(station)->passenger_count;
+    }
+    throw std::runtime_error("Station is not in the network.");
 }
 
 std::vector<network_monitor::Id>

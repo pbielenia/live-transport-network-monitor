@@ -126,67 +126,67 @@ BOOST_AUTO_TEST_CASE(duplicate)
 
 BOOST_AUTO_TEST_SUITE_END(); // add_line
 
-//BOOST_AUTO_TEST_SUITE(passenger_events);
-//
-//BOOST_AUTO_TEST_CASE(basic)
-//{
-//    TransportNetwork network{};
-//    bool is_ok{false};
-//
-//    Station station_0{"station_000", "Station Name 0"};
-//    Station station_1{"station_001", "Station Name 1"};
-//    Station station_2{"station_002", "Station Name 2"};
-//    Route route_0{"route_000",   "Route Name 0",
-//                  "line_000",    "station_000",
-//                  "station_002", {"station_000", "station_001", "station_002"}};
-//    Line line{"line_000", "Line Name", {route_0}};
-//
-//    is_ok = true;
-//    is_ok &= network.add_station(station_0);
-//    is_ok &= network.add_station(station_1);
-//    is_ok &= network.add_station(station_2);
-//    BOOST_REQUIRE(is_ok);
-//    is_ok = network.add_line(line);
-//    BOOST_REQUIRE(is_ok);
-//
-//    BOOST_REQUIRE_EQUAL(network.get_passenger_count(station_0.id), 0);
-//    BOOST_REQUIRE_EQUAL(network.get_passenger_count(station_1.id), 0);
-//    BOOST_REQUIRE_EQUAL(network.get_passenger_count(station_2.id), 0);
-//    try {
-//        auto count{network.get_passenger_count("station_42")};
-//        BOOST_REQUIRE(false);
-//    } catch (const std::runtime_error& error) {
-//        BOOST_REQUIRE(true);
-//    }
-//
-//    using PassengerEvent = TransportNetwork::PassengerEvent;
-//    is_ok = network.record_passenger_event(station_0.id, PassengerEvent::In);
-//    BOOST_REQUIRE(is_ok);
-//    BOOST_CHECK_EQUAL(network.get_passenger_count(station_0.id), 1);
-//    BOOST_CHECK_EQUAL(network.get_passenger_count(station_1.id), 0);
-//    BOOST_CHECK_EQUAL(network.get_passenger_count(station_2.id), 0);
-//
-//    is_ok = network.record_passenger_event(station_0.id, PassengerEvent::In);
-//    BOOST_REQUIRE(is_ok);
-//    BOOST_CHECK_EQUAL(network.get_passenger_count(station_0.id), 2);
-//
-//    is_ok = network.record_passenger_event(station_1.id, PassengerEvent::In);
-//    BOOST_REQUIRE(is_ok);
-//    BOOST_CHECK_EQUAL(network.get_passenger_count(station_0.id), 2);
-//    BOOST_CHECK_EQUAL(network.get_passenger_count(station_1.id), 1);
-//    BOOST_CHECK_EQUAL(network.get_passenger_count(station_2.id), 0);
-//
-//    is_ok = network.record_passenger_event(station_0.id, PassengerEvent::Out);
-//    BOOST_REQUIRE(is_ok);
-//    BOOST_CHECK_EQUAL(network.get_passenger_count(station_0.id), 1);
-//
-//    is_ok = network.record_passenger_event(station_2.id, PassengerEvent::Out);
-//    BOOST_REQUIRE(is_ok);
-//    BOOST_CHECK_EQUAL(network.get_passenger_count(station_2.id), -1);
-//}
-//
-//BOOST_AUTO_TEST_SUITE_END(); // passenger_events
-//
+BOOST_AUTO_TEST_SUITE(passenger_events);
+
+BOOST_AUTO_TEST_CASE(basic)
+{
+    TransportNetwork network{};
+    bool is_ok{false};
+
+    Station station_0{"station_000", "Station Name 0"};
+    Station station_1{"station_001", "Station Name 1"};
+    Station station_2{"station_002", "Station Name 2"};
+    Route route_0{"route_000",   "Route Name 0",
+                  "line_000",    "station_000",
+                  "station_002", {"station_000", "station_001", "station_002"}};
+    Line line{"line_000", "Line Name", {route_0}};
+
+    is_ok = true;
+    is_ok &= network.add_station(station_0);
+    is_ok &= network.add_station(station_1);
+    is_ok &= network.add_station(station_2);
+    BOOST_REQUIRE(is_ok);
+    is_ok = network.add_line(line);
+    BOOST_REQUIRE(is_ok);
+
+    BOOST_REQUIRE_EQUAL(network.get_passenger_count(station_0.id), 0);
+    BOOST_REQUIRE_EQUAL(network.get_passenger_count(station_1.id), 0);
+    BOOST_REQUIRE_EQUAL(network.get_passenger_count(station_2.id), 0);
+    try {
+        auto count{network.get_passenger_count("station_42")};
+        BOOST_REQUIRE(false);
+    } catch (const std::runtime_error& error) {
+        BOOST_REQUIRE(true);
+    }
+
+    using PassengerEvent = TransportNetwork::PassengerEvent;
+    is_ok = network.record_passenger_event(station_0.id, PassengerEvent::In);
+    BOOST_REQUIRE(is_ok);
+    BOOST_CHECK_EQUAL(network.get_passenger_count(station_0.id), 1);
+    BOOST_CHECK_EQUAL(network.get_passenger_count(station_1.id), 0);
+    BOOST_CHECK_EQUAL(network.get_passenger_count(station_2.id), 0);
+
+    is_ok = network.record_passenger_event(station_0.id, PassengerEvent::In);
+    BOOST_REQUIRE(is_ok);
+    BOOST_CHECK_EQUAL(network.get_passenger_count(station_0.id), 2);
+
+    is_ok = network.record_passenger_event(station_1.id, PassengerEvent::In);
+    BOOST_REQUIRE(is_ok);
+    BOOST_CHECK_EQUAL(network.get_passenger_count(station_0.id), 2);
+    BOOST_CHECK_EQUAL(network.get_passenger_count(station_1.id), 1);
+    BOOST_CHECK_EQUAL(network.get_passenger_count(station_2.id), 0);
+
+    is_ok = network.record_passenger_event(station_0.id, PassengerEvent::Out);
+    BOOST_REQUIRE(is_ok);
+    BOOST_CHECK_EQUAL(network.get_passenger_count(station_0.id), 1);
+
+    is_ok = network.record_passenger_event(station_2.id, PassengerEvent::Out);
+    BOOST_REQUIRE(is_ok);
+    BOOST_CHECK_EQUAL(network.get_passenger_count(station_2.id), -1);
+}
+
+BOOST_AUTO_TEST_SUITE_END(); // passenger_events
+
 //BOOST_AUTO_TEST_SUITE(get_routes_serving_station);
 //
 //BOOST_AUTO_TEST_CASE(basic)
