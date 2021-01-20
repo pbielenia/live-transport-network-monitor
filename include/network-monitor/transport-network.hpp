@@ -1,5 +1,7 @@
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <memory>
 
 namespace network_monitor {
 
@@ -62,7 +64,41 @@ public:
                              const Id& station_b);
 
 private:
-    //
+    struct GraphNode;
+    struct GraphEdge;
+    struct RouteInternal;
+    struct LineInternal;
+
+    struct GraphNode {
+        Station station{};
+        long long passenger_count{0};
+        std::vector<GraphEdge> edges{};
+
+        std::vector<GraphEdge>::const_iterator
+        find_edge_for_route(const std::shared_ptr<const RouteInternal>& route) const;
+    };
+
+    struct GraphEdge {
+        std::shared_ptr<RouteInternal> route{nullptr};
+        std::shared_ptr<GraphNode> next_stop{nullptr};
+        unsigned travel_time{0};
+    };
+
+    struct RouteInternal {
+        Id id{};
+        std::string name{};
+        std::shared_ptr<LineInternal> line{nullptr};
+        std::vector<std::shared_ptr<GraphNode>> stops{};
+    };
+
+    struct LineInternal {
+        Id id{};
+        std::string name{};
+        std::unordered_map<Id, std::shared_ptr<RouteInternal>> routes{};
+    };
+
+    std::unordered_map<Id, std::shared_ptr<GraphNode>> stations{};
+    std::unordered_map<Id, std::shared_ptr<LineInternal>> lines{};
 };
 
 } // namespace network_monitor
