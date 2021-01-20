@@ -1,7 +1,7 @@
-#include <string>
-#include <vector>
-#include <unordered_map>
 #include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace network_monitor {
 
@@ -94,10 +94,18 @@ private:
     };
 
     struct LineInternal {
+        LineInternal(Id id, std::string name);
+
         Id id{};
         std::string name{};
         std::unordered_map<Id, std::shared_ptr<RouteInternal>> routes{};
     };
+
+    std::shared_ptr<LineInternal> make_internal_line(const Line& line) const;
+
+    std::shared_ptr<RouteInternal>
+    make_internal_route(const Route& route,
+                        const std::shared_ptr<LineInternal>& line) const;
 
     std::unordered_map<Id, std::shared_ptr<GraphNode>> stations{};
     std::unordered_map<Id, std::shared_ptr<LineInternal>> lines{};

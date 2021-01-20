@@ -45,6 +45,12 @@ network_monitor::TransportNetwork::GraphNode::GraphNode(Station station)
 {
 }
 
+network_monitor::TransportNetwork::LineInternal::LineInternal(Id id, std::string name)
+    : id{std::move(id)},
+      name{std::move(name)}
+{
+}
+
 bool network_monitor::TransportNetwork::add_station(
     const network_monitor::Station& station)
 {
@@ -58,7 +64,52 @@ bool network_monitor::TransportNetwork::add_station(
 
 bool network_monitor::TransportNetwork::add_line(const network_monitor::Line& line)
 {
-    return false;
+    //  All stations served by this line must already be in the network.
+    for (const auto& route : line.routes) {
+        if (!stations.contains(route.start_station_id)
+            or !stations.contains(route.end_station_id)) {
+            return false;
+        }
+        for (const auto& stop : route.stops) {
+            if (!stations.contains(stop)) {
+                return false;
+            }
+        }
+    }
+
+    //  The line cannot already be in the network.
+    if (lines.contains(line.id)) {
+        return false;
+    }
+
+    lines[line.id] = make_internal_line(line);
+    return true;
+}
+
+auto network_monitor::TransportNetwork::make_internal_line(const Line& line) const
+    -> std::shared_ptr<LineInternal>
+{
+    auto internal_line = std::make_shared<LineInternal>(line.id, line.name);
+
+    for (const auto& route : line.routes) {
+        internal_line->routes[route.id] = make_internal_route(route, internal_line);
+    }
+    return internal_line;
+}
+
+auto network_monitor::TransportNetwork::make_internal_route(
+    const Route& route, const std::shared_ptr<LineInternal>& line) const
+    -> std::shared_ptr<RouteInternal>
+{
+    auto internal_route = std::make_shared<RouteInternal>();
+    internal_route->id = route.id;
+    internal_route->name = route.name;
+    internal_route->line = line;
+
+    for (const auto& stop : route.stops) {
+        internal_route->stops.push_back(stations.at(stop));
+    }
+    return internal_route;
 }
 
 bool network_monitor::TransportNetwork::record_passenger_event(
