@@ -3,61 +3,84 @@
 
 bool network_monitor::Station::operator==(const Station& other) const
 {
-    return false;
+    return id == other.id;
 }
+
 bool network_monitor::Route::operator==(const Route& other) const
 {
-    return false;
+    return id == other.id;
 }
+
 bool network_monitor::Line::operator==(const network_monitor::Line& other) const
 {
-    return false;
+    return id == other.id;
 }
+
 network_monitor::TransportNetwork::TransportNetwork() {}
+
 network_monitor::TransportNetwork::TransportNetwork(
     const network_monitor::TransportNetwork& other)
 {
 }
+
 network_monitor::TransportNetwork::TransportNetwork(
     network_monitor::TransportNetwork&& other) noexcept
 {
 }
+
 network_monitor::TransportNetwork& network_monitor::TransportNetwork::operator=(
     const network_monitor::TransportNetwork& other)
 {
     return *this;
 }
+
 network_monitor::TransportNetwork& network_monitor::TransportNetwork::operator=(
     network_monitor::TransportNetwork&& other) noexcept
 {
     return *this;
 }
+
+network_monitor::TransportNetwork::GraphNode::GraphNode(Station station)
+    : station(station)
+{
+}
+
 bool network_monitor::TransportNetwork::add_station(
     const network_monitor::Station& station)
 {
-    return false;
+    if (stations.contains(station.id)) {
+        return false;
+    }
+
+    stations[station.id] = std::make_shared<GraphNode>(station);
+    return true;
 }
+
 bool network_monitor::TransportNetwork::add_line(const network_monitor::Line& line)
 {
     return false;
 }
+
 bool network_monitor::TransportNetwork::record_passenger_event(
     const network_monitor::Id& station,
     const network_monitor::TransportNetwork::PassengerEvent& event)
 {
     return false;
 }
+
 long long network_monitor::TransportNetwork::get_passenger_count(
     const network_monitor::Id& station) const
 {
     return 0;
 }
+
 std::vector<network_monitor::Id>
 network_monitor::TransportNetwork::get_routes_serving_station(
     const network_monitor::Id& station) const
 {
     return std::vector<Id>();
 }
+
 bool network_monitor::TransportNetwork::set_travel_time(
     const network_monitor::Id& station_a,
     const network_monitor::Id& station_b,
@@ -65,12 +88,14 @@ bool network_monitor::TransportNetwork::set_travel_time(
 {
     return false;
 }
+
 unsigned
 network_monitor::TransportNetwork::get_travel_time(const network_monitor::Id& station_a,
                                                    const network_monitor::Id& station_b)
 {
     return 0;
 }
+
 unsigned
 network_monitor::TransportNetwork::get_travel_time(const network_monitor::Id& line,
                                                    const network_monitor::Id& route,

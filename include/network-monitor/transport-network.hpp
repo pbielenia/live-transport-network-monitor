@@ -70,6 +70,8 @@ private:
     struct LineInternal;
 
     struct GraphNode {
+        GraphNode(Station station);
+
         Station station{};
         long long passenger_count{0};
         std::vector<GraphEdge> edges{};

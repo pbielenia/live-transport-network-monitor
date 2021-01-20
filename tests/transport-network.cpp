@@ -27,30 +27,30 @@ BOOST_AUTO_TEST_CASE(basic)
     BOOST_CHECK(is_ok);
 }
 
-//BOOST_AUTO_TEST_CASE(duplicate_id)
-//{
-//    TransportNetwork network{};
-//    bool is_ok{false};
-//
-//    Station station{"station_000", "Station Name"};
-//    is_ok = network.add_station(station);
-//    BOOST_REQUIRE(is_ok);
-//    is_ok = network.add_station(station);
-//    BOOST_CHECK(!is_ok);
-//}
-//
-//BOOST_AUTO_TEST_CASE(duplicate_name)
-//{
-//    TransportNetwork network{};
-//    bool is_ok{false};
-//
-//    Station station_0{"station_000", "Same Name"};
-//    is_ok = network.add_station(station_0);
-//    BOOST_REQUIRE(is_ok);
-//    Station station_1{"station_001", "Same Name"};
-//    is_ok = network.add_station(station_1);
-//    BOOST_CHECK(is_ok);
-//}
+BOOST_AUTO_TEST_CASE(duplicate_id)
+{
+    TransportNetwork network{};
+    bool is_ok{false};
+
+    Station station{"station_000", "Station Name"};
+    is_ok = network.add_station(station);
+    BOOST_REQUIRE(is_ok);
+    is_ok = network.add_station(station);
+    BOOST_CHECK(!is_ok);
+}
+
+BOOST_AUTO_TEST_CASE(duplicate_name)
+{
+    TransportNetwork network{};
+    bool is_ok{false};
+
+    Station station_0{"station_000", "Same Name"};
+    is_ok = network.add_station(station_0);
+    BOOST_REQUIRE(is_ok);
+    Station station_1{"station_001", "Same Name"};
+    is_ok = network.add_station(station_1);
+    BOOST_CHECK(is_ok);
+}
 
 BOOST_AUTO_TEST_SUITE_END(); // add_station
 
