@@ -57,11 +57,11 @@ public:
     bool
     set_travel_time(const Id& station_a, const Id& station_b, const unsigned travel_time);
 
-    unsigned get_travel_time(const Id& station_a, const Id& station_b);
+    unsigned get_travel_time(const Id& station_a, const Id& station_b) const;
     unsigned get_travel_time(const Id& line,
                              const Id& route,
                              const Id& station_a,
-                             const Id& station_b);
+                             const Id& station_b) const;
 
 private:
     struct GraphNode;

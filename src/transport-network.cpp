@@ -187,13 +187,61 @@ bool network_monitor::TransportNetwork::set_travel_time(
     const network_monitor::Id& station_b,
     const unsigned int travel_time)
 {
+    if (!stations.contains(station_a) or !stations.contains(station_b)) {
+        return false;
+    }
+
+    auto& station_a_edges = stations.at(station_a)->edges;
+    auto station_a_graph_edge =
+        std::find_if(station_a_edges.begin(), station_a_edges.end(), [&station_b](const auto& graph_edge) {
+            return graph_edge.next_stop->station.id == station_b;
+        });
+    if (station_a_graph_edge != station_a_edges.end()) {
+        station_a_graph_edge->travel_time = travel_time;
+        return true;
+    }
+
+    auto& station_b_edges = stations.at(station_b)->edges;
+    auto station_b_graph_edge =
+        std::find_if(station_b_edges.begin(), station_b_edges.end(), [&station_a](const auto& graph_edge) {
+          return graph_edge.next_stop->station.id == station_a;
+        });
+    if (station_b_graph_edge != station_b_edges.end()) {
+        station_b_graph_edge->travel_time = travel_time;
+        return true;
+    }
+
     return false;
 }
 
 unsigned
 network_monitor::TransportNetwork::get_travel_time(const network_monitor::Id& station_a,
-                                                   const network_monitor::Id& station_b)
+                                                   const network_monitor::Id& station_b) const
 {
+    if (!stations.contains(station_a) or !stations.contains(station_b)) {
+        return 0;
+    }
+
+    auto& station_a_edges = stations.at(station_a)->edges;
+    auto station_a_graph_edge =
+        std::find_if(station_a_edges.begin(), station_a_edges.end(), [&station_b](const auto& graph_edge) {
+            return graph_edge.next_stop->station.id == station_b;
+        });
+
+    if (station_a_graph_edge != station_a_edges.end()) {
+        return station_a_graph_edge->travel_time;
+    }
+
+    auto& station_b_edges = stations.at(station_b)->edges;
+    auto station_b_graph_edge =
+        std::find_if(station_b_edges.begin(), station_b_edges.end(), [&station_a](const auto& graph_edge) {
+          return graph_edge.next_stop->station.id == station_a;
+        });
+
+    if (station_b_graph_edge != station_b_edges.end()) {
+        return station_b_graph_edge->travel_time;
+    }
+
     return 0;
 }
 
@@ -201,7 +249,7 @@ unsigned
 network_monitor::TransportNetwork::get_travel_time(const network_monitor::Id& line,
                                                    const network_monitor::Id& route,
                                                    const network_monitor::Id& station_a,
-                                                   const network_monitor::Id& station_b)
+                                                   const network_monitor::Id& station_b) const
 {
     return 0;
 }
