@@ -1,4 +1,5 @@
 
+#include <iostream>
 #include <set>
 #include <transport-network.hpp>
 
@@ -193,9 +194,10 @@ bool network_monitor::TransportNetwork::set_travel_time(
 
     auto& station_a_edges = stations.at(station_a)->edges;
     auto station_a_graph_edge =
-        std::find_if(station_a_edges.begin(), station_a_edges.end(), [&station_b](const auto& graph_edge) {
-            return graph_edge.next_stop->station.id == station_b;
-        });
+        std::find_if(station_a_edges.begin(), station_a_edges.end(),
+                     [&station_b](const auto& graph_edge) {
+                         return graph_edge.next_stop->station.id == station_b;
+                     });
     if (station_a_graph_edge != station_a_edges.end()) {
         station_a_graph_edge->travel_time = travel_time;
         return true;
@@ -203,9 +205,10 @@ bool network_monitor::TransportNetwork::set_travel_time(
 
     auto& station_b_edges = stations.at(station_b)->edges;
     auto station_b_graph_edge =
-        std::find_if(station_b_edges.begin(), station_b_edges.end(), [&station_a](const auto& graph_edge) {
-          return graph_edge.next_stop->station.id == station_a;
-        });
+        std::find_if(station_b_edges.begin(), station_b_edges.end(),
+                     [&station_a](const auto& graph_edge) {
+                         return graph_edge.next_stop->station.id == station_a;
+                     });
     if (station_b_graph_edge != station_b_edges.end()) {
         station_b_graph_edge->travel_time = travel_time;
         return true;
@@ -214,9 +217,8 @@ bool network_monitor::TransportNetwork::set_travel_time(
     return false;
 }
 
-unsigned
-network_monitor::TransportNetwork::get_travel_time(const network_monitor::Id& station_a,
-                                                   const network_monitor::Id& station_b) const
+unsigned network_monitor::TransportNetwork::get_travel_time(
+    const network_monitor::Id& station_a, const network_monitor::Id& station_b) const
 {
     if (!stations.contains(station_a) or !stations.contains(station_b)) {
         return 0;
@@ -224,9 +226,10 @@ network_monitor::TransportNetwork::get_travel_time(const network_monitor::Id& st
 
     auto& station_a_edges = stations.at(station_a)->edges;
     auto station_a_graph_edge =
-        std::find_if(station_a_edges.begin(), station_a_edges.end(), [&station_b](const auto& graph_edge) {
-            return graph_edge.next_stop->station.id == station_b;
-        });
+        std::find_if(station_a_edges.begin(), station_a_edges.end(),
+                     [&station_b](const auto& graph_edge) {
+                         return graph_edge.next_stop->station.id == station_b;
+                     });
 
     if (station_a_graph_edge != station_a_edges.end()) {
         return station_a_graph_edge->travel_time;
@@ -234,9 +237,10 @@ network_monitor::TransportNetwork::get_travel_time(const network_monitor::Id& st
 
     auto& station_b_edges = stations.at(station_b)->edges;
     auto station_b_graph_edge =
-        std::find_if(station_b_edges.begin(), station_b_edges.end(), [&station_a](const auto& graph_edge) {
-          return graph_edge.next_stop->station.id == station_a;
-        });
+        std::find_if(station_b_edges.begin(), station_b_edges.end(),
+                     [&station_a](const auto& graph_edge) {
+                         return graph_edge.next_stop->station.id == station_a;
+                     });
 
     if (station_b_graph_edge != station_b_edges.end()) {
         return station_b_graph_edge->travel_time;
@@ -245,11 +249,41 @@ network_monitor::TransportNetwork::get_travel_time(const network_monitor::Id& st
     return 0;
 }
 
-unsigned
-network_monitor::TransportNetwork::get_travel_time(const network_monitor::Id& line,
-                                                   const network_monitor::Id& route,
-                                                   const network_monitor::Id& station_a,
-                                                   const network_monitor::Id& station_b) const
+unsigned network_monitor::TransportNetwork::get_travel_time(
+    const network_monitor::Id& line,
+    const network_monitor::Id& route,
+    const network_monitor::Id& station_a,
+    const network_monitor::Id& station_b) const
 {
+    if (!lines.contains(line) or !stations.contains(station_a)
+        or !stations.contains(station_b)) {
+        return 0;
+    }
+
+    std::cout << "Line " << line << " and stations " << station_a << ", " << station_b
+              << " exist.\n";
+
+    const auto& edges = stations.at(station_a)->edges;
+    const auto graph_edge =
+        std::find_if(edges.begin(), edges.end(), [route](const auto& graph_edge) {
+            return graph_edge.route->id == route;
+        });
+    if (graph_edge != edges.end()) {
+        std::cout << "Station " << station_a << " serves the route " << route << ".\n";
+    } else {
+        std::cout << "Station " << station_a << " doesn't serve the route " << route
+                  << ".\n";
+    }
+
+    // TODO: check if the station_b also serves the route.
+
+
     return 0;
+}
+
+auto network_monitor::TransportNetwork::GraphNode::find_edge_for_route(
+    const std::shared_ptr<const RouteInternal>& route) const
+    -> std::vector<GraphEdge>::const_iterator
+{
+    //    return ;
 }
