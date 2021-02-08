@@ -268,6 +268,10 @@ BOOST_AUTO_TEST_CASE(basic)
     is_ok = network.set_travel_time(station_1.id, station_0.id, 3);
     BOOST_CHECK(is_ok);
     BOOST_CHECK_EQUAL(network.get_travel_time(station_1.id, station_0.id), 3);
+
+    is_ok = network.set_travel_time(station_1.id, station_2.id, 4);
+    BOOST_CHECK(is_ok);
+    BOOST_CHECK_EQUAL(network.get_travel_time(station_1.id, station_2.id), 4);
 }
 
 BOOST_AUTO_TEST_CASE(over_route)

@@ -1,4 +1,5 @@
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -76,7 +77,7 @@ private:
         long long passenger_count{0};
         std::vector<GraphEdge> edges{};
 
-        std::vector<GraphEdge>::const_iterator
+        std::optional<std::vector<GraphEdge>::const_iterator>
         find_edge_for_route(const std::shared_ptr<const RouteInternal>& route) const;
     };
 
