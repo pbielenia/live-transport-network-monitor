@@ -1,5 +1,3 @@
-
-#include <iostream>
 #include <set>
 #include <transport-network.hpp>
 
@@ -51,6 +49,12 @@ network_monitor::TransportNetwork::LineInternal::LineInternal(Id id, std::string
     : id{std::move(id)},
       name{std::move(name)}
 {
+}
+
+bool network_monitor::TransportNetwork::from_json(nlohmann::json&& source)
+{
+    // TODO
+    return false;
 }
 
 bool network_monitor::TransportNetwork::add_station(

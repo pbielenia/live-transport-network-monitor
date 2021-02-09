@@ -1,0 +1,43 @@
+{
+  "lines": [
+    {
+      "line_id": "line_000",
+      "name": "Line Name",
+      "stations": [
+        "station_000",
+        "station_001"
+      ],
+      "routes": [
+        {
+          "route_id": "route_000",
+          "direction": "inbound",
+          "start_station_id": "station_000",
+          "end_station_id": "station_001",
+          "route_stops": [
+            "station_000",
+            "station_001"
+          ]
+        }
+      ]
+    }
+  ],
+  "stations": [
+    {
+      "station_id": "station_000",
+      "name": "Station Name 0"
+    },
+    {
+      "station_id": "station_001",
+      "name": "Station Name 1"
+    }
+  ],
+  "travel_times": [
+    {
+      "start_station_id": "station_000",
+      "end_station_id": "station_001",
+      "line_id": "line_000",
+      "route_id": "route_000",
+      "travel_time": "4"
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -73,6 +74,20 @@ public:
 
     TransportNetwork& operator=(const TransportNetwork& other);
     TransportNetwork& operator=(TransportNetwork&& other) noexcept;
+
+    /*! \brief Populate the network from a JSON object.
+     *
+     *  \param source Ownership of the source JSON object is moved to this method.
+     *
+     *  \return false if stations and lines where parsed successfully, but not the travel
+     *          times
+     *
+     *  \throws std::runtime_error This method throws if the JSON items were parsed
+     *                             correctly but there was an issue adding new stations
+     *                             or lines to the network.
+     *  \throws nlohmann::json::exception If there was a problem parsing the JSON object.
+     */
+    bool from_json(nlohmann::json&& source);
 
     bool add_station(const Station& station);
     bool add_line(const Line& line);

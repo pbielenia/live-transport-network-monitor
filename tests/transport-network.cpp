@@ -343,6 +343,21 @@ BOOST_AUTO_TEST_CASE(over_route)
 
 BOOST_AUTO_TEST_SUITE_END(); // travel_time
 
+BOOST_AUTO_TEST_CASE(create_from_json)
+{
+    // TODO: read and dump json
+    const std::string source_path{std::string(TESTS_NETWORK_LAYOUTS_DIR)
+                                  + "/network-layout-1.json"};
+    std::ifstream ifs(source_path);
+    try {
+        nlohmann::json network_layout = nlohmann::json::parse(ifs);
+        std::cout << network_layout.dump(2) << "\n";
+    } catch (const std::exception& e) {
+        std::cout << "Error message: " << e.what() << "\n";
+    }
+
+}
+
 BOOST_AUTO_TEST_SUITE_END(); // class_TransportNetwork
 
 BOOST_AUTO_TEST_SUITE_END(); // network_monitor
