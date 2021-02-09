@@ -66,6 +66,11 @@ bool network_monitor::TransportNetwork::add_station(
 
 bool network_monitor::TransportNetwork::add_line(const network_monitor::Line& line)
 {
+    //  The line cannot already be in the network.
+    if (lines.contains(line.id)) {
+        return false;
+    }
+
     //  All stations served by this line must already be in the network.
     for (const auto& route : line.routes) {
         if (!stations.contains(route.start_station_id)
@@ -77,11 +82,6 @@ bool network_monitor::TransportNetwork::add_line(const network_monitor::Line& li
                 return false;
             }
         }
-    }
-
-    //  The line cannot already be in the network.
-    if (lines.contains(line.id)) {
-        return false;
     }
 
     lines[line.id] = make_internal_line(line);
@@ -138,15 +138,18 @@ bool network_monitor::TransportNetwork::record_passenger_event(
         return false;
     }
 
-    if (event == PassengerEvent::In) {
+    switch (event) {
+    case PassengerEvent::In: {
         stations.at(station)->passenger_count++;
-    } else if (event == PassengerEvent::Out) {
+        return true;
+    }
+    case PassengerEvent::Out: {
         stations.at(station)->passenger_count--;
-    } else {
+        return true;
+    }
+    default:
         return false;
     }
-
-    return true;
 }
 
 long long network_monitor::TransportNetwork::get_passenger_count(
@@ -162,11 +165,13 @@ std::vector<network_monitor::Id>
 network_monitor::TransportNetwork::get_routes_serving_station(
     const network_monitor::Id& station) const
 {
+    // FIXME: In the worst case, we are iterating over all routes for all lines in the
+    //        network. We may want to optimize this.
     std::set<Id> routes;
-    for (const auto& [line_id, line] : lines) {
-        for (const auto& [route_id, route] : line->routes) {
+    for (const auto& [_, line] : lines) {
+        for (const auto& [_, route] : line->routes) {
             if (route_serves_station(*route, station)) {
-                routes.emplace(route_id);
+                routes.emplace(route->id);
             }
         }
     }
