@@ -8,13 +8,38 @@ namespace network_monitor {
 
 using Id = std::string;
 
+/*! \brief Network station
+ *
+ *  A Station struct is well formed if:
+ *  - `id` is unique across all stations in the network.
+ */
 struct Station {
     Id id{};
     std::string name{};
 
+    /*! \brief
+     *
+     *  Two stations are "equal" if they have same ID.
+     */
     bool operator==(const Station& other) const;
 };
 
+/*! \brief Network route
+ *
+ *  Each underground line has one or more routes. A route represents a single possible
+ *  journey across a set of stops in a specified direction.
+ *
+ *  There may or may not be a corresponding route in the opposite direction of travel.
+ *
+ *  A route struct is well formed if:
+ *  - `id` is unique across all lines and their routes in the network.
+ *  - The `line_id` line exists and has this route among its routes.
+ *  - `stops` has at least 2 stops.
+ *  - `start_station_id` is the first stop in `stops`.
+ *  - `end_station_id` is the last stop in `stops`.
+ *  - Every `station_id` station in `stops` exists.
+ *  - Every stop in `stops` appears only one.
+ */
 struct Route {
     Id id{};
     std::string name{};
