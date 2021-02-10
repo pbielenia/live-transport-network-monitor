@@ -54,12 +54,14 @@ target_compile_definitions(network-monitor-tests
     PRIVATE
         TESTS_CACERT_PEM="${CMAKE_CURRENT_SOURCE_DIR}/tests/cacert.pem"
         TESTS_NETWORK_LAYOUT_PATH="${CMAKE_CURRENT_SOURCE_DIR}/tests/network-layout.json"
+        TESTS_NETWORK_LAYOUTS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/network_layouts"
     )
 target_link_libraries(network-monitor-tests
     PRIVATE
         network-monitor
         Boost::Boost
         OpenSSL::OpenSSL
+        nlohmann_json::nlohmann_json
     )
 add_test(
     NAME network-monitor-tests
