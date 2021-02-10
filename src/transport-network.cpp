@@ -53,8 +53,46 @@ network_monitor::TransportNetwork::LineInternal::LineInternal(Id id, std::string
 
 bool network_monitor::TransportNetwork::from_json(nlohmann::json&& source)
 {
-    // TODO
-    return false;
+    // TODO: route direction is not used
+    // Make stations
+    for (const auto& station : source.at("stations")) {
+        auto station_id{station.at("station_id").get<std::string>()};
+        auto station_name{station.at("name").get<std::string>()};
+
+        auto is_ok = add_station({station_id, station_name});
+        if (!is_ok) {
+            throw std::runtime_error("Could not add station " + station_id);
+        }
+    }
+    // Make routes and lines
+    for (const auto& line : source.at("lines")) {
+        auto line_id{line.at("line_id").get<std::string>()};
+
+        std::vector<Route> routes;
+        for (const auto& route : line.at("routes")) {
+            routes.push_back(
+                Route{route.at("route_id").get<std::string>(), "The route has no name",
+                      line_id, route.at("start_station_id").get<std::string>(),
+                      route.at("end_station_id").get<std::string>(),
+                      route.at("route_stops").get<std::vector<std::string>>()});
+        }
+        auto is_ok = add_line(Line{line_id, line.at("name").get<std::string>(), routes});
+        if (!is_ok) {
+            throw std::runtime_error("Could not add line " + line_id);
+        }
+    }
+
+    // Set travel times
+    auto is_ok{false};
+    for (const auto& travel_time : source.at("travel_times")) {
+        is_ok = set_travel_time(travel_time.at("start_station_id").get<std::string>(),
+                                travel_time.at("end_station_id").get<std::string>(),
+                                travel_time.at("travel_time").get<int>());
+        if (!is_ok) {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool network_monitor::TransportNetwork::add_station(

@@ -343,20 +343,72 @@ BOOST_AUTO_TEST_CASE(over_route)
 
 BOOST_AUTO_TEST_SUITE_END(); // travel_time
 
-BOOST_AUTO_TEST_CASE(create_from_json)
-{
-    // TODO: read and dump json
-    const std::string source_path{std::string(TESTS_NETWORK_LAYOUTS_DIR)
-                                  + "/network-layout-1.json"};
-    std::ifstream ifs(source_path);
-    try {
-        nlohmann::json network_layout = nlohmann::json::parse(ifs);
-        std::cout << network_layout.dump(2) << "\n";
-    } catch (const std::exception& e) {
-        std::cout << "Error message: " << e.what() << "\n";
-    }
+BOOST_AUTO_TEST_SUITE(json)
 
+nlohmann::json read_json_from_file(const std::string& path)
+{
+    const std::string source_path{std::string(TESTS_NETWORK_LAYOUTS_DIR) + "/" + path};
+    std::ifstream ifs(source_path);
+    return nlohmann::json::parse(ifs);
 }
+
+BOOST_AUTO_TEST_CASE(create_from_json_1)
+try {
+    auto network_layout = read_json_from_file("network-layout-1.json");
+    TransportNetwork network{};
+    bool is_ok{false};
+
+    is_ok = network.from_json(std::move(network_layout));
+    BOOST_REQUIRE(is_ok);
+
+    BOOST_CHECK_EQUAL(network.get_travel_time("station_000", "station_001"), 4);
+
+    auto routes{network.get_routes_serving_station("station_000")};
+    BOOST_REQUIRE_EQUAL(routes.size(), 1);
+    BOOST_CHECK_EQUAL(routes[0], "route_000");
+
+} catch (const std::exception& e) {
+    std::cout << "Error message: " << e.what() << "\n";
+    BOOST_REQUIRE(false);
+}
+
+BOOST_AUTO_TEST_CASE(create_from_json_2)
+try {
+    auto network_layout = read_json_from_file("network-layout-2.json");
+    TransportNetwork network{};
+    bool is_ok{false};
+
+    is_ok = network.from_json(std::move(network_layout));
+    BOOST_REQUIRE(is_ok);
+
+    BOOST_CHECK_EQUAL(network.get_travel_time("station_000", "station_001"), 1);
+    BOOST_CHECK_EQUAL(network.get_travel_time("station_001", "station_000"), 1);
+    BOOST_CHECK_EQUAL(network.get_travel_time("station_001", "station_002"), 2);
+    BOOST_CHECK_EQUAL(network.get_travel_time("station_002", "station_001"), 2);
+    BOOST_CHECK_EQUAL(
+        network.get_travel_time("line_000", "route_000", "station_000", "station_002"),
+        3);
+
+} catch (const std::exception& e) {
+    std::cout << "Error message: " << e.what();
+    BOOST_REQUIRE(false);
+}
+
+BOOST_AUTO_TEST_CASE(create_from_json_3)
+try {
+    auto network_layout = read_json_from_file("network-layout-3.json");
+    TransportNetwork network{};
+    bool is_ok{false};
+
+    is_ok = network.from_json(std::move(network_layout));
+    BOOST_REQUIRE(!is_ok);
+
+} catch (const std::exception& e) {
+    std::cout << "Error message: " << e.what();
+    BOOST_REQUIRE(false);
+}
+
+BOOST_AUTO_TEST_SUITE_END(); // json
 
 BOOST_AUTO_TEST_SUITE_END(); // class_TransportNetwork
 
