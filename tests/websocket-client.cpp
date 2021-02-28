@@ -10,10 +10,15 @@
 
 using network_monitor::BoostWebSocketClient;
 using network_monitor::MockResolver;
+using network_monitor::MockTcpStream;
 using network_monitor::MockWebSocketClient;
 
 struct WebSocketClientTestFixture {
-    WebSocketClientTestFixture() { MockResolver::resolve_error_code = {}; }
+    WebSocketClientTestFixture()
+    {
+        MockResolver::resolve_error_code = {};
+        MockTcpStream::connect_error_code = {};
+    }
 };
 
 static boost::unit_test::timeout timeout{3};
@@ -27,11 +32,11 @@ BOOST_AUTO_TEST_CASE(cacert_pem)
     BOOST_CHECK(std::filesystem::exists(TESTS_CACERT_PEM));
 }
 
-BOOST_FIXTURE_TEST_CASE(Connet, WebSocketClientTestFixture);
+BOOST_FIXTURE_TEST_SUITE(Connect, WebSocketClientTestFixture);
 
 BOOST_AUTO_TEST_CASE(fail_resolve, *timeout)
 {
-    const std::string url {"echo.websocket.org"};
+    const std::string url{"echo.websocket.org"};
     const std::string endpoint{"/"};
     const std::string port{"443"};
 
@@ -43,13 +48,40 @@ BOOST_AUTO_TEST_CASE(fail_resolve, *timeout)
 
     MockWebSocketClient client{url, endpoint, port, io_context, ssl_context};
     bool called_on_connect{false};
-    auto on_connect{[&called_on_connect](auto error_code){
+    auto on_connect{[&called_on_connect](auto error_code) {
         called_on_connect = true;
         BOOST_CHECK_EQUAL(error_code, boost::asio::error::host_not_found);
     }};
     client.connect(on_connect);
     io_context.run();
 
+    BOOST_CHECK(called_on_connect);
+}
+
+BOOST_AUTO_TEST_CASE(fail_socket_connect, *timeout)
+{
+    // We use the mock client so we don't really connect to the target.
+    const std::string url{"echo.websocket.org"};
+    const std::string endpoint{"/"};
+    const std::string port{"443"};
+
+    boost::asio::ssl::context ssl_context{boost::asio::ssl::context::tlsv12_client};
+    ssl_context.load_verify_file(TESTS_CACERT_PEM);
+    boost::asio::io_context io_context{};
+
+    // Set the expected error codes.
+    MockTcpStream::connect_error_code = boost::asio::error::connection_refused;
+
+    MockWebSocketClient client{url, endpoint, port, io_context, ssl_context};
+    bool called_on_connect{false};
+    auto on_connect{[&called_on_connect](auto error_code) {
+        called_on_connect = true;
+        BOOST_CHECK_EQUAL(error_code, boost::asio::error::connection_refused);
+    }};
+    client.connect(on_connect);
+    io_context.run();
+
+    // When we get here, the io_context::run function has run out of work to do.
     BOOST_CHECK(called_on_connect);
 }
 

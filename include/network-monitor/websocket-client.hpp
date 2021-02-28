@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+#include <iomanip>
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
 #include <boost/beast/ssl.hpp>
