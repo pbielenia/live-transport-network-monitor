@@ -1,5 +1,6 @@
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
+#include <boost/beast/ssl.hpp>
 #include <memory>
 #include <string>
 
@@ -19,11 +20,13 @@ public:
      *  \param port         The port on the server.
      *  \param io_context   The io_context object. The user takes care of calling
      *                      ioc.run().
+     *  \param tls_context  The TLS context to setup a TLS socket stream.
      */
     WebSocketClient(const std::string& url,
                     const std::string& endpoint,
                     const std::string& port,
-                    boost::asio::io_context& io_context);
+                    boost::asio::io_context& io_context,
+                    boost::asio::ssl::context& tls_context);
 
     /*! \brief Destructor.
      */
@@ -67,7 +70,9 @@ private:
         std::function<void(boost::system::error_code)> on_disconnect = nullptr);
     void ResolveServerUrl();
     void ConnectToServer(boost::asio::ip::tcp::resolver::results_type results);
-    void Handshake();
+    void SetTcpStreamTimeoutToSuggested();
+    void HandshakeTls();
+    void HandshakeWebSocket();
     void ListenToIncomingMessage(const boost::system::error_code& error);
     std::string ReadMessage(const size_t received_bytes_count);
 
@@ -77,7 +82,8 @@ private:
 
     void OnServerUrlResolved(boost::asio::ip::tcp::resolver::results_type results);
     void OnConnectedToServer(const boost::system::error_code& error);
-    void OnHandshakeCompleted(const boost::system::error_code& error);
+    void OnTlsHandshakeCompleted(const boost::system::error_code& error);
+    void OnWebSocketHandshakeCompleted(const boost::system::error_code& error);
     void OnMessageReceived(const boost::system::error_code& error,
                            const size_t received_bytes_count);
 
@@ -86,7 +92,8 @@ private:
     const std::string server_port_{};
 
     boost::asio::ip::tcp::resolver resolver_;
-    boost::beast::websocket::stream<boost::beast::tcp_stream> websocket_stream_;
+    boost::beast::websocket::stream<boost::beast::ssl_stream<boost::beast::tcp_stream>>
+        websocket_stream_;
 
     boost::beast::flat_buffer response_buffer_{};
     bool closed_{true};

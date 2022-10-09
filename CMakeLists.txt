@@ -50,6 +50,7 @@ target_link_libraries(${NETWORK_MONITOR_TESTS_EXE_NAME}
     PRIVATE
         ${NETWORK_MONITOR_LIBRARY_NAME}
         Boost::Boost
+        OpenSSL::OpenSSL
 )
 
 add_test(

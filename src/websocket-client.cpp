@@ -1,5 +1,6 @@
 #include "network-monitor/websocket-client.h"
 
+#include <boost/asio/ssl/stream.hpp>
 #include <openssl/ssl.h>
 
 using namespace NetworkMonitor;
@@ -7,12 +8,13 @@ using namespace NetworkMonitor;
 WebSocketClient::WebSocketClient(const std::string& url,
                                  const std::string& endpoint,
                                  const std::string& port,
-                                 boost::asio::io_context& io_context)
+                                 boost::asio::io_context& io_context,
+                                 boost::asio::ssl::context& tls_context)
     : server_url_{url},
       server_endpoint_{endpoint},
       server_port_{port},
       resolver_{boost::asio::make_strand(io_context)},
-      websocket_stream_{boost::asio::make_strand(io_context)}
+      websocket_stream_{boost::asio::make_strand(io_context), tls_context}
 {
 }
 
@@ -65,24 +67,54 @@ void WebSocketClient::OnServerUrlResolved(
 void WebSocketClient::ConnectToServer(
     boost::asio::ip::tcp::resolver::results_type results)
 {
-    websocket_stream_.next_layer().async_connect(
-        *results, [this](auto error) { OnConnectedToServer(error); });
+    auto& tcp_stream = boost::beast::get_lowest_layer(websocket_stream_);
+    tcp_stream.expires_after(std::chrono::seconds(5));
+    tcp_stream.async_connect(*results,
+                             [this](auto error) { OnConnectedToServer(error); });
 }
 
 void WebSocketClient::OnConnectedToServer(const boost::system::error_code& error)
 {
-    Handshake();
+    SetTcpStreamTimeoutToSuggested();
+
+    // Set the host name before the TLS handshake or the connection will fail
+    SSL_set_tlsext_host_name(websocket_stream_.next_layer().native_handle(),
+                             server_url_.c_str());
+
+    HandshakeTls();
 }
 
-void WebSocketClient::Handshake()
+void WebSocketClient::SetTcpStreamTimeoutToSuggested()
+{
+    auto& tcp_stream = boost::beast::get_lowest_layer(websocket_stream_);
+    tcp_stream.expires_never();
+    websocket_stream_.set_option(boost::beast::websocket::stream_base::timeout::suggested(
+        boost::beast::role_type::client));
+}
+
+void WebSocketClient::HandshakeTls()
+{
+    websocket_stream_.next_layer().async_handshake(
+        boost::asio::ssl::stream_base::handshake_type::client,
+        [this](auto error) { OnTlsHandshakeCompleted(error); });
+}
+
+void WebSocketClient::OnTlsHandshakeCompleted(const boost::system::error_code& error)
+{
+    HandshakeWebSocket();
+}
+
+void WebSocketClient::HandshakeWebSocket()
 {
     const std::string connection_host{server_url_ + ':' + server_port_};
-    websocket_stream_.async_handshake(
-        connection_host, server_endpoint_,
-        [this](const boost::system::error_code& error) { OnHandshakeCompleted(error); });
+    websocket_stream_.async_handshake(connection_host, server_endpoint_,
+                                      [this](const boost::system::error_code& error) {
+                                          OnWebSocketHandshakeCompleted(error);
+                                      });
 }
 
-void WebSocketClient::OnHandshakeCompleted(const boost::system::error_code& error)
+void WebSocketClient::OnWebSocketHandshakeCompleted(
+    const boost::system::error_code& error)
 {
     CallOnConnectCallbackIfExists(error);
     ListenToIncomingMessage(error);
