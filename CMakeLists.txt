@@ -10,7 +10,7 @@ set(NETWORK_MONITOR_TESTS_EXE_NAME ${PROJECT_NAME}-tests)
 if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/conaninfo.txt)
     list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_BINARY_DIR}")
 endif()
-find_package(Boost 1.80 REQUIRED COMPONENTS system)
+find_package(Boost 1.80 REQUIRED COMPONENTS system unit_test_framework)
 
 # Library
 add_library(${NETWORK_MONITOR_LIBRARY_NAME} STATIC
@@ -31,6 +31,7 @@ target_include_directories(${NETWORK_MONITOR_LIBRARY_NAME}
 
 # Tests
 add_executable(${NETWORK_MONITOR_TESTS_EXE_NAME}
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/main.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/websocket-client.cpp"
 )
 target_compile_features(${NETWORK_MONITOR_LIBRARY_NAME}
