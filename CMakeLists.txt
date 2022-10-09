@@ -40,7 +40,11 @@ add_executable(${NETWORK_MONITOR_TESTS_EXE_NAME}
 )
 target_compile_features(${NETWORK_MONITOR_LIBRARY_NAME}
     PRIVATE
-        cxx_std_14
+        cxx_std_17
+)
+target_compile_definitions(${NETWORK_MONITOR_TESTS_EXE_NAME}
+    PRIVATE
+        TESTS_CACERT_PEM="${CMAKE_CURRENT_SOURCE_DIR}/tests/cacert.pem"
 )
 target_link_libraries(${NETWORK_MONITOR_TESTS_EXE_NAME}
     PRIVATE
