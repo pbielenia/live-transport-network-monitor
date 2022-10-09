@@ -1,7 +1,5 @@
 #include "network-monitor/websocket-client.h"
 
-#include <iostream>
-
 using namespace NetworkMonitor;
 
 WebSocketClient::WebSocketClient(const std::string& url,
@@ -50,9 +48,6 @@ void WebSocketClient::ResolveServerUrl()
                             [this](const boost::system::error_code& error,
                                    boost::asio::ip::tcp::resolver::results_type results) {
                                 if (error) {
-                                    std::cout
-                                        << "Resolving server URL has failed. Reason: "
-                                        << error.message() << std::endl;
                                     return;
                                 }
                                 OnServerUrlResolved(results);
@@ -62,7 +57,6 @@ void WebSocketClient::ResolveServerUrl()
 void WebSocketClient::OnServerUrlResolved(
     boost::asio::ip::tcp::resolver::results_type results)
 {
-    std::cout << __FUNCTION__ << std::endl;
     ConnectToServer(results);
 }
 
@@ -75,7 +69,6 @@ void WebSocketClient::ConnectToServer(
 
 void WebSocketClient::OnConnectedToServer(const boost::system::error_code& error)
 {
-    std::cout << __FUNCTION__ << std::endl;
     Handshake();
 }
 
@@ -89,7 +82,6 @@ void WebSocketClient::Handshake()
 
 void WebSocketClient::OnHandshakeCompleted(const boost::system::error_code& error)
 {
-    std::cout << __FUNCTION__ << std::endl;
     CallOnConnectCallbackIfExists(error);
     ListenToIncomingMessage(error);
     closed_ = false;
@@ -120,9 +112,7 @@ void WebSocketClient::ListenToIncomingMessage(const boost::system::error_code& e
 void WebSocketClient::OnMessageReceived(const boost::system::error_code& error,
                                         const size_t received_bytes_count)
 {
-    std::cout << __FUNCTION__ << std::endl;
     if (error) {
-        std::cout << __FUNCTION__ << ", Error: " << error.message() << std::endl;
         return;
     }
     CallOnMessageCallbackIfExists(error, ReadMessage(received_bytes_count));
@@ -148,7 +138,6 @@ void WebSocketClient::Send(
     const std::string& message,
     std::function<void(boost::system::error_code)> on_send_callback)
 {
-    std::cout << __FUNCTION__ << std::endl;
     websocket_stream_.async_write(boost::asio::buffer(message),
                                   [this, on_send_callback](auto error, auto) {
                                       if (on_send_callback) {
@@ -160,7 +149,6 @@ void WebSocketClient::Send(
 void WebSocketClient::Close(
     std::function<void(boost::system::error_code)> on_close_callback)
 {
-    std::cout << __FUNCTION__ << std::endl;
     websocket_stream_.async_close(boost::beast::websocket::close_code::none,
                                   on_close_callback);
     closed_ = true;
