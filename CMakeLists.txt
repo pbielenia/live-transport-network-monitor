@@ -12,6 +12,8 @@ if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/conaninfo.txt)
 endif()
 find_package(Boost 1.80 REQUIRED COMPONENTS system unit_test_framework)
 
+enable_testing()
+
 # Library
 add_library(${NETWORK_MONITOR_LIBRARY_NAME} STATIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src/websocket-client.cpp"
@@ -42,4 +44,12 @@ target_link_libraries(${NETWORK_MONITOR_TESTS_EXE_NAME}
     PRIVATE
         ${NETWORK_MONITOR_LIBRARY_NAME}
         Boost::Boost
+)
+
+add_test(
+    NAME ${NETWORK_MONITOR_TESTS_EXE_NAME}
+    COMMAND $<TARGET_FILE:${NETWORK_MONITOR_TESTS_EXE_NAME}>
+)
+set_tests_properties(${NETWORK_MONITOR_TESTS_EXE_NAME} PROPERTIES
+    PASS_REGULAR_EXPRESSION ".*No errors detected"
 )

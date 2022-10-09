@@ -28,3 +28,8 @@ conan install -if build --profile conanprofile.toml .
 cmake -Bbuild -GNinja
 ninja -Cbuild
 ```
+
+### Run all tests
+```bash
+ninja -Cbuild test
+```
