@@ -1,5 +1,7 @@
 #include "network-monitor/websocket-client.h"
 
+#include <openssl/ssl.h>
+
 using namespace NetworkMonitor;
 
 WebSocketClient::WebSocketClient(const std::string& url,
