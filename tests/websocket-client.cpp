@@ -4,6 +4,7 @@
 #include <boost/beast/ssl.hpp>
 #include <boost/test/unit_test.hpp>
 #include <filesystem>
+#include <sstream>
 #include <string>
 
 using NetworkMonitor::WebSocketClient;
@@ -67,6 +68,61 @@ BOOST_AUTO_TEST_CASE(class_WebSocketClient)
     BOOST_CHECK(messageReceived);
     BOOST_CHECK(disconnected);
     BOOST_CHECK_EQUAL(message, echo);
+}
+
+bool CheckResponse(const std::string& response)
+{
+    // We do not parse the whole message. We only check that it contains some
+    // expected items.
+    bool ok{true};
+    ok &= response.find("ERROR") != std::string::npos;
+    ok &= response.find("ValidationInvalidAuth") != std::string::npos;
+    return ok;
+}
+
+BOOST_AUTO_TEST_CASE(class_WebSocketClient_send_stomp)
+{
+    // Connection targets
+    const std::string url{"ltnm.learncppthroughprojects.com"};
+    const std::string endpoint{"/network-events"};
+    const std::string port{"443"};
+    const std::string username{"test"};
+    const std::string password{"test"};
+
+    std::stringstream stream;
+    stream << "STOMP\n"
+           << "accept-version:1.2\n"
+           << "host:ltnm.learncppthroughprojects.com\n"
+           << "login:" << username << "\n"
+           << "passcode:" << password << "\n"
+           << "\n"
+           << '\0';
+
+    const std::string message{stream.str()};
+
+    // TLS context
+    boost::asio::ssl::context tls_context{boost::asio::ssl::context::tlsv12_client};
+    tls_context.load_verify_file(TESTS_CACERT_PEM);
+
+    // Always start with an I/O context object.
+    boost::asio::io_context io_context{};
+
+    // The class under test
+    WebSocketClient client{url, endpoint, port, io_context, tls_context};
+
+    auto onConnect{[&client, &message](auto ec) {
+        if (!ec) {
+            client.Send(message);
+        }
+    }};
+    auto onReceive{[&client, &message](auto ec, auto received) {
+        if (!ec) {
+            BOOST_CHECK(CheckResponse(received));
+        }
+    }};
+
+    client.Connect(onConnect, onReceive);
+    io_context.run();
 }
 
 BOOST_AUTO_TEST_SUITE_END();
