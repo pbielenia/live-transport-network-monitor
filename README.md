@@ -33,3 +33,8 @@ ninja -Cbuild
 ```bash
 ninja -Cbuild test
 ```
+
+### Run tests with log messages enabled
+```
+./build/network-monitor-tests --log_level=message
+```
