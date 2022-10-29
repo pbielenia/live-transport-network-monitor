@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <curl/curl.h>
+#include <fstream>
 #include <network-monitor/file-downloader.h>
 
 bool NetworkMonitor::DownloadFile(const std::string& file_url,
@@ -34,4 +35,18 @@ bool NetworkMonitor::DownloadFile(const std::string& file_url,
         return false;
     }
     return true;
+}
+
+nlohmann::json NetworkMonitor::ParseJsonFile(const std::filesystem::path& source)
+{
+    nlohmann::json parsed{};
+    if (!std::filesystem::exists(source)) {
+        return parsed;
+    }
+    try {
+        std::ifstream file{source};
+        file >> parsed;
+    } catch (...) {
+    }
+    return parsed;
 }

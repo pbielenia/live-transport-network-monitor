@@ -15,6 +15,7 @@ endif()
 find_package(Boost 1.80 REQUIRED COMPONENTS system unit_test_framework)
 find_package(OpenSSL 3 REQUIRED)
 find_package(CURL REQUIRED)
+find_package(nlohmann_json 3.11.2 REQUIRED)
 
 enable_testing()
 
@@ -31,6 +32,8 @@ target_link_libraries(${NETWORK_MONITOR_LIBRARY_NAME}
     PUBLIC
         Boost::Boost
         OpenSSL::OpenSSL
+        nlohmann_json::nlohmann_json
+    PRIVATE
         CURL::libcurl
 )
 target_include_directories(${NETWORK_MONITOR_LIBRARY_NAME}
@@ -51,6 +54,7 @@ target_compile_features(${NETWORK_MONITOR_LIBRARY_NAME}
 target_compile_definitions(${NETWORK_MONITOR_TESTS_EXE_NAME}
     PRIVATE
         TESTS_CACERT_PEM="${CMAKE_CURRENT_SOURCE_DIR}/tests/cacert.pem"
+        TESTS_NETWORK_LAYOUT_JSON="${CMAKE_CURRENT_SOURCE_DIR}/tests/network-layout.json"
 )
 target_link_libraries(${NETWORK_MONITOR_TESTS_EXE_NAME}
     PRIVATE

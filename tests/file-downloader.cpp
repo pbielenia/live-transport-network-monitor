@@ -6,6 +6,7 @@
 #include <string>
 
 using NetworkMonitor::DownloadFile;
+using NetworkMonitor::ParseJsonFile;
 
 BOOST_AUTO_TEST_SUITE(network_monitor);
 
@@ -40,6 +41,29 @@ BOOST_AUTO_TEST_CASE(file_downloader)
 
     // Clean up.
     std::filesystem::remove(destination);
+}
+
+BOOST_AUTO_TEST_CASE(parse_json_file)
+{
+    const auto parsed_json = ParseJsonFile(TESTS_NETWORK_LAYOUT_JSON);
+
+    const std::string lines_keyword{"lines"};
+    const std::string stations_keyword{"stations"};
+    const std::string travel_times_keyword{"travel_times"};
+
+    BOOST_CHECK(parsed_json.is_object());
+
+    BOOST_CHECK(parsed_json.contains(lines_keyword));
+    BOOST_CHECK(parsed_json.at(lines_keyword).is_array());
+    BOOST_CHECK(!parsed_json.at(lines_keyword).empty());
+
+    BOOST_CHECK(parsed_json.contains(stations_keyword));
+    BOOST_CHECK(parsed_json.at(stations_keyword).is_array());
+    BOOST_CHECK(!parsed_json.at(stations_keyword).empty());
+
+    BOOST_CHECK(parsed_json.contains(travel_times_keyword));
+    BOOST_CHECK(parsed_json.at(travel_times_keyword).is_array());
+    BOOST_CHECK(!parsed_json.at(travel_times_keyword).empty());
 }
 
 BOOST_AUTO_TEST_SUITE_END();
