@@ -1,4 +1,4 @@
-#include "network-monitor/websocket-client.h"
+#include "network-monitor/websocket-client.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/beast/ssl.hpp>
