@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE(basic)
     ok &= network.AddStation(station_1);
     BOOST_REQUIRE(ok);
 
-    // Then, add the line, with the two routes.
+    // Then, add the line, with the one route.
     Route route_0{
         "route_000",   "inbound",     "line_000",
         "station_000", "station_001", {"station_000", "station_001"},
@@ -105,6 +105,7 @@ BOOST_AUTO_TEST_CASE(basic)
         {route_0},
     };
     ok = network.AddLine(line);
+    BOOST_TEST_MESSAGE(ok);
     BOOST_CHECK(ok);
 }
 

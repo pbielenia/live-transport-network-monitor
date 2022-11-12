@@ -1,3 +1,6 @@
+#include <map>
+#include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -108,11 +111,11 @@ public:
 
     /*! \brief Copy assignment operator
      */
-    TransportNetwork& operator=(const TransportNetwork& copied);
+    TransportNetwork& operator=(const TransportNetwork& copied) = default;
 
     /*! \brief Move assignment operator
      */
-    TransportNetwork& operator=(TransportNetwork&& moved);
+    TransportNetwork& operator=(TransportNetwork&& moved) = default;
 
     /*! \brief Add a station to the network.
      *
@@ -209,7 +212,67 @@ public:
                                const Id& station_a,
                                const Id& station_b) const;
 
-    // ...
+private:
+    struct GraphNode;
+    struct GraphEdge;
+    struct RouteInternal;
+    struct LineInternal;
+
+    struct GraphNode {
+        GraphNode(const Station& station);
+
+        Id id;
+        std::string name;
+        long long int passenger_count{0};
+        std::vector<std::shared_ptr<GraphEdge>> edges{};
+
+        // FIXME: Possibly could be successfully turned into FindAnyEdgeToNextStation to
+        //        return only the first found match.
+        std::vector<std::shared_ptr<GraphEdge>>
+        FindEdgesToNextStation(const Id& next_station) const;
+        std::vector<std::shared_ptr<GraphEdge>>
+        FindEdgesForRoute(const std::shared_ptr<RouteInternal>& route) const;
+        // std::vector<std::shared_ptr<GraphEdge>>
+        // FindEdges(std::function<bool(const std::shared_ptr<GraphEdge>&)>) const;
+    };
+
+    struct GraphEdge {
+        GraphEdge(const std::shared_ptr<RouteInternal>& route,
+                  const std::shared_ptr<GraphNode>& next_station);
+
+        std::shared_ptr<RouteInternal> route;
+        std::shared_ptr<GraphNode> next_station;
+        unsigned int travel_time{0};
+    };
+
+    struct RouteInternal {
+        RouteInternal(const Id& id, const std::shared_ptr<LineInternal>& line);
+
+        Id id;
+        std::shared_ptr<LineInternal> line;
+        std::vector<std::shared_ptr<GraphNode>> stations{};
+    };
+
+    struct LineInternal {
+        LineInternal(const Id& id, const std::string& name);
+
+        Id id;
+        std::string name;
+        std::vector<std::shared_ptr<RouteInternal>> routes{};
+    };
+
+    void AddStationInternal(const Station& station);
+    std::shared_ptr<LineInternal> CreateLineInternal(const Id& id,
+                                                     const std::string& name);
+    bool StationExists(const Id& station_id) const;
+    bool StationsExist(const std::vector<Route>& routes) const;
+    bool StationsExist(const std::vector<Id>& stations) const;
+    bool LineExists(const Line& line) const;
+    bool StationsAreAdjacend(const Id& station_a, const Id& station_b) const;
+    bool StationConnectsAnother(const Id& station_a, const Id& station_b) const;
+
+    std::map<Id, std::shared_ptr<GraphNode>> stations_{};
+    std::map<Id, std::shared_ptr<LineInternal>> lines_{};
 };
 
 } // namespace NetworkMonitor
