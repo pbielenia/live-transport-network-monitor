@@ -47,6 +47,53 @@ TransportNetwork::TransportNetwork(TransportNetwork&& moved)
 //     return *this;
 // }
 
+bool TransportNetwork::FromJson(nlohmann::json&& source)
+{
+    for (const auto& station : source.at("stations")) {
+        Station new_station{};
+        new_station.id = station.at("station_id").get<Id>();
+        new_station.name = station.at("name").get<std::string>();
+        auto result = AddStation(new_station);
+        if (result == false) {
+            throw std::runtime_error("Adding station failed [id: " + new_station.id
+                                     + ", name: " + new_station.name + "]");
+        }
+    }
+
+    for (const auto& line : source.at("lines")) {
+        Line new_line{};
+        new_line.id = line.at("line_id").get<Id>();
+        new_line.name = line.at("name").get<std::string>();
+        for (const auto& route : line.at("routes")) {
+            Route new_route{};
+            new_route.id = route.at("route_id").get<Id>();
+            new_route.direction = route.at("direction").get<std::string>();
+            new_route.start_station_id = route.at("start_station_id").get<Id>();
+            new_route.end_station_id = route.at("end_station_id").get<Id>();
+            for (const auto& stop : route.at("route_stops")) {
+                new_route.stops.push_back(stop.get<Id>());
+            }
+            new_line.routes.push_back(std::move(new_route));
+        }
+        auto result = AddLine(new_line);
+        if (result == false) {
+            throw std::runtime_error("Adding line failed [id: " + new_line.id
+                                     + ", name: " + new_line.name + "]");
+        }
+    }
+
+    for (const auto& travel_time : source.at("travel_times")) {
+        auto result = SetTravelTime(travel_time.at("start_station_id").get<Id>(),
+                                    travel_time.at("end_station_id").get<Id>(),
+                                    travel_time.at("travel_time").get<unsigned>());
+        if (result == false) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool TransportNetwork::AddStation(const Station& station)
 {
     if (StationExists(station.id)) {

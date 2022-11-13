@@ -57,6 +57,7 @@ target_compile_definitions(${NETWORK_MONITOR_TESTS_EXE_NAME}
     PRIVATE
         TESTS_CACERT_PEM="${CMAKE_CURRENT_SOURCE_DIR}/tests/cacert.pem"
         TESTS_NETWORK_LAYOUT_JSON="${CMAKE_CURRENT_SOURCE_DIR}/tests/network-layout.json"
+        TESTS_RESOURCES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/resources"
 )
 target_link_libraries(${NETWORK_MONITOR_TESTS_EXE_NAME}
     PRIVATE

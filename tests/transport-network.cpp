@@ -1,6 +1,7 @@
 #include <boost/test/unit_test.hpp>
 #include <filesystem>
 #include <fstream>
+#include <network-monitor/file-downloader.hpp>
 #include <network-monitor/transport-network.hpp>
 #include <stdexcept>
 #include <string>
@@ -480,6 +481,119 @@ BOOST_AUTO_TEST_CASE(over_route)
 }
 
 BOOST_AUTO_TEST_SUITE_END(); // TravelTime
+
+BOOST_AUTO_TEST_SUITE(FromJson);
+
+std::vector<Id> GetSortedIds(std::vector<Id>& routes)
+{
+    std::vector<Id> ids{routes};
+    std::sort(ids.begin(), ids.end());
+    return ids;
+}
+
+BOOST_AUTO_TEST_CASE(from_json_1line_1route)
+{
+    const auto test_file_path =
+        std::filesystem::path(TESTS_RESOURCES_DIR) / "from_json_1line_1route.json";
+    auto json_source = NetworkMonitor::ParseJsonFile(test_file_path);
+
+    TransportNetwork network{};
+    auto ok{network.FromJson(std::move(json_source))};
+    BOOST_REQUIRE(ok);
+
+    auto routes{network.GetRoutesServingStation("station_0")};
+    BOOST_REQUIRE_EQUAL(routes.size(), 1);
+    BOOST_CHECK_EQUAL(routes[0], "route_0");
+}
+
+BOOST_AUTO_TEST_CASE(from_json_1line_2routes)
+{
+    auto test_file_path{std::filesystem::path(TESTS_RESOURCES_DIR)
+                        / "from_json_1line_2routes.json"};
+    auto json_source = NetworkMonitor::ParseJsonFile(test_file_path);
+
+    TransportNetwork network{};
+    auto ok{network.FromJson(std::move(json_source))};
+    BOOST_REQUIRE(ok);
+
+    std::vector<Id> routes{};
+    routes = network.GetRoutesServingStation("station_0");
+    BOOST_REQUIRE_EQUAL(routes.size(), 1);
+    BOOST_CHECK_EQUAL(routes[0], "route_0");
+    routes = network.GetRoutesServingStation("station_1");
+    BOOST_REQUIRE_EQUAL(routes.size(), 2);
+    BOOST_CHECK(GetSortedIds(routes) == std::vector<Id>({"route_0", "route_1"}));
+}
+
+BOOST_AUTO_TEST_CASE(from_json_2lines_2routes)
+{
+    auto test_file_path{std::filesystem::path(TESTS_RESOURCES_DIR)
+                        / "from_json_2lines_2routes.json"};
+    auto json_source = NetworkMonitor::ParseJsonFile(test_file_path);
+
+    TransportNetwork network{};
+    auto ok{network.FromJson(std::move(json_source))};
+    BOOST_REQUIRE(ok);
+
+    std::vector<Id> routes{};
+    routes = network.GetRoutesServingStation("station_0");
+    BOOST_REQUIRE_EQUAL(routes.size(), 2);
+    BOOST_CHECK_EQUAL(routes[0], "route_0");
+    BOOST_CHECK_EQUAL(routes[1], "route_1");
+    routes = network.GetRoutesServingStation("station_1");
+    BOOST_REQUIRE_EQUAL(routes.size(), 2);
+    BOOST_CHECK(GetSortedIds(routes) == std::vector<Id>({"route_0", "route_1"}));
+}
+
+BOOST_AUTO_TEST_CASE(from_json_travel_times)
+{
+    auto test_file_path{std::filesystem::path(TESTS_RESOURCES_DIR)
+                        / "from_json_travel_times.json"};
+    auto json_source = NetworkMonitor::ParseJsonFile(test_file_path);
+
+    BOOST_TEST_MESSAGE(json_source);
+
+    TransportNetwork network{};
+    auto ok{network.FromJson(std::move(json_source))};
+    BOOST_REQUIRE(ok);
+
+    BOOST_CHECK_EQUAL(network.GetTravelTime("station_0", "station_1"), 1);
+    BOOST_CHECK_EQUAL(network.GetTravelTime("station_1", "station_0"), 1);
+    BOOST_CHECK_EQUAL(network.GetTravelTime("station_1", "station_2"), 2);
+    BOOST_CHECK_EQUAL(
+        network.GetTravelTime("line_0", "route_0", "station_0", "station_2"), 1 + 2);
+}
+
+BOOST_AUTO_TEST_CASE(fail_on_good_json_bad_times)
+{
+    nlohmann::json source{{"stations",
+                           {{
+                                {"station_id", "station_0"},
+                                {"name", "Station 0 Name"},
+                            },
+                            {
+                                {"station_id", "station_0"},
+                                {"name", "Station 0 Name"},
+                            }}
+
+                          },
+                          {"lines", {}},
+                          {"travel_times", {}}};
+    TransportNetwork network{};
+    BOOST_CHECK_THROW(network.FromJson(std::move(source)), std::runtime_error);
+}
+BOOST_AUTO_TEST_CASE(fail_on_bad_travel_times)
+{
+    const auto test_file_path =
+        std::filesystem::path(TESTS_RESOURCES_DIR) / "from_json_bad_travel_times.json";
+    auto json_source = NetworkMonitor::ParseJsonFile(test_file_path);
+
+    TransportNetwork network{};
+    auto ok{network.FromJson(std::move(json_source))};
+    BOOST_REQUIRE(!ok);
+}
+
+BOOST_AUTO_TEST_SUITE_END(); // FromJson
 
 BOOST_AUTO_TEST_SUITE_END(); // class_TransportNetwork
 
