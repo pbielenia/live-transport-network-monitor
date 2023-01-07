@@ -1,4 +1,3 @@
-from importlib.metadata import requires
 from conans import ConanFile
 
 
@@ -10,10 +9,9 @@ class ConanPackage(ConanFile):
 
     requires = [
         ('boost/1.80.0'),
-        ('openssl/3.0.5'),
         ('libcurl/7.85.0'),
-        ('zlib/1.2.13'),
         ('nlohmann_json/3.11.2'),
+        ('openssl/1.1.1h'),
     ]
 
     default_options = (
