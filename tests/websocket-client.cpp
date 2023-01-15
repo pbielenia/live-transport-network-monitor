@@ -32,7 +32,8 @@ BOOST_AUTO_TEST_CASE(class_WebSocketClient)
     boost::asio::io_context io_context{};
 
     // The class under test
-    WebSocketClient client{url, endpoint, port, io_context, tls_context};
+    NetworkMonitor::BoostWebSocketClient client{url, endpoint, port, io_context,
+                                                tls_context};
 
     // We use these flags to check that the connection, send, receive functions
     // work as expected.
@@ -108,7 +109,8 @@ BOOST_AUTO_TEST_CASE(class_WebSocketClient_send_stomp)
     boost::asio::io_context io_context{};
 
     // The class under test
-    WebSocketClient client{url, endpoint, port, io_context, tls_context};
+    NetworkMonitor::BoostWebSocketClient client{url, endpoint, port, io_context,
+                                                tls_context};
 
     auto onConnect{[&client, &message](auto ec) {
         if (!ec) {
