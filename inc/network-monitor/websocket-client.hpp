@@ -1,10 +1,12 @@
+// TODO: Add header guards
+
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
 #include <boost/beast/ssl.hpp>
 #include <memory>
 #include <string>
 
-namespace NetworkMonitor {
+namespace network_monitor {
 
 /*! \brief Client to connect to a WebSocket server over plain TCP.
  *
@@ -156,6 +158,9 @@ void WebSocketClient<Resolver, WebSocketStream>::SaveProvidedCallbacks(
 template<typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::ResolveServerUrl()
 {
+    // TODO: The async_resolve method is deprecated. Use overload with separate host
+    //       and service parameters.
+    //       https://www.boost.org/doc/libs/1_81_0/doc/html/boost_asio/reference/ip__basic_resolver/async_resolve.html
     resolver_.async_resolve(server_url_, server_port_, [this](auto error, auto results) {
         if (error) {
             return;
@@ -317,4 +322,4 @@ using BoostWebSocketClient = WebSocketClient<
     boost::asio::ip::tcp::resolver,
     boost::beast::websocket::stream<boost::beast::ssl_stream<boost::beast::tcp_stream>>>;
 
-} // namespace NetworkMonitor
+} // namespace network_monitor

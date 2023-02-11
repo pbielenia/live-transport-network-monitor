@@ -1,5 +1,7 @@
 #include "network-monitor/websocket-client.hpp"
 
+#include "boost-mock.hpp"
+
 #include <boost/asio.hpp>
 #include <boost/beast/ssl.hpp>
 #include <boost/test/unit_test.hpp>
@@ -7,7 +9,18 @@
 #include <sstream>
 #include <string>
 
-using NetworkMonitor::WebSocketClient;
+using network_monitor::MockResolver;
+using network_monitor::TestWebSocketClient;
+using network_monitor::WebSocketClient;
+
+// This fixture is used to re-initialize all mock properties before a test.
+struct WebSocketClientTestFixture {
+    WebSocketClientTestFixture() { MockResolver::resolve_error_code = {}; }
+};
+
+// Use this to set a timeout on tests that may hang or suffer from a slow
+// connection.
+using timeout = boost::unit_test::timeout;
 
 BOOST_AUTO_TEST_SUITE(network_monitor);
 
@@ -32,8 +45,8 @@ BOOST_AUTO_TEST_CASE(class_WebSocketClient)
     boost::asio::io_context io_context{};
 
     // The class under test
-    NetworkMonitor::BoostWebSocketClient client{url, endpoint, port, io_context,
-                                                tls_context};
+    network_monitor::BoostWebSocketClient client{url, endpoint, port, io_context,
+                                                 tls_context};
 
     // We use these flags to check that the connection, send, receive functions
     // work as expected.
@@ -109,8 +122,8 @@ BOOST_AUTO_TEST_CASE(class_WebSocketClient_send_stomp)
     boost::asio::io_context io_context{};
 
     // The class under test
-    NetworkMonitor::BoostWebSocketClient client{url, endpoint, port, io_context,
-                                                tls_context};
+    network_monitor::BoostWebSocketClient client{url, endpoint, port, io_context,
+                                                 tls_context};
 
     auto onConnect{[&client, &message](auto ec) {
         if (!ec) {
