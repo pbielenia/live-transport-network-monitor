@@ -18,8 +18,7 @@ struct WebSocketClientTestFixture {
     WebSocketClientTestFixture() { MockResolver::resolve_error_code = {}; }
 };
 
-// Use this to set a timeout on tests that may hang or suffer from a slow
-// connection.
+// Used to set a timeout on tests that may hang or suffer from a slow connection.
 using timeout = boost::unit_test::timeout;
 
 BOOST_AUTO_TEST_SUITE(network_monitor);
@@ -66,63 +65,52 @@ BOOST_AUTO_TEST_SUITE(live);
 
 BOOST_AUTO_TEST_CASE(echo, *timeout{20})
 {
-    // Connection targets
     const std::string url{"ltnm.learncppthroughprojects.com"};
     const std::string endpoint{"/echo"};
     const std::string port{"443"};
     const std::string message{"Hello WebSocket"};
 
-    // TLS context
     boost::asio::ssl::context tls_context{boost::asio::ssl::context::tlsv12_client};
     tls_context.load_verify_file(TESTS_CACERT_PEM);
 
-    // Always start with an I/O context object.
     boost::asio::io_context io_context{};
-
-    // The class under test
     NetworkMonitor::BoostWebSocketClient client{url, endpoint, port, io_context,
                                                  tls_context};
 
-    // We use these flags to check that the connection, send, receive functions
-    // work as expected.
     bool connected{false};
-    bool messageSent{false};
-    bool messageReceived{false};
-    bool messageMatches{false};
+    bool message_sent{false};
+    bool message_received{false};
+    bool message_matches{false};
     bool disconnected{false};
     std::string echo{};
 
-    // Our own callbacks
-    auto onSend{[&messageSent](auto ec) { messageSent = !ec; }};
-    auto onConnect{[&client, &connected, &onSend, &message](auto ec) {
-        connected = !ec;
-        if (!ec) {
-            client.Send(message, onSend);
+    auto on_send{[&message_sent](auto error_code) { message_sent = !error_code; }};
+    auto on_connect{[&client, &connected, &on_send, &message](auto error_code) {
+        connected = !error_code.failed();
+        if (connected) {
+            client.Send(message, on_send);
         }
     }};
-    auto onClose{[&disconnected](auto ec) { disconnected = !ec; }};
-    auto onReceive{[&client, &onClose, &messageReceived, &messageMatches, &message,
-                    &echo](auto ec, auto received) {
-        messageReceived = !ec;
+    auto on_close{[&disconnected](auto error_code) { disconnected = !error_code.failed(); }};
+    auto on_receive{[&client, &on_close, &message_received, &message_matches, &message,
+                    &echo](auto error_code, auto received) {
+        message_received = !error_code.failed();
         echo = message;
-        client.Close(onClose);
+        client.Close(on_close);
     }};
 
-    // We must call io_context::run for asynchronous callbacks to run.
-    client.Connect(onConnect, onReceive);
+    client.Connect(on_connect, on_receive);
     io_context.run();
 
     BOOST_CHECK(connected);
-    BOOST_CHECK(messageSent);
-    BOOST_CHECK(messageReceived);
+    BOOST_CHECK(message_sent);
+    BOOST_CHECK(message_received);
     BOOST_CHECK(disconnected);
     BOOST_CHECK_EQUAL(message, echo);
 }
 
 bool CheckResponse(const std::string& response)
 {
-    // We do not parse the whole message. We only check that it contains some
-    // expected items.
     bool ok{true};
     ok &= response.find("ERROR") != std::string::npos;
     ok &= response.find("ValidationInvalidAuth") != std::string::npos;
@@ -131,7 +119,6 @@ bool CheckResponse(const std::string& response)
 
 BOOST_AUTO_TEST_CASE(send_stomp_frame)
 {
-    // Connection targets
     const std::string url{"ltnm.learncppthroughprojects.com"};
     const std::string endpoint{"/network-events"};
     const std::string port{"443"};
@@ -149,25 +136,19 @@ BOOST_AUTO_TEST_CASE(send_stomp_frame)
 
     const std::string message{stream.str()};
 
-    // TLS context
     boost::asio::ssl::context tls_context{boost::asio::ssl::context::tlsv12_client};
     tls_context.load_verify_file(TESTS_CACERT_PEM);
 
-    // Always start with an I/O context object.
     boost::asio::io_context io_context{};
-
-    // The class under test
     NetworkMonitor::BoostWebSocketClient client{url, endpoint, port, io_context,
                                                  tls_context};
 
-    // Flags to check that the connection, send and receive functions work as expected.
     bool connected{false};
     bool message_sent{false};
     bool message_received{false};
     bool disconnected{false};
     std::string response{};
 
-    // Callbacks
     auto on_send_callback{[&message_sent](auto error_code) {
         message_sent = !error_code;
     }};
