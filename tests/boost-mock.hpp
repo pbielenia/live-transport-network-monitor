@@ -3,7 +3,7 @@
 #include <boost/asio.hpp>
 #include <string>
 
-namespace network_monitor {
+namespace NetworkMonitor {
 
 /*! \brief Mock the DNS resolver from Boost.Asio.
  *
@@ -68,4 +68,4 @@ using TestWebSocketClient = WebSocketClient<
     MockResolver,
     boost::beast::websocket::stream<boost::beast::ssl_stream<boost::beast::tcp_stream>>>;
 
-} // namespace network_monitor
+} // namespace NetworkMonitor

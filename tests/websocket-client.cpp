@@ -9,9 +9,9 @@
 #include <sstream>
 #include <string>
 
-using network_monitor::MockResolver;
-using network_monitor::TestWebSocketClient;
-using network_monitor::WebSocketClient;
+using NetworkMonitor::MockResolver;
+using NetworkMonitor::TestWebSocketClient;
+using NetworkMonitor::WebSocketClient;
 
 // This fixture is used to re-initialize all mock properties before a test.
 struct WebSocketClientTestFixture {
@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(class_WebSocketClient)
     boost::asio::io_context io_context{};
 
     // The class under test
-    network_monitor::BoostWebSocketClient client{url, endpoint, port, io_context,
+    NetworkMonitor::BoostWebSocketClient client{url, endpoint, port, io_context,
                                                  tls_context};
 
     // We use these flags to check that the connection, send, receive functions
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(class_WebSocketClient_send_stomp)
     boost::asio::io_context io_context{};
 
     // The class under test
-    network_monitor::BoostWebSocketClient client{url, endpoint, port, io_context,
+    NetworkMonitor::BoostWebSocketClient client{url, endpoint, port, io_context,
                                                  tls_context};
 
     auto onConnect{[&client, &message](auto ec) {

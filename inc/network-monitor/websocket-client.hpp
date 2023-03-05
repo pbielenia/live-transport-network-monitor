@@ -6,7 +6,7 @@
 #include <memory>
 #include <string>
 
-namespace network_monitor {
+namespace NetworkMonitor {
 
 /*! \brief Client to connect to a WebSocket server over plain TCP.
  *
@@ -322,4 +322,4 @@ using BoostWebSocketClient = WebSocketClient<
     boost::asio::ip::tcp::resolver,
     boost::beast::websocket::stream<boost::beast::ssl_stream<boost::beast::tcp_stream>>>;
 
-} // namespace network_monitor
+} // namespace NetworkMonitor
