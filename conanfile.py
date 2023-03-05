@@ -12,6 +12,7 @@ class ConanPackage(ConanFile):
         ('libcurl/7.85.0'),
         ('nlohmann_json/3.11.2'),
         ('openssl/1.1.1h'),
+        ('zlib/1.2.13'),
     ]
 
     default_options = (
