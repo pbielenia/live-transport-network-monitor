@@ -162,7 +162,8 @@ void WebSocketClient<Resolver, WebSocketStream>::ResolveServerUrl()
     //       and service parameters.
     //       https://www.boost.org/doc/libs/1_81_0/doc/html/boost_asio/reference/ip__basic_resolver/async_resolve.html
     resolver_.async_resolve(server_url_, server_port_, [this](auto error, auto results) {
-        if (error) {
+        if (error.failed()) {
+            CallOnConnectCallbackIfExists(error);
             return;
         }
         OnServerUrlResolved(results);
@@ -190,6 +191,11 @@ template<typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::OnConnectedToServer(
     const boost::system::error_code& error)
 {
+    if (error.failed()) {
+        CallOnConnectCallbackIfExists(error);
+        return;
+    }
+
     SetTcpStreamTimeoutToSuggested();
 
     // Set the host name before the TLS handshake or the connection will fail
@@ -220,6 +226,10 @@ template<typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::OnTlsHandshakeCompleted(
     const boost::system::error_code& error)
 {
+    if (error.failed()) {
+        CallOnConnectCallbackIfExists(error);
+        return;
+    }
     HandshakeWebSocket();
 }
 
@@ -237,7 +247,12 @@ template<typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::OnWebSocketHandshakeCompleted(
     const boost::system::error_code& error)
 {
+    // TODO: this return on error prevents calling the remaining stuff if there's an error
+    //       and even so wants to pass the error to them
     CallOnConnectCallbackIfExists(error);
+    if (error.failed()) {
+        return;
+    }
     ListenToIncomingMessage(error);
     closed_ = false;
 }
@@ -271,6 +286,8 @@ template<typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::OnMessageReceived(
     const boost::system::error_code& error, const size_t received_bytes_count)
 {
+    // TODO: this return on error prevents calling the remaining stuff if there's an error
+    //       and even so wants to pass the error to them
     if (error) {
         return;
     }

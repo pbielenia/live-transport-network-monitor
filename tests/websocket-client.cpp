@@ -24,12 +24,47 @@ using timeout = boost::unit_test::timeout;
 
 BOOST_AUTO_TEST_SUITE(network_monitor);
 
+BOOST_AUTO_TEST_SUITE(class_WebSocketClient);
+
 BOOST_AUTO_TEST_CASE(cacert_pem)
 {
     BOOST_CHECK(std::filesystem::exists(TESTS_CACERT_PEM));
 }
 
-BOOST_AUTO_TEST_CASE(class_WebSocketClient)
+BOOST_FIXTURE_TEST_SUITE(Connect, WebSocketClientTestFixture);
+
+BOOST_AUTO_TEST_CASE(fail_resolve, *timeout{1})
+{
+    const std::string url{"some.echo-server.com"};
+    const std::string endpoint{"/"};
+    const std::string port{"443"};
+
+    boost::asio::ssl::context tls_context{boost::asio::ssl::context::tlsv12_client};
+    tls_context.load_verify_file(TESTS_CACERT_PEM);
+    boost::asio::io_context io_context{};
+
+    MockResolver::resolve_error_code = boost::asio::error::host_not_found;
+
+    NetworkMonitor::TestWebSocketClient client{url, endpoint, port, io_context,
+                                               tls_context};
+
+    bool called_on_connect{false};
+    auto on_connect{[&called_on_connect](auto error_code) {
+        called_on_connect = true;
+        BOOST_CHECK_EQUAL(error_code, MockResolver::resolve_error_code);
+    }};
+
+    client.Connect(on_connect);
+    io_context.run();
+
+    BOOST_CHECK(called_on_connect);
+}
+
+BOOST_AUTO_TEST_SUITE_END(); // Connect
+
+BOOST_AUTO_TEST_SUITE(live);
+
+BOOST_AUTO_TEST_CASE(echo, *timeout{20})
 {
     // Connection targets
     const std::string url{"ltnm.learncppthroughprojects.com"};
@@ -164,4 +199,8 @@ BOOST_AUTO_TEST_CASE(send_stomp_frame)
     BOOST_CHECK(CheckResponse(response));
 }
 
-BOOST_AUTO_TEST_SUITE_END();
+BOOST_AUTO_TEST_SUITE_END(); // live
+
+BOOST_AUTO_TEST_SUITE_END(); // class_WebSocketClient
+
+BOOST_AUTO_TEST_SUITE_END(); // network_monitor
