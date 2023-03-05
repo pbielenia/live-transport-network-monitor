@@ -94,7 +94,7 @@ bool CheckResponse(const std::string& response)
     return ok;
 }
 
-BOOST_AUTO_TEST_CASE(class_WebSocketClient_send_stomp)
+BOOST_AUTO_TEST_CASE(send_stomp_frame)
 {
     // Connection targets
     const std::string url{"ltnm.learncppthroughprojects.com"};
@@ -125,19 +125,43 @@ BOOST_AUTO_TEST_CASE(class_WebSocketClient_send_stomp)
     NetworkMonitor::BoostWebSocketClient client{url, endpoint, port, io_context,
                                                  tls_context};
 
-    auto onConnect{[&client, &message](auto ec) {
-        if (!ec) {
-            client.Send(message);
-        }
+    // Flags to check that the connection, send and receive functions work as expected.
+    bool connected{false};
+    bool message_sent{false};
+    bool message_received{false};
+    bool disconnected{false};
+    std::string response{};
+
+    // Callbacks
+    auto on_send_callback{[&message_sent](auto error_code) {
+        message_sent = !error_code;
     }};
-    auto onReceive{[&client, &message](auto ec, auto received) {
-        if (!ec) {
-            BOOST_CHECK(CheckResponse(received));
+
+    auto on_connect_callback{[&client, &connected, &on_send_callback, &message](auto error_code) {
+        connected = !error_code;
+        if (connected) {
+            client.Send(message, on_send_callback);
         }
     }};
 
-    client.Connect(onConnect, onReceive);
+    auto on_close_callback{[&disconnected](auto error_code) {
+        disconnected = !error_code;
+    }};
+
+    auto on_receive_callback{[&client, &on_close_callback, &message_received, &response](auto error_code, auto received) {
+        message_received = !error_code;
+        response = std::move(received);
+        client.Close(on_close_callback);
+    }};
+
+    client.Connect(on_connect_callback, on_receive_callback);
     io_context.run();
+
+    BOOST_CHECK(connected);
+    BOOST_CHECK(message_sent);
+    BOOST_CHECK(message_received);
+    BOOST_CHECK(disconnected);
+    BOOST_CHECK(CheckResponse(response));
 }
 
 BOOST_AUTO_TEST_SUITE_END();
