@@ -76,7 +76,7 @@ private:
             nullptr,
         std::function<void(boost::system::error_code)> on_disconnect = nullptr);
     void ResolveServerUrl();
-    void ConnectToServer(boost::asio::ip::tcp::resolver::results_type results);
+    void ConnectToServer(boost::asio::ip::tcp::resolver::results_type endpoint);
     void SetTcpStreamTimeoutToSuggested();
     void HandshakeTls();
     void HandshakeWebSocket();
@@ -179,11 +179,11 @@ void WebSocketClient<Resolver, WebSocketStream>::OnServerUrlResolved(
 
 template<typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::ConnectToServer(
-    boost::asio::ip::tcp::resolver::results_type results)
+    boost::asio::ip::tcp::resolver::results_type endpoint)
 {
     auto& tcp_stream = boost::beast::get_lowest_layer(websocket_stream_);
     tcp_stream.expires_after(std::chrono::seconds(5));
-    tcp_stream.async_connect(*results,
+    tcp_stream.async_connect(*endpoint,
                              [this](auto error) { OnConnectedToServer(error); });
 }
 
