@@ -39,8 +39,19 @@ public:
     
     static boost::system::error_code connect_error_code;
 
-    template <typename ConnectHandler>
-    void async_connect(endpoint_type type, ConnectHandler&& handler);
+    template <typename ConnectToken>
+    void async_connect(endpoint_type type, ConnectToken&& token);
+};
+
+template <typename TcpStream>
+class MockSslStream : public boost::beast::ssl_stream<TcpStream> {
+public:
+    using boost::beast::ssl_stream<TcpStream>::ssl_stream;
+
+    static boost::system::error_code handshake_error_code;
+
+    template<typename HandshakeToken>
+    void async_handshake(boost::asio::ssl::stream_base::handshake_type type, HandshakeToken token);
 };
 
 template<typename ExecutionContext>
@@ -95,25 +106,53 @@ void MockResolver::async_resolve(std::string_view host,
     );
 }
 
-template <typename ConnectHandler>
-void MockTcpStream::async_connect(endpoint_type type, ConnectHandler&& handler) {
+template <typename ConnectToken>
+void MockTcpStream::async_connect(endpoint_type type, ConnectToken&& token) {
     return boost::asio::async_initiate<
-        ConnectHandler, void(boost::system::error_code)>(
+        ConnectToken, void(boost::system::error_code)>(
         [](auto&& handler, auto stream) {
             boost::asio::post(stream->get_executor(),
                                 boost::beast::bind_handler(std::move(handler),
                                                             MockTcpStream::connect_error_code));
-        }, handler, this
+        },
+        token,
+        this
     );
+}
+
+template<typename TcpStream> template<typename HandshakeToken>
+void MockSslStream<TcpStream>::async_handshake(boost::asio::ssl::stream_base::handshake_type type, HandshakeToken token) {
+    return boost::asio::async_initiate<
+        HandshakeToken, void(boost::system::error_code)>(
+            [](auto&& handler, auto ssl_stream) {
+                boost::asio::post(
+                    ssl_stream->get_executor(),
+                    boost::beast::bind_handler(std::move(handler),
+                                               MockSslStream<TcpStream>::handshake_error_code)
+                );
+            },
+            token,
+            this
+        );
 }
 
 // Out-of-line static members initialization
 inline boost::system::error_code MockResolver::resolve_error_code{};
 inline boost::system::error_code MockTcpStream::connect_error_code{};
 
+template <typename TcpStream>
+inline boost::system::error_code MockSslStream<TcpStream>::handshake_error_code{};
+
 template <typename TeardownHandler>
 void async_teardown(boost::beast::role_type role,
                     MockTcpStream& socket,
+                    TeardownHandler&& handler) {
+    return;
+}
+
+template <typename TeardownHandler, typename TcpStream>
+void async_teardown(boost::beast::role_type role,
+                    MockSslStream<TcpStream>& socket,
                     TeardownHandler&& handler) {
     return;
 }
@@ -124,6 +163,6 @@ void async_teardown(boost::beast::role_type role,
  */
 using TestWebSocketClient = WebSocketClient<
     MockResolver,
-    boost::beast::websocket::stream<boost::beast::ssl_stream<MockTcpStream>>>;
+    boost::beast::websocket::stream<MockSslStream<MockTcpStream>>>;
 
 } // namespace NetworkMonitor

@@ -11,6 +11,7 @@
 
 using NetworkMonitor::MockResolver;
 using NetworkMonitor::MockTcpStream;
+using NetworkMonitor::MockSslStream;
 using NetworkMonitor::TestWebSocketClient;
 using NetworkMonitor::WebSocketClient;
 
@@ -19,6 +20,7 @@ struct WebSocketClientTestFixture {
     WebSocketClientTestFixture() {
         MockResolver::resolve_error_code = {};
         MockTcpStream::connect_error_code = {};
+        MockSslStream<MockTcpStream>::handshake_error_code = {};
     }
 };
 
@@ -62,7 +64,7 @@ BOOST_AUTO_TEST_CASE(fail_resolve, *timeout{1})
     BOOST_CHECK(called_on_connect);
 }
 
-BOOST_AUTO_TEST_CASE(fail_socket_connect, *timeout{1})
+BOOST_AUTO_TEST_CASE(fail_socket_connection, *timeout{1})
 {
     const std::string url{"some.echo-server.com"};
     const std::string endpoint{"/"};
@@ -80,6 +82,32 @@ BOOST_AUTO_TEST_CASE(fail_socket_connect, *timeout{1})
     auto on_connect{[&called_on_connect](auto error_code) {
         called_on_connect = true;
         BOOST_CHECK_EQUAL(error_code, MockTcpStream::connect_error_code);
+    }};
+
+    client.Connect(on_connect);
+    io_context.run();
+
+    BOOST_CHECK(called_on_connect);
+}
+
+BOOST_AUTO_TEST_CASE(fail_socket_handshake, *timeout{1})
+{
+    const std::string url{"some.echo-server.com"};
+    const std::string endpoint{"/"};
+    const std::string port{"443"};
+
+    boost::asio::ssl::context tls_context{boost::asio::ssl::context::tlsv12_client};
+    tls_context.load_verify_file(TESTS_CACERT_PEM);
+    boost::asio::io_context io_context{};
+
+    MockSslStream<MockTcpStream>::handshake_error_code = boost::asio::ssl::error::stream_truncated;
+
+    TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+
+    bool called_on_connect{false};
+    auto on_connect{[&called_on_connect](auto error_code) {
+        called_on_connect = true;
+        BOOST_CHECK_EQUAL(error_code, MockSslStream<MockTcpStream>::handshake_error_code);
     }};
 
     client.Connect(on_connect);
