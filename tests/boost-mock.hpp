@@ -54,6 +54,17 @@ public:
     void async_handshake(boost::asio::ssl::stream_base::handshake_type type, HandshakeToken token);
 };
 
+template <typename TlsStream>
+class MockWebSocketStream : public boost::beast::websocket::stream<TlsStream> {
+public:
+    using boost::beast::websocket::stream<TlsStream>::stream;
+
+    static boost::system::error_code handshake_error_code;
+
+    template<typename HandshakeToken>
+    void async_handshake(std::string_view host, std::string_view target, HandshakeToken token);
+};
+
 template<typename ExecutionContext>
 MockResolver::MockResolver(ExecutionContext&& context) : context_{context}
 {
@@ -136,12 +147,31 @@ void MockSslStream<TcpStream>::async_handshake(boost::asio::ssl::stream_base::ha
         );
 }
 
+template<typename TlsStream> template<typename HandshakeToken>
+void MockWebSocketStream<TlsStream>::async_handshake(std::string_view host, std::string_view target, HandshakeToken token) {
+    return boost::asio::async_initiate<
+        HandshakeToken, void(boost::system::error_code)>(
+            [](auto&& handler, auto websocket_stream) {
+                boost::asio::post(
+                    websocket_stream->get_executor(),
+                    boost::beast::bind_handler(std::move(handler),
+                                               MockWebSocketStream<TlsStream>::handshake_error_code)
+                );
+            },
+            token,
+            this
+        );
+}
+
 // Out-of-line static members initialization
 inline boost::system::error_code MockResolver::resolve_error_code{};
 inline boost::system::error_code MockTcpStream::connect_error_code{};
 
 template <typename TcpStream>
 inline boost::system::error_code MockSslStream<TcpStream>::handshake_error_code{};
+
+template <typename TlsStream>
+inline boost::system::error_code MockWebSocketStream<TlsStream>::handshake_error_code{};
 
 template <typename TeardownHandler>
 void async_teardown(boost::beast::role_type role,
@@ -157,12 +187,19 @@ void async_teardown(boost::beast::role_type role,
     return;
 }
 
+template <typename TeardownHandler, typename TlsStream>
+void async_teardown(boost::beast::role_type role,
+                    MockWebSocketStream<TlsStream>& socket,
+                    TeardownHandler&& handler) {
+    return;
+}
+
 /*! \brief Type alias for the mocked WebSocketClient.
  *
  *  Only the DNS resolver and the TCP stream are mocked.
  */
 using TestWebSocketClient = WebSocketClient<
     MockResolver,
-    boost::beast::websocket::stream<MockSslStream<MockTcpStream>>>;
+    MockWebSocketStream<MockSslStream<MockTcpStream>>>;
 
 } // namespace NetworkMonitor
