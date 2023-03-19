@@ -331,7 +331,12 @@ void WebSocketClient<Resolver, WebSocketStream>::Close(
     std::function<void(boost::system::error_code)> on_close_callback)
 {
     websocket_stream_.async_close(boost::beast::websocket::close_code::none,
-                                  on_close_callback);
+        [on_close_callback](auto error_code) {
+            if (on_close_callback) {
+                on_close_callback(error_code);
+            }
+        }
+    );
     closed_ = true;
 }
 
