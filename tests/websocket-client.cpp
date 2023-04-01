@@ -23,6 +23,10 @@ struct WebSocketClientTestFixture {
         MockTcpStream::connect_error_code = {};
         MockSslStream<MockTcpStream>::handshake_error_code = {};
         MockWebSocketStream<MockSslStream<MockTcpStream>>::handshake_error_code = {};
+        MockWebSocketStream<MockSslStream<MockTcpStream>>::close_error_code = {};
+        MockWebSocketStream<MockSslStream<MockTcpStream>>::write_error_code = {};
+        MockWebSocketStream<MockSslStream<MockTcpStream>>::read_error_code = {};
+        MockWebSocketStream<MockSslStream<MockTcpStream>>::read_buffer = {};
     }
 };
 
@@ -120,7 +124,6 @@ BOOST_AUTO_TEST_CASE(fail_socket_handshake, *timeout{1})
 
 BOOST_AUTO_TEST_CASE(fail_websocket_handshake, *timeout{1})
 {
-    // TODO: this could include MockWebSocketStream as well
     using MockTlsStream = MockSslStream<MockTcpStream>;
 
     const std::string url{"some.echo-server.com"};
@@ -147,7 +150,413 @@ BOOST_AUTO_TEST_CASE(fail_websocket_handshake, *timeout{1})
     BOOST_CHECK(called_on_connect);
 }
 
+BOOST_AUTO_TEST_CASE(successful_nothing_to_read, *timeout{1})
+{
+    const std::string url{"some.echo-server.com"};
+    const std::string endpoint{"/"};
+    const std::string port{"443"};
+
+    boost::asio::ssl::context tls_context{boost::asio::ssl::context::tlsv12_client};
+    tls_context.load_verify_file(TESTS_CACERT_PEM);
+    boost::asio::io_context io_context{};
+
+    TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+
+    bool called_on_connect{false};
+    auto on_connect{[&called_on_connect, &client](auto error_code) {
+        called_on_connect = true;
+        BOOST_CHECK(!error_code);
+        client.Close();
+    }};
+
+    client.Connect(on_connect);
+    io_context.run();
+
+    BOOST_CHECK(called_on_connect);
+}
+
+BOOST_AUTO_TEST_CASE(successful_no_connecthandler, *timeout{1})
+{
+    const std::string url{"some.echo-server.com"};
+    const std::string endpoint{"/"};
+    const std::string port{"443"};
+
+    boost::asio::ssl::context tls_context{boost::asio::ssl::context::tlsv12_client};
+    tls_context.load_verify_file(TESTS_CACERT_PEM);
+    boost::asio::io_context io_context{};
+
+    TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+
+    bool timeout_occured{false};
+
+    boost::asio::high_resolution_timer timer(io_context, boost::asio::chrono::milliseconds(250));
+    timer.async_wait([&timeout_occured, &client](auto error_code) {
+        timeout_occured = true;
+        BOOST_CHECK(!error_code);
+        client.Close();
+    });
+
+    client.Connect();
+    io_context.run();
+
+    BOOST_CHECK(timeout_occured);
+}
+
 BOOST_AUTO_TEST_SUITE_END(); // Connect
+
+BOOST_FIXTURE_TEST_SUITE(onMessage, WebSocketClientTestFixture);
+
+BOOST_AUTO_TEST_CASE(one_message, *timeout{1})
+{
+    using WebsocketSocketStream = MockWebSocketStream<MockSslStream<MockTcpStream>>;
+
+    const std::string url{"some.echo-server.com"};
+    const std::string endpoint{"/"};
+    const std::string port{"443"};
+    const std::string expected_message{"Test message"};
+
+    boost::asio::ssl::context tls_context{boost::asio::ssl::context::tlsv12_client};
+    tls_context.load_verify_file(TESTS_CACERT_PEM);
+    boost::asio::io_context io_context{};
+
+    TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+
+    WebsocketSocketStream::read_buffer = expected_message;
+
+    bool called_on_message{false};
+
+    auto on_message{[&called_on_message, &expected_message, &client](auto error_code, auto received_message) {
+        called_on_message = true;
+        BOOST_CHECK(!error_code);
+        BOOST_CHECK_EQUAL(expected_message, received_message);
+
+        client.Close();
+    }};
+
+    client.Connect(nullptr, on_message);
+    io_context.run();
+
+    BOOST_CHECK(called_on_message);
+}
+
+BOOST_AUTO_TEST_CASE(two_messages, *timeout{1})
+{
+    using WebsocketSocketStream = MockWebSocketStream<MockSslStream<MockTcpStream>>;
+
+    const std::string url{"some.echo-server.com"};
+    const std::string endpoint{"/"};
+    const std::string port{"443"};
+    const std::string expected_message_1{"The first test message"};
+    const std::string expected_message_2{"The second test message"};
+
+    boost::asio::ssl::context tls_context{boost::asio::ssl::context::tlsv12_client};
+    tls_context.load_verify_file(TESTS_CACERT_PEM);
+    boost::asio::io_context io_context{};
+
+    TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+
+    unsigned called_on_message_count{};
+
+    auto on_connect{[](auto error_code) {
+        BOOST_CHECK(!error_code);
+    }};
+    auto on_message{[&called_on_message_count, &expected_message_1, &expected_message_2, &client](auto error_code, auto received_message) {
+        called_on_message_count++;
+        BOOST_CHECK(!error_code);
+        std::string expected_message{};
+        if (called_on_message_count == 1) {
+            BOOST_CHECK_EQUAL(expected_message_1, received_message);
+            WebsocketSocketStream::read_buffer = expected_message_2;
+        } else if (called_on_message_count == 2) {
+            BOOST_CHECK_EQUAL(expected_message_2, received_message);
+            client.Close();
+        }
+    }};
+
+    WebsocketSocketStream::read_buffer = expected_message_1;
+    client.Connect(on_connect, on_message);
+    io_context.run();
+
+    BOOST_CHECK_EQUAL(called_on_message_count, 2);
+}
+
+BOOST_AUTO_TEST_CASE(fail, *timeout{1})
+{
+    using WebsocketSocketStream = MockWebSocketStream<MockSslStream<MockTcpStream>>;
+
+    const std::string url{"some.echo-server.com"};
+    const std::string endpoint{"/"};
+    const std::string port{"443"};
+    const std::string expected_message{"Test message"};
+
+    boost::asio::ssl::context tls_context{boost::asio::ssl::context::tlsv12_client};
+    tls_context.load_verify_file(TESTS_CACERT_PEM);
+    boost::asio::io_context io_context{};
+
+    TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+
+    WebsocketSocketStream::read_error_code = boost::beast::websocket::error::bad_data_frame;
+    WebsocketSocketStream::read_buffer = expected_message;
+
+    bool called_on_connect{false};
+    bool called_on_message{false};
+    bool timeout_occured{false};
+
+    boost::asio::high_resolution_timer timer(io_context, boost::asio::chrono::milliseconds(250));
+    timer.async_wait([&timeout_occured, &client](auto error_code) {
+        timeout_occured = true;
+        BOOST_CHECK(!error_code);
+        client.Close();
+    });
+
+    auto on_connect{[&called_on_connect](auto error_code) {
+        called_on_connect = true;
+        BOOST_CHECK(!error_code);
+    }};
+    auto on_message{[&called_on_message](auto error_code, auto received_message) {
+        called_on_message = true;
+        BOOST_CHECK(false);
+    }};
+
+    client.Connect(on_connect, on_message);
+    io_context.run();
+
+    BOOST_CHECK(called_on_connect);
+    BOOST_CHECK(!called_on_message);
+    BOOST_CHECK(timeout_occured);
+}
+
+BOOST_AUTO_TEST_CASE(no_handler, *timeout{1})
+{
+    using WebsocketSocketStream = MockWebSocketStream<MockSslStream<MockTcpStream>>;
+
+    const std::string url{"some.echo-server.com"};
+    const std::string endpoint{"/"};
+    const std::string port{"443"};
+
+    boost::asio::ssl::context tls_context{boost::asio::ssl::context::tlsv12_client};
+    tls_context.load_verify_file(TESTS_CACERT_PEM);
+    boost::asio::io_context io_context{};
+
+    TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+
+    bool called_on_connect{false};
+    bool timeout_occured{false};
+
+    boost::asio::high_resolution_timer timer(io_context, boost::asio::chrono::milliseconds(250));
+    timer.async_wait([&timeout_occured, &client](auto error_code) {
+        timeout_occured = true;
+        BOOST_CHECK(!error_code);
+        client.Close();
+    });
+
+    auto on_connect{[&called_on_connect](auto error_code) {
+        called_on_connect = true;
+        BOOST_CHECK(!error_code);
+    }};
+
+    client.Connect(on_connect);
+    io_context.run();
+
+    BOOST_CHECK(called_on_connect);
+    BOOST_CHECK(timeout_occured);
+}
+
+BOOST_AUTO_TEST_SUITE_END(); // onMessage
+
+BOOST_FIXTURE_TEST_SUITE(Send, WebSocketClientTestFixture);
+
+BOOST_AUTO_TEST_CASE(one_message, *timeout{1})
+{
+    const std::string url{"some.echo-server.com"};
+    const std::string endpoint{"/"};
+    const std::string port{"443"};
+    const std::string message_to_send{"Test message"};
+
+    boost::asio::ssl::context tls_context{boost::asio::ssl::context::tlsv12_client};
+    tls_context.load_verify_file(TESTS_CACERT_PEM);
+    boost::asio::io_context io_context{};
+
+    TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+
+    bool called_on_connect{false};
+    bool called_on_send{false};
+
+    auto on_send{[&called_on_send, &client](auto error_code) {
+        called_on_send = true;
+        BOOST_CHECK(!error_code.failed());
+        client.Close();
+    }};
+    auto on_connect{[&called_on_connect, &client, &message_to_send, &on_send](auto error_code) {
+        called_on_connect = true;
+        BOOST_CHECK(!error_code.failed());
+
+        client.Send(message_to_send, on_send);
+    }};
+
+    client.Connect(on_connect);
+    io_context.run();
+
+    BOOST_CHECK(called_on_connect);
+    BOOST_CHECK(called_on_send);
+}
+
+BOOST_AUTO_TEST_CASE(send_before_connect, *timeout{1})
+{
+    const std::string url{"some.echo-server.com"};
+    const std::string endpoint{"/"};
+    const std::string port{"443"};
+    const std::string message_to_send{"Test message"};
+
+    boost::asio::ssl::context tls_context{boost::asio::ssl::context::tlsv12_client};
+    tls_context.load_verify_file(TESTS_CACERT_PEM);
+    boost::asio::io_context io_context{};
+
+    TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+
+    bool called_on_send{false};
+
+    auto on_send{[&called_on_send, &client](auto error_code) {
+        called_on_send = true;
+        BOOST_CHECK_EQUAL(error_code, boost::asio::error::operation_aborted);
+    }};
+
+    client.Send(message_to_send, on_send);
+    io_context.run();
+
+    BOOST_CHECK(called_on_send);
+} 
+
+BOOST_AUTO_TEST_CASE(fail, *timeout{1})
+{
+    using WebsocketSocketStream = MockWebSocketStream<MockSslStream<MockTcpStream>>;
+
+    const std::string url{"some.echo-server.com"};
+    const std::string endpoint{"/"};
+    const std::string port{"443"};
+    const std::string message_to_send{"Test message"};
+
+    boost::asio::ssl::context tls_context{boost::asio::ssl::context::tlsv12_client};
+    tls_context.load_verify_file(TESTS_CACERT_PEM);
+    boost::asio::io_context io_context{};
+
+    TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+
+    WebsocketSocketStream::write_error_code = boost::beast::websocket::error::bad_data_frame;
+
+    bool called_on_connect{false};
+    bool called_on_send{false};
+
+    auto on_send{[&called_on_send, &client](auto error_code) {
+        called_on_send = true;
+        BOOST_CHECK(error_code == boost::beast::websocket::error::bad_data_frame);
+        client.Close();
+    }};
+    auto on_connect{[&called_on_connect, &client, &message_to_send, &on_send](auto error_code) {
+        called_on_connect = true;
+        BOOST_CHECK(!error_code.failed());
+        client.Send(message_to_send, on_send);
+    }};
+
+    client.Connect(on_connect);
+    io_context.run();
+
+    BOOST_CHECK(called_on_send);
+    BOOST_CHECK(called_on_connect);
+} 
+
+BOOST_AUTO_TEST_SUITE_END(); // Send
+
+BOOST_FIXTURE_TEST_SUITE(Close, WebSocketClientTestFixture);
+
+BOOST_AUTO_TEST_CASE(close, *timeout{1})
+{
+    const std::string url{"some.echo-server.com"};
+    const std::string endpoint{"/"};
+    const std::string port{"443"};
+
+    boost::asio::ssl::context tls_context{boost::asio::ssl::context::tlsv12_client};
+    tls_context.load_verify_file(TESTS_CACERT_PEM);
+    boost::asio::io_context io_context{};
+
+    TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+
+    bool on_close_called{false};
+    auto on_close{[&on_close_called](auto error_code) {
+        BOOST_CHECK(!error_code);
+        on_close_called = true;
+    }};
+    auto on_connect{[&client, &on_close](auto error_code) {
+        BOOST_CHECK(!error_code);
+        client.Close(on_close);
+    }};
+
+    client.Connect(on_connect);
+    io_context.run();
+
+    BOOST_CHECK(on_close_called);
+}
+
+BOOST_AUTO_TEST_CASE(close_before_connect, *timeout{1})
+{
+    const std::string url{"some.echo-server.com"};
+    const std::string endpoint{"/"};
+    const std::string port{"443"};
+
+    boost::asio::ssl::context tls_context{boost::asio::ssl::context::tlsv12_client};
+    tls_context.load_verify_file(TESTS_CACERT_PEM);
+    boost::asio::io_context io_context{};
+
+    TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+
+    bool on_close_called{false};
+
+    auto on_close{[&on_close_called](auto error_code) {
+        BOOST_CHECK_EQUAL(error_code, boost::asio::error::operation_aborted);
+        on_close_called = true;
+    }};
+
+    client.Close(on_close);
+    io_context.run();
+
+    BOOST_CHECK(on_close_called);
+}
+
+BOOST_AUTO_TEST_CASE(close_no_disconnect, *timeout{1})
+{
+    const std::string url{"some.echo-server.com"};
+    const std::string endpoint{"/"};
+    const std::string port{"443"};
+
+    boost::asio::ssl::context tls_context{boost::asio::ssl::context::tlsv12_client};
+    tls_context.load_verify_file(TESTS_CACERT_PEM);
+    boost::asio::io_context io_context{};
+
+    TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+
+    bool on_close_called{false};
+    bool on_disconnect_called{false};
+
+    auto on_close{[&on_close_called](auto error_code) {
+        on_close_called = true;
+        BOOST_CHECK(!error_code.failed());
+    }};
+    auto on_connect{[&on_close, &client](auto error_code) {
+        BOOST_REQUIRE(!error_code.failed());
+        client.Close(on_close);
+    }};
+    auto on_disconnect{[&on_disconnect_called](auto error_code) {
+        on_disconnect_called = true;
+    }};
+
+    client.Connect(on_connect, nullptr, on_disconnect);
+    io_context.run();
+
+    BOOST_CHECK(on_close_called);
+    BOOST_CHECK(!on_disconnect_called);
+}
+
+BOOST_AUTO_TEST_SUITE_END(); // Close
 
 BOOST_AUTO_TEST_SUITE(live);
 
@@ -180,6 +589,7 @@ BOOST_AUTO_TEST_CASE(echo, *timeout{20})
         }
     }};
     auto on_close{[&disconnected](auto error_code) { disconnected = !error_code.failed(); }};
+    // TODO: why so many references passed in lambda? seems not all are utilized
     auto on_receive{[&client, &on_close, &message_received, &message_matches, &message,
                     &echo](auto error_code, auto received) {
         message_received = !error_code.failed();
