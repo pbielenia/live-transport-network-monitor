@@ -98,19 +98,21 @@ bool TransportNetwork::AddLine(const Line& line)
         return false;
     }
 
-    // TODO: Move this check to the time of creating a list of stations.
+    // FIXME: Move this check to the time of creating a list of stations.
+    //        So to the interation over route.stops down below?
+    //        Do this rather as a part of the optimization phase.
     if (!StationsExist(line.routes)) {
         return false;
     }
 
-    // TODO: Should not insert the newly created line into the lines_. The function
-    //       actually becomes unneccessary anymore. Make here a direct call to
-    //       std::make_shared and insert it only at the end.
+    // FIXME: Should not insert the newly created line into the lines_.
+    //        The function actually becomes unneccessary anymore. Make here
+    //        a direct call to std::make_shared and insert it only at the end.
     auto line_internal = CreateLineInternal(line.id, line.name);
 
     for (const auto& route : line.routes) {
-        // TODO: Can be written more clearly or moved to the separate function. It does
-        //       "return false if the route already existis in the line".
+        // FIXME: Can be written more clearly or moved to the separate function.
+        //        It does "return false if the route already existis in the line".
         if (std::find_if(line_internal->routes.begin(), line_internal->routes.end(),
                          [&route](auto line_route) {
                              return route.id == line_route->id;
@@ -118,11 +120,11 @@ bool TransportNetwork::AddLine(const Line& line)
             return false;
         }
 
-        // TODO: Gather the list of stations first.
+        // FIXME: Gather the list of stations first.
         std::vector<std::shared_ptr<GraphNode>> stops{};
         stops.reserve(route.stops.size());
         for (const auto& stop_id : route.stops) {
-            // TODO: Create a separate function for getting a station. In purpose of
+            // FIXME: Create a separate function for getting a station. In purpose of
             //       readability.
             if (!StationExists(stop_id)) {
                 return false;
@@ -262,7 +264,7 @@ unsigned int TransportNetwork::GetTravelTime(const Id& line,
         return total_travel_time;
     }
 
-    // TODO: Make the FindRoute function from the below.
+    // FIXME: Turn the below code into the new private method named FindRoute.
     const auto& line_routes = lines_.at(line)->routes;
     const auto route_internal =
         std::find_if(line_routes.begin(), line_routes.end(),

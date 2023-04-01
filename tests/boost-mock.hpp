@@ -85,7 +85,6 @@ class MockWebSocketStream : public boost::beast::websocket::stream<TlsStream> {
                      CloseHandler&& handler);
 
    private:
-    // TODO: Why on earth it has to have inverted arguments comparing to async_read??
     template <typename DynamicBuffer, typename ReadHandler>
     void recursive_read_internal(ReadHandler&& handler, DynamicBuffer& buffer);
 

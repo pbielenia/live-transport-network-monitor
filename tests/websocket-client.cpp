@@ -587,11 +587,11 @@ BOOST_AUTO_TEST_CASE(echo, *timeout{20})
     bool connected{false};
     bool message_sent{false};
     bool message_received{false};
-    bool message_matches{false};
     bool disconnected{false};
     std::string echo{};
 
-    auto on_send{[&message_sent](auto error_code) { message_sent = !error_code; }};
+    auto on_send{
+        [&message_sent](auto error_code) { message_sent = !error_code.failed(); }};
     auto on_connect{[&client, &connected, &on_send, &message](auto error_code) {
         connected = !error_code.failed();
         if (connected) {
@@ -600,9 +600,8 @@ BOOST_AUTO_TEST_CASE(echo, *timeout{20})
     }};
     auto on_close{
         [&disconnected](auto error_code) { disconnected = !error_code.failed(); }};
-    // TODO: why so many references passed in lambda? seems not all are utilized
-    auto on_receive{[&client, &on_close, &message_received, &message_matches, &message,
-                     &echo](auto error_code, auto received) {
+    auto on_receive{[&client, &on_close, &message_received, &message, &echo](
+                        auto error_code, auto received) {
         message_received = !error_code.failed();
         echo = message;
         client.Close(on_close);
