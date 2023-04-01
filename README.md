@@ -40,4 +40,6 @@ ninja -Cbuild test
 ```
 
 ### Run a specific test or test suite
+```
 ./build/network-monitor-tests --run_test=network_monitor/class_WebSocketClient/Connect/fail_socket_connection
+```
