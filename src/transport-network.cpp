@@ -35,18 +35,6 @@ TransportNetwork::TransportNetwork(TransportNetwork&& moved)
 {
 }
 
-// TransportNetwork& TransportNetwork::operator=(const TransportNetwork& copied)
-// {
-//     // todo
-//     return *this;
-// }
-
-// TransportNetwork& TransportNetwork::operator=(TransportNetwork&& moved)
-// {
-//     // todo
-//     return *this;
-// }
-
 bool TransportNetwork::FromJson(nlohmann::json&& source)
 {
     for (const auto& station : source.at("stations")) {
