@@ -93,7 +93,7 @@ struct PassengerEvent {
 /*! \brief Underground network representation
  */
 class TransportNetwork {
-public:
+   public:
     /*! \brief Default constructor
      */
     TransportNetwork();
@@ -228,7 +228,7 @@ public:
                                const Id& station_a,
                                const Id& station_b) const;
 
-private:
+   private:
     struct GraphNode;
     struct GraphEdge;
     struct RouteInternal;
@@ -244,10 +244,10 @@ private:
 
         // FIXME: Possibly could be successfully turned into FindAnyEdgeToNextStation to
         //        return only the first found match.
-        std::vector<std::shared_ptr<GraphEdge>>
-        FindEdgesToNextStation(const Id& next_station) const;
-        std::vector<std::shared_ptr<GraphEdge>>
-        FindEdgesForRoute(const std::shared_ptr<RouteInternal>& route) const;
+        std::vector<std::shared_ptr<GraphEdge>> FindEdgesToNextStation(
+            const Id& next_station) const;
+        std::vector<std::shared_ptr<GraphEdge>> FindEdgesForRoute(
+            const std::shared_ptr<RouteInternal>& route) const;
         // std::vector<std::shared_ptr<GraphEdge>>
         // FindEdges(std::function<bool(const std::shared_ptr<GraphEdge>&)>) const;
     };
@@ -291,4 +291,4 @@ private:
     std::map<Id, std::shared_ptr<LineInternal>> lines_{};
 };
 
-} // namespace NetworkMonitor
+}  // namespace NetworkMonitor

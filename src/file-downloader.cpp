@@ -1,5 +1,6 @@
-#include <cstdio>
 #include <curl/curl.h>
+
+#include <cstdio>
 #include <fstream>
 #include <network-monitor/file-downloader.hpp>
 
