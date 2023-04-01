@@ -106,7 +106,6 @@ BOOST_AUTO_TEST_CASE(basic)
         {route_0},
     };
     ok = network.AddLine(line);
-    BOOST_TEST_MESSAGE(ok);
     BOOST_CHECK(ok);
 }
 
@@ -550,8 +549,6 @@ BOOST_AUTO_TEST_CASE(from_json_travel_times)
     auto test_file_path{std::filesystem::path(TESTS_RESOURCES_DIR) /
                         "from_json_travel_times.json"};
     auto json_source = NetworkMonitor::ParseJsonFile(test_file_path);
-
-    BOOST_TEST_MESSAGE(json_source);
 
     TransportNetwork network{};
     auto ok{network.FromJson(std::move(json_source))};
