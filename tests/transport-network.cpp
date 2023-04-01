@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(duplicate_name)
     BOOST_CHECK(ok);
 }
 
-BOOST_AUTO_TEST_SUITE_END(); // AddStation
+BOOST_AUTO_TEST_SUITE_END();  // AddStation
 
 BOOST_AUTO_TEST_SUITE(AddLine);
 
@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE(duplicate)
     BOOST_CHECK(!ok);
 }
 
-BOOST_AUTO_TEST_SUITE_END(); // AddLine
+BOOST_AUTO_TEST_SUITE_END();  // AddLine
 
 BOOST_AUTO_TEST_SUITE(PassengerEvents);
 
@@ -235,7 +235,7 @@ BOOST_AUTO_TEST_CASE(basic)
     BOOST_REQUIRE_EQUAL(network.GetPassengerCount(station_1.id), 0);
     BOOST_REQUIRE_EQUAL(network.GetPassengerCount(station_2.id), 0);
     try {
-        auto count{network.GetPassengerCount("station_42")}; // Not in the network
+        auto count{network.GetPassengerCount("station_42")};  // Not in the network
         BOOST_REQUIRE(false);
     } catch (const std::runtime_error& e) {
         BOOST_REQUIRE(true);
@@ -259,12 +259,12 @@ BOOST_AUTO_TEST_CASE(basic)
     ok = network.RecordPassengerEvent({station_0.id, EventType::Out});
     BOOST_REQUIRE(ok);
     BOOST_CHECK_EQUAL(network.GetPassengerCount(station_0.id), 1);
-    ok = network.RecordPassengerEvent({station_2.id, EventType::Out}); // Negative
+    ok = network.RecordPassengerEvent({station_2.id, EventType::Out});  // Negative
     BOOST_REQUIRE(ok);
     BOOST_CHECK_EQUAL(network.GetPassengerCount(station_2.id), -1);
 }
 
-BOOST_AUTO_TEST_SUITE_END(); // PassengerEvents
+BOOST_AUTO_TEST_SUITE_END();  // PassengerEvents
 
 BOOST_AUTO_TEST_SUITE(GetRoutesServingStation);
 
@@ -325,7 +325,7 @@ BOOST_AUTO_TEST_CASE(basic)
     BOOST_CHECK_EQUAL(routes.size(), 0);
 }
 
-BOOST_AUTO_TEST_SUITE_END(); // GetRoutesServingStation
+BOOST_AUTO_TEST_SUITE_END();  // GetRoutesServingStation
 
 BOOST_AUTO_TEST_SUITE(TravelTime);
 
@@ -480,7 +480,7 @@ BOOST_AUTO_TEST_CASE(over_route)
         network.GetTravelTime(line.id, route_0.id, station_1.id, station_1.id), 0);
 }
 
-BOOST_AUTO_TEST_SUITE_END(); // TravelTime
+BOOST_AUTO_TEST_SUITE_END();  // TravelTime
 
 BOOST_AUTO_TEST_SUITE(FromJson);
 
@@ -508,8 +508,8 @@ BOOST_AUTO_TEST_CASE(from_json_1line_1route)
 
 BOOST_AUTO_TEST_CASE(from_json_1line_2routes)
 {
-    auto test_file_path{std::filesystem::path(TESTS_RESOURCES_DIR)
-                        / "from_json_1line_2routes.json"};
+    auto test_file_path{std::filesystem::path(TESTS_RESOURCES_DIR) /
+                        "from_json_1line_2routes.json"};
     auto json_source = NetworkMonitor::ParseJsonFile(test_file_path);
 
     TransportNetwork network{};
@@ -527,8 +527,8 @@ BOOST_AUTO_TEST_CASE(from_json_1line_2routes)
 
 BOOST_AUTO_TEST_CASE(from_json_2lines_2routes)
 {
-    auto test_file_path{std::filesystem::path(TESTS_RESOURCES_DIR)
-                        / "from_json_2lines_2routes.json"};
+    auto test_file_path{std::filesystem::path(TESTS_RESOURCES_DIR) /
+                        "from_json_2lines_2routes.json"};
     auto json_source = NetworkMonitor::ParseJsonFile(test_file_path);
 
     TransportNetwork network{};
@@ -547,8 +547,8 @@ BOOST_AUTO_TEST_CASE(from_json_2lines_2routes)
 
 BOOST_AUTO_TEST_CASE(from_json_travel_times)
 {
-    auto test_file_path{std::filesystem::path(TESTS_RESOURCES_DIR)
-                        / "from_json_travel_times.json"};
+    auto test_file_path{std::filesystem::path(TESTS_RESOURCES_DIR) /
+                        "from_json_travel_times.json"};
     auto json_source = NetworkMonitor::ParseJsonFile(test_file_path);
 
     BOOST_TEST_MESSAGE(json_source);
@@ -593,8 +593,8 @@ BOOST_AUTO_TEST_CASE(fail_on_bad_travel_times)
     BOOST_REQUIRE(!ok);
 }
 
-BOOST_AUTO_TEST_SUITE_END(); // FromJson
+BOOST_AUTO_TEST_SUITE_END();  // FromJson
 
-BOOST_AUTO_TEST_SUITE_END(); // class_TransportNetwork
+BOOST_AUTO_TEST_SUITE_END();  // class_TransportNetwork
 
-BOOST_AUTO_TEST_SUITE_END(); // websocket_client
+BOOST_AUTO_TEST_SUITE_END();  // websocket_client

@@ -21,4 +21,4 @@ bool DownloadFile(const std::string& file_url,
  */
 nlohmann::json ParseJsonFile(const std::filesystem::path& source);
 
-} // namespace NetworkMonitor
+}  // namespace NetworkMonitor

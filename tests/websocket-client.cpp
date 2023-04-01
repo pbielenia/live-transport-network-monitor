@@ -1,7 +1,5 @@
 #include "network-monitor/websocket-client.hpp"
 
-#include "boost-mock.hpp"
-
 #include <boost/asio.hpp>
 #include <boost/beast/ssl.hpp>
 #include <boost/test/unit_test.hpp>
@@ -9,16 +7,19 @@
 #include <sstream>
 #include <string>
 
+#include "boost-mock.hpp"
+
 using NetworkMonitor::MockResolver;
-using NetworkMonitor::MockTcpStream;
 using NetworkMonitor::MockSslStream;
+using NetworkMonitor::MockTcpStream;
 using NetworkMonitor::MockWebSocketStream;
 using NetworkMonitor::TestWebSocketClient;
 using NetworkMonitor::WebSocketClient;
 
 // This fixture is used to re-initialize all mock properties before a test.
 struct WebSocketClientTestFixture {
-    WebSocketClientTestFixture() {
+    WebSocketClientTestFixture()
+    {
         MockResolver::resolve_error_code = {};
         MockTcpStream::connect_error_code = {};
         MockSslStream<MockTcpStream>::handshake_error_code = {};
@@ -106,7 +107,8 @@ BOOST_AUTO_TEST_CASE(fail_socket_handshake, *timeout{1})
     tls_context.load_verify_file(TESTS_CACERT_PEM);
     boost::asio::io_context io_context{};
 
-    MockSslStream<MockTcpStream>::handshake_error_code = boost::asio::ssl::error::stream_truncated;
+    MockSslStream<MockTcpStream>::handshake_error_code =
+        boost::asio::ssl::error::stream_truncated;
 
     TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
 
@@ -134,14 +136,16 @@ BOOST_AUTO_TEST_CASE(fail_websocket_handshake, *timeout{1})
     tls_context.load_verify_file(TESTS_CACERT_PEM);
     boost::asio::io_context io_context{};
 
-    MockWebSocketStream<MockTlsStream>::handshake_error_code = boost::beast::websocket::error::no_host;
+    MockWebSocketStream<MockTlsStream>::handshake_error_code =
+        boost::beast::websocket::error::no_host;
 
     TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
 
     bool called_on_connect{false};
     auto on_connect{[&called_on_connect](auto error_code) {
         called_on_connect = true;
-        BOOST_CHECK_EQUAL(error_code, MockWebSocketStream<MockTlsStream>::handshake_error_code);
+        BOOST_CHECK_EQUAL(error_code,
+                          MockWebSocketStream<MockTlsStream>::handshake_error_code);
     }};
 
     client.Connect(on_connect);
@@ -189,7 +193,8 @@ BOOST_AUTO_TEST_CASE(successful_no_connecthandler, *timeout{1})
 
     bool timeout_occured{false};
 
-    boost::asio::high_resolution_timer timer(io_context, boost::asio::chrono::milliseconds(250));
+    boost::asio::high_resolution_timer timer(io_context,
+                                             boost::asio::chrono::milliseconds(250));
     timer.async_wait([&timeout_occured, &client](auto error_code) {
         timeout_occured = true;
         BOOST_CHECK(!error_code);
@@ -202,7 +207,7 @@ BOOST_AUTO_TEST_CASE(successful_no_connecthandler, *timeout{1})
     BOOST_CHECK(timeout_occured);
 }
 
-BOOST_AUTO_TEST_SUITE_END(); // Connect
+BOOST_AUTO_TEST_SUITE_END();  // Connect
 
 BOOST_FIXTURE_TEST_SUITE(onMessage, WebSocketClientTestFixture);
 
@@ -225,7 +230,8 @@ BOOST_AUTO_TEST_CASE(one_message, *timeout{1})
 
     bool called_on_message{false};
 
-    auto on_message{[&called_on_message, &expected_message, &client](auto error_code, auto received_message) {
+    auto on_message{[&called_on_message, &expected_message, &client](
+                        auto error_code, auto received_message) {
         called_on_message = true;
         BOOST_CHECK(!error_code);
         BOOST_CHECK_EQUAL(expected_message, received_message);
@@ -257,10 +263,9 @@ BOOST_AUTO_TEST_CASE(two_messages, *timeout{1})
 
     unsigned called_on_message_count{};
 
-    auto on_connect{[](auto error_code) {
-        BOOST_CHECK(!error_code);
-    }};
-    auto on_message{[&called_on_message_count, &expected_message_1, &expected_message_2, &client](auto error_code, auto received_message) {
+    auto on_connect{[](auto error_code) { BOOST_CHECK(!error_code); }};
+    auto on_message{[&called_on_message_count, &expected_message_1, &expected_message_2,
+                     &client](auto error_code, auto received_message) {
         called_on_message_count++;
         BOOST_CHECK(!error_code);
         std::string expected_message{};
@@ -295,14 +300,16 @@ BOOST_AUTO_TEST_CASE(fail, *timeout{1})
 
     TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
 
-    WebsocketSocketStream::read_error_code = boost::beast::websocket::error::bad_data_frame;
+    WebsocketSocketStream::read_error_code =
+        boost::beast::websocket::error::bad_data_frame;
     WebsocketSocketStream::read_buffer = expected_message;
 
     bool called_on_connect{false};
     bool called_on_message{false};
     bool timeout_occured{false};
 
-    boost::asio::high_resolution_timer timer(io_context, boost::asio::chrono::milliseconds(250));
+    boost::asio::high_resolution_timer timer(io_context,
+                                             boost::asio::chrono::milliseconds(250));
     timer.async_wait([&timeout_occured, &client](auto error_code) {
         timeout_occured = true;
         BOOST_CHECK(!error_code);
@@ -343,7 +350,8 @@ BOOST_AUTO_TEST_CASE(no_handler, *timeout{1})
     bool called_on_connect{false};
     bool timeout_occured{false};
 
-    boost::asio::high_resolution_timer timer(io_context, boost::asio::chrono::milliseconds(250));
+    boost::asio::high_resolution_timer timer(io_context,
+                                             boost::asio::chrono::milliseconds(250));
     timer.async_wait([&timeout_occured, &client](auto error_code) {
         timeout_occured = true;
         BOOST_CHECK(!error_code);
@@ -362,7 +370,7 @@ BOOST_AUTO_TEST_CASE(no_handler, *timeout{1})
     BOOST_CHECK(timeout_occured);
 }
 
-BOOST_AUTO_TEST_SUITE_END(); // onMessage
+BOOST_AUTO_TEST_SUITE_END();  // onMessage
 
 BOOST_FIXTURE_TEST_SUITE(Send, WebSocketClientTestFixture);
 
@@ -387,12 +395,13 @@ BOOST_AUTO_TEST_CASE(one_message, *timeout{1})
         BOOST_CHECK(!error_code.failed());
         client.Close();
     }};
-    auto on_connect{[&called_on_connect, &client, &message_to_send, &on_send](auto error_code) {
-        called_on_connect = true;
-        BOOST_CHECK(!error_code.failed());
+    auto on_connect{
+        [&called_on_connect, &client, &message_to_send, &on_send](auto error_code) {
+            called_on_connect = true;
+            BOOST_CHECK(!error_code.failed());
 
-        client.Send(message_to_send, on_send);
-    }};
+            client.Send(message_to_send, on_send);
+        }};
 
     client.Connect(on_connect);
     io_context.run();
@@ -425,7 +434,7 @@ BOOST_AUTO_TEST_CASE(send_before_connect, *timeout{1})
     io_context.run();
 
     BOOST_CHECK(called_on_send);
-} 
+}
 
 BOOST_AUTO_TEST_CASE(fail, *timeout{1})
 {
@@ -442,7 +451,8 @@ BOOST_AUTO_TEST_CASE(fail, *timeout{1})
 
     TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
 
-    WebsocketSocketStream::write_error_code = boost::beast::websocket::error::bad_data_frame;
+    WebsocketSocketStream::write_error_code =
+        boost::beast::websocket::error::bad_data_frame;
 
     bool called_on_connect{false};
     bool called_on_send{false};
@@ -452,20 +462,21 @@ BOOST_AUTO_TEST_CASE(fail, *timeout{1})
         BOOST_CHECK(error_code == boost::beast::websocket::error::bad_data_frame);
         client.Close();
     }};
-    auto on_connect{[&called_on_connect, &client, &message_to_send, &on_send](auto error_code) {
-        called_on_connect = true;
-        BOOST_CHECK(!error_code.failed());
-        client.Send(message_to_send, on_send);
-    }};
+    auto on_connect{
+        [&called_on_connect, &client, &message_to_send, &on_send](auto error_code) {
+            called_on_connect = true;
+            BOOST_CHECK(!error_code.failed());
+            client.Send(message_to_send, on_send);
+        }};
 
     client.Connect(on_connect);
     io_context.run();
 
     BOOST_CHECK(called_on_send);
     BOOST_CHECK(called_on_connect);
-} 
+}
 
-BOOST_AUTO_TEST_SUITE_END(); // Send
+BOOST_AUTO_TEST_SUITE_END();  // Send
 
 BOOST_FIXTURE_TEST_SUITE(Close, WebSocketClientTestFixture);
 
@@ -545,9 +556,8 @@ BOOST_AUTO_TEST_CASE(close_no_disconnect, *timeout{1})
         BOOST_REQUIRE(!error_code.failed());
         client.Close(on_close);
     }};
-    auto on_disconnect{[&on_disconnect_called](auto error_code) {
-        on_disconnect_called = true;
-    }};
+    auto on_disconnect{
+        [&on_disconnect_called](auto error_code) { on_disconnect_called = true; }};
 
     client.Connect(on_connect, nullptr, on_disconnect);
     io_context.run();
@@ -556,7 +566,7 @@ BOOST_AUTO_TEST_CASE(close_no_disconnect, *timeout{1})
     BOOST_CHECK(!on_disconnect_called);
 }
 
-BOOST_AUTO_TEST_SUITE_END(); // Close
+BOOST_AUTO_TEST_SUITE_END();  // Close
 
 BOOST_AUTO_TEST_SUITE(live);
 
@@ -572,7 +582,7 @@ BOOST_AUTO_TEST_CASE(echo, *timeout{20})
 
     boost::asio::io_context io_context{};
     NetworkMonitor::BoostWebSocketClient client{url, endpoint, port, io_context,
-                                                 tls_context};
+                                                tls_context};
 
     bool connected{false};
     bool message_sent{false};
@@ -588,10 +598,11 @@ BOOST_AUTO_TEST_CASE(echo, *timeout{20})
             client.Send(message, on_send);
         }
     }};
-    auto on_close{[&disconnected](auto error_code) { disconnected = !error_code.failed(); }};
+    auto on_close{
+        [&disconnected](auto error_code) { disconnected = !error_code.failed(); }};
     // TODO: why so many references passed in lambda? seems not all are utilized
     auto on_receive{[&client, &on_close, &message_received, &message_matches, &message,
-                    &echo](auto error_code, auto received) {
+                     &echo](auto error_code, auto received) {
         message_received = !error_code.failed();
         echo = message;
         client.Close(on_close);
@@ -639,7 +650,7 @@ BOOST_AUTO_TEST_CASE(send_stomp_frame)
 
     boost::asio::io_context io_context{};
     NetworkMonitor::BoostWebSocketClient client{url, endpoint, port, io_context,
-                                                 tls_context};
+                                                tls_context};
 
     bool connected{false};
     bool message_sent{false};
@@ -647,22 +658,22 @@ BOOST_AUTO_TEST_CASE(send_stomp_frame)
     bool disconnected{false};
     std::string response{};
 
-    auto on_send_callback{[&message_sent](auto error_code) {
-        message_sent = !error_code;
-    }};
+    auto on_send_callback{
+        [&message_sent](auto error_code) { message_sent = !error_code; }};
 
-    auto on_connect_callback{[&client, &connected, &on_send_callback, &message](auto error_code) {
-        connected = !error_code;
-        if (connected) {
-            client.Send(message, on_send_callback);
-        }
-    }};
+    auto on_connect_callback{
+        [&client, &connected, &on_send_callback, &message](auto error_code) {
+            connected = !error_code;
+            if (connected) {
+                client.Send(message, on_send_callback);
+            }
+        }};
 
-    auto on_close_callback{[&disconnected](auto error_code) {
-        disconnected = !error_code;
-    }};
+    auto on_close_callback{
+        [&disconnected](auto error_code) { disconnected = !error_code; }};
 
-    auto on_receive_callback{[&client, &on_close_callback, &message_received, &response](auto error_code, auto received) {
+    auto on_receive_callback{[&client, &on_close_callback, &message_received, &response](
+                                 auto error_code, auto received) {
         message_received = !error_code;
         response = std::move(received);
         client.Close(on_close_callback);
@@ -678,8 +689,8 @@ BOOST_AUTO_TEST_CASE(send_stomp_frame)
     BOOST_CHECK(CheckResponse(response));
 }
 
-BOOST_AUTO_TEST_SUITE_END(); // live
+BOOST_AUTO_TEST_SUITE_END();  // live
 
-BOOST_AUTO_TEST_SUITE_END(); // class_WebSocketClient
+BOOST_AUTO_TEST_SUITE_END();  // class_WebSocketClient
 
-BOOST_AUTO_TEST_SUITE_END(); // network_monitor
+BOOST_AUTO_TEST_SUITE_END();  // network_monitor

@@ -55,8 +55,8 @@ bool TransportNetwork::FromJson(nlohmann::json&& source)
         new_station.name = station.at("name").get<std::string>();
         auto result = AddStation(new_station);
         if (result == false) {
-            throw std::runtime_error("Adding station failed [id: " + new_station.id
-                                     + ", name: " + new_station.name + "]");
+            throw std::runtime_error("Adding station failed [id: " + new_station.id +
+                                     ", name: " + new_station.name + "]");
         }
     }
 
@@ -77,8 +77,8 @@ bool TransportNetwork::FromJson(nlohmann::json&& source)
         }
         auto result = AddLine(new_line);
         if (result == false) {
-            throw std::runtime_error("Adding line failed [id: " + new_line.id
-                                     + ", name: " + new_line.name + "]");
+            throw std::runtime_error("Adding line failed [id: " + new_line.id +
+                                     ", name: " + new_line.name + "]");
         }
     }
 
@@ -124,8 +124,9 @@ bool TransportNetwork::AddLine(const Line& line)
         // TODO: Can be written more clearly or moved to the separate function. It does
         //       "return false if the route already existis in the line".
         if (std::find_if(line_internal->routes.begin(), line_internal->routes.end(),
-                         [&route](auto line_route) { return route.id == line_route->id; })
-            != line_internal->routes.end()) {
+                         [&route](auto line_route) {
+                             return route.id == line_route->id;
+                         }) != line_internal->routes.end()) {
             return false;
         }
 
@@ -165,16 +166,16 @@ bool TransportNetwork::RecordPassengerEvent(const PassengerEvent& event)
     auto& passenger_count = stations_.at(event.station_id)->passenger_count;
 
     switch (event.type) {
-    case PassengerEvent::Type::In: {
-        passenger_count++;
-        break;
-    }
-    case PassengerEvent::Type::Out: {
-        passenger_count--;
-        break;
-    }
-    default:
-        return false;
+        case PassengerEvent::Type::In: {
+            passenger_count++;
+            break;
+        }
+        case PassengerEvent::Type::Out: {
+            passenger_count--;
+            break;
+        }
+        default:
+            return false;
     }
 
     return true;
@@ -217,8 +218,8 @@ bool TransportNetwork::SetTravelTime(const Id& station_a,
                                      const Id& station_b,
                                      const unsigned int travel_time)
 {
-    if (!StationExists(station_a) || !StationExists(station_b)
-        || station_a == station_b) {
+    if (!StationExists(station_a) || !StationExists(station_b) ||
+        station_a == station_b) {
         return false;
     }
 
@@ -238,8 +239,8 @@ bool TransportNetwork::SetTravelTime(const Id& station_a,
 unsigned int TransportNetwork::GetTravelTime(const Id& station_a,
                                              const Id& station_b) const
 {
-    if (!StationExists(station_a) || !StationExists(station_b)
-        || station_a == station_b) {
+    if (!StationExists(station_a) || !StationExists(station_b) ||
+        station_a == station_b) {
         return 0;
     }
 
@@ -349,8 +350,8 @@ void TransportNetwork::AddStationInternal(const Station& station)
     stations_.emplace(station.id, std::move(node));
 }
 
-std::shared_ptr<TransportNetwork::LineInternal>
-TransportNetwork::CreateLineInternal(const Id& id, const std::string& name)
+std::shared_ptr<TransportNetwork::LineInternal> TransportNetwork::CreateLineInternal(
+    const Id& id, const std::string& name)
 {
     return lines_.emplace(id, std::make_shared<LineInternal>(id, name)).first->second;
 }
@@ -387,8 +388,8 @@ bool TransportNetwork::LineExists(const Line& line) const
 
 bool TransportNetwork::StationsAreAdjacend(const Id& station_a, const Id& station_b) const
 {
-    return StationConnectsAnother(station_a, station_b)
-           || StationConnectsAnother(station_b, station_a);
+    return StationConnectsAnother(station_a, station_b) ||
+           StationConnectsAnother(station_b, station_a);
 }
 
 bool TransportNetwork::StationConnectsAnother(const Id& station_a,
