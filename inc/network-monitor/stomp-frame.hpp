@@ -62,11 +62,11 @@ enum class StompHeader {
 
 /*! \brief Print operator for the `StompHeader` class.
  */
-std::ostream& operator<<(std::ostream& os, const StompFrame& command);
+std::ostream& operator<<(std::ostream& os, const StompHeader& header);
 
 /*! \brief Convert `StompHeader` to string.
  */
-std::string ToString(const StompFrame& frame);
+std::string ToString(const StompHeader& header);
 
 // ...
 
