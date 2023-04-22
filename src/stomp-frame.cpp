@@ -12,21 +12,22 @@ boost::bimap<L, R> MakeBimap(
 
 static const auto stomp_commands_strings{MakeBimap<StompCommand, std::string_view>({
     // clang-format off
-    {StompCommand::Abort,       "ABORT"         },
-    {StompCommand::Ack,         "ACK"           },
-    {StompCommand::Begin,       "BEGIN"         },
-    {StompCommand::Commit,      "COMMIT"        },
-    {StompCommand::Connect,     "CONNECT"       },
-    {StompCommand::Connected,   "CONNECTED"     },
-    {StompCommand::Disconnect,  "DISCONNECT"    },
-    {StompCommand::Error,       "ERROR"         },
-    {StompCommand::Message,     "MESSAGE"       },
-    {StompCommand::NAck,        "NACK"          },
-    {StompCommand::Receipt,     "RECEIPT"       },
-    {StompCommand::Send,        "SEND"          },
-    {StompCommand::Stomp,       "STOMP"         },
-    {StompCommand::Subscribe,   "SUBSCRIBE"     },
-    {StompCommand::Unsubscribe, "UNSUBSCRIBE"   },
+    {StompCommand::Abort,           "ABORT"             },
+    {StompCommand::Ack,             "ACK"               },
+    {StompCommand::Begin,           "BEGIN"             },
+    {StompCommand::Commit,          "COMMIT"            },
+    {StompCommand::Connect,         "CONNECT"           },
+    {StompCommand::Connected,       "CONNECTED"         },
+    {StompCommand::Disconnect,      "DISCONNECT"        },
+    {StompCommand::Error,           "ERROR"             },
+    {StompCommand::Invalid,         "INVALID_COMMAND"   },
+    {StompCommand::Message,         "MESSAGE"           },
+    {StompCommand::NAck,            "NACK"              },
+    {StompCommand::Receipt,         "RECEIPT"           },
+    {StompCommand::Send,            "SEND"              },
+    {StompCommand::Stomp,           "STOMP"             },
+    {StompCommand::Subscribe,       "SUBSCRIBE"         },
+    {StompCommand::Unsubscribe,     "UNSUBSCRIBE"       },
     // clang-format on
 })};
 
@@ -40,6 +41,7 @@ static const auto stomp_headers_strings{MakeBimap<StompHeader, std::string_view>
     {StompHeader::HeartBeat,        "heart-beat"        },
     {StompHeader::Host,             "host"              },
     {StompHeader::Id,               "id"                },
+    {StompHeader::Invalid,          "invalid-header"    },
     {StompHeader::Login,            "login"             },
     {StompHeader::Message,          "message"           },
     {StompHeader::MessageId,        "message-id"        },
@@ -56,27 +58,26 @@ static const auto stomp_headers_strings{MakeBimap<StompHeader, std::string_view>
 
 static const auto stomp_errors_strings{MakeBimap<StompError, std::string_view>({
     // clang-format off
-    {StompError::Ok,    "Ok"    },
+    {StompError::Ok,                "Ok"                },
+    {StompError::UndefinedError,    "UndefinedError"    },
     // clang-format off
 })};
-
-static const std::string stomp_invalid{"invalid"};
 
 std::string_view ToStringView(const StompCommand& command)
 {
     const auto string_representation{stomp_commands_strings.left.find(command)};
     if (string_representation == stomp_commands_strings.left.end()) {
-        return std::string_view(stomp_invalid);
+        return stomp_commands_strings.left.find(StompCommand::Invalid)->second;
     } else {
         return string_representation->second;
     }
 }
 
-std::string_view ToStringView(const StompHeader& command)
+std::string_view ToStringView(const StompHeader& header)
 {
-    const auto string_representation{stomp_headers_strings.left.find(command)};
+    const auto string_representation{stomp_headers_strings.left.find(header)};
     if (string_representation == stomp_headers_strings.left.end()) {
-        return std::string_view(stomp_invalid);
+        return stomp_headers_strings.left.find(StompHeader::Invalid)->second;
     } else {
         return string_representation->second;
     }
@@ -86,7 +87,7 @@ std::string_view ToStringView(const StompError& error)
 {
     const auto string_representation{stomp_errors_strings.left.find(error)};
     if (string_representation == stomp_errors_strings.left.end()) {
-        return std::string_view(stomp_invalid);
+        return stomp_errors_strings.left.find(StompError::UndefinedError)->second;
     } else {
         return string_representation->second;
     }

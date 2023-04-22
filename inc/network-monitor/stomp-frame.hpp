@@ -72,6 +72,7 @@ std::string ToString(const StompHeader& header);
  */
 enum class StompError {
     Ok = 0,
+    UndefinedError,
     // TODO: Add enum values here
     // ...
     // parsing error - error in the structure of the frame

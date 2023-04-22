@@ -84,6 +84,31 @@ static const std::vector<StompHeader> stomp_headers{
     // clang-format on
 };
 
+BOOST_AUTO_TEST_CASE(ostream)
+{
+    // Get the value of invalid
+    std::stringstream stream{};
+    stream << StompHeader::Invalid;
+    const auto invalid{stream.str()};
+
+    // Check if any valid header doesn't match the invalid
+    for (const auto& header : stomp_headers) {
+        stream.str("");
+        stream.clear();
+        stream << header;
+        BOOST_CHECK(stream.str() != invalid);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(ToString)
+{
+    const auto invalid{NetworkMonitor::ToString(StompHeader::Invalid)};
+
+    for (const auto& header : stomp_headers) {
+        BOOST_CHECK(NetworkMonitor::ToString(header) != invalid);
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END();  // enum_StompHeader
 
 BOOST_AUTO_TEST_SUITE(enum_StompError);
@@ -93,6 +118,31 @@ static const std::vector<StompError> stomp_errors{
     StompError::Ok
     // clang-format on
 };
+
+BOOST_AUTO_TEST_CASE(ostream)
+{
+    // Get the value of invalid
+    std::stringstream stream{};
+    stream << StompError::UndefinedError;
+    const auto invalid{stream.str()};
+
+    // Check if any valid error doesn't match the invalid
+    for (const auto& error : stomp_errors) {
+        stream.str("");
+        stream.clear();
+        stream << error;
+        BOOST_CHECK(stream.str() != invalid);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(ToString)
+{
+    const auto invalid{NetworkMonitor::ToString(StompError::UndefinedError)};
+
+    for (const auto& error : stomp_errors) {
+        BOOST_CHECK(NetworkMonitor::ToString(error) != invalid);
+    }
+}
 
 BOOST_AUTO_TEST_SUITE_END();  // enum_StompError
 
