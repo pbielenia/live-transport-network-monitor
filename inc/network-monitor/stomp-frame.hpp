@@ -74,10 +74,11 @@ std::string ToString(const StompHeader& header);
  */
 enum class StompError {
     Ok = 0,
-    // TODO: Your enum values go here
+    // TODO: Add enum values here
     // ...
     // parsing error - error in the structure of the frame
     // validation error - parsed correctly, but missing required headers
+    //
 };
 
 // ...
@@ -120,16 +121,31 @@ class StompFrame {
      */
     StompFrame& operator=(StompFrame&& other);
 
-    // TODO: Other APIs go here
-    // ...
+    /*! \brief Get the STOMP command.
+     */
+    StompCommand GetCommand() const;
+
+    /*! \brief Check if the frame has a specified header.
+     */
+    const bool HasHeader(const StompHeader& header) const;
+
+    /*! \brief Get the value for the specified header.
+     *
+     *   \returns An empty std::string_view if the header is not in the frame.
+     */
+    const std::string_view& GetHeaderValue(const StompHeader& header) const;
+
+    /*! \brief Get the frame body.
+     */
+    const std::string_view& GetBody() const;
+
    private:
     using Headers = std::unordered_map<StompHeader, std::string_view>;
 
+    std::string plain_content_{};
     StompCommand command_{StompCommand::Invalid};
     Headers headers_{};
     std::string_view body_{};
 };
 
 }  // namespace NetworkMonitor
-
-#endif  // NETWORK_MONITOR_STOMP_FRAME_H

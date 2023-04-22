@@ -132,3 +132,23 @@ StompFrame& StompFrame::operator=(StompFrame&& other)
 {
     //
 }
+
+StompCommand StompFrame::GetCommand() const
+{
+    //
+}
+
+const bool StompFrame::HasHeader(const StompHeader& header) const
+{
+    //
+}
+
+const std::string_view& StompFrame::GetHeaderValue(const StompHeader& header) const
+{
+    //
+}
+
+const std::string_view& StompFrame::GetBody() const
+{
+    //
+}
