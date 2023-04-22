@@ -4,6 +4,7 @@ BasedOnStyle: Google
 # Custom preferences
 AllowAllConstructorInitializersOnNextLine: false
 AllowAllParametersOfDeclarationOnNextLine: true
+AllowShortEnumsOnASingleLine: false
 AlignEscapedNewlines: Left
 AllowShortFunctionsOnASingleLine: Inline
 BraceWrapping:
