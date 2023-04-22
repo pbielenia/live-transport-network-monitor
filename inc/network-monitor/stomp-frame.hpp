@@ -68,8 +68,6 @@ std::ostream& operator<<(std::ostream& os, const StompHeader& header);
  */
 std::string ToString(const StompHeader& header);
 
-// ...
-
 /*! \brief Error codes for the STOMP protocol
  */
 enum class StompError {
@@ -81,7 +79,13 @@ enum class StompError {
     //
 };
 
-// ...
+/*! \brief Print operator for the `StompError` class.
+ */
+std::ostream& operator<<(std::ostream& os, const StompError& error);
+
+/*! \brief Convert `StompError` to string.
+ */
+std::string ToString(const StompError& error);
 
 /* \brief STOMP frame representation, supporting STOMP v1.2.
  */

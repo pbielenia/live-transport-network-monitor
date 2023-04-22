@@ -54,6 +54,12 @@ static const auto stomp_headers_strings{MakeBimap<StompHeader, std::string_view>
     // clang-format on
 })};
 
+static const auto stomp_errors_strings{MakeBimap<StompError, std::string_view>({
+    // clang-format off
+    {StompError::Ok,    "Ok"    },
+    // clang-format off
+})};
+
 static const std::string stomp_invalid{"invalid"};
 
 std::string_view ToStringView(const StompCommand& command)
@@ -66,17 +72,6 @@ std::string_view ToStringView(const StompCommand& command)
     }
 }
 
-std::ostream& operator<<(std::ostream& os, const StompCommand& command)
-{
-    os << ToStringView(command);
-    return os;
-}
-
-std::string ToString(const StompCommand& command)
-{
-    return std::string(ToStringView(command));
-}
-
 std::string_view ToStringView(const StompHeader& command)
 {
     const auto string_representation{stomp_headers_strings.left.find(command)};
@@ -87,15 +82,47 @@ std::string_view ToStringView(const StompHeader& command)
     }
 }
 
-std::ostream& operator<<(std::ostream& os, const StompHeader& header)
+std::string_view ToStringView(const StompError& error)
+{
+    const auto string_representation{stomp_errors_strings.left.find(error)};
+    if (string_representation == stomp_errors_strings.left.end()) {
+        return std::string_view(stomp_invalid);
+    } else {
+        return string_representation->second;
+    }
+}
+
+std::ostream& NetworkMonitor::operator<<(std::ostream& os, const StompCommand& command)
+{
+    os << ToStringView(command);
+    return os;
+}
+
+std::ostream& NetworkMonitor::operator<<(std::ostream& os, const StompHeader& header)
 {
     os << ToStringView(header);
     return os;
 }
 
-std::string ToString(const StompHeader& header)
+std::ostream& NetworkMonitor::operator<<(std::ostream& os, const StompError& error)
+{
+    os << ToStringView(error);
+    return os;
+}
+
+std::string NetworkMonitor::ToString(const StompCommand& command)
+{
+    return std::string(ToStringView(command));
+}
+
+std::string NetworkMonitor::ToString(const StompHeader& header)
 {
     return std::string(ToStringView(header));
+}
+
+std::string NetworkMonitor::ToString(const StompError& error)
+{
+    return std::string(ToStringView(error));
 }
 
 StompFrame::StompFrame()
@@ -126,29 +153,35 @@ StompFrame::StompFrame(StompFrame&& other)
 StompFrame& StompFrame::operator=(const StompFrame& other)
 {
     //
+    return *this;
 }
 
 StompFrame& StompFrame::operator=(StompFrame&& other)
 {
     //
+    return *this;
 }
 
 StompCommand StompFrame::GetCommand() const
 {
     //
+    return StompCommand::Invalid;
 }
 
 const bool StompFrame::HasHeader(const StompHeader& header) const
 {
     //
+    return false;
 }
 
 const std::string_view& StompFrame::GetHeaderValue(const StompHeader& header) const
 {
     //
+    return ToStringView(StompHeader::Invalid);
 }
 
 const std::string_view& StompFrame::GetBody() const
 {
     //
+    return body_;
 }
