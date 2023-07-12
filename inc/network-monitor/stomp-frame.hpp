@@ -73,6 +73,10 @@ std::string ToString(const StompHeader& header);
 enum class StompError {
     Ok = 0,
     UndefinedError,
+    InvalidCommand,
+    InvalidHeader,
+    NoHeaderValue,
+    MissingBodyNewline,
     // TODO: Add enum values here
     // ...
     // parsing error - error in the structure of the frame
@@ -100,6 +104,9 @@ class StompFrame {
     /*! \brief Construct the STOMP frame from a string. The string is copied.
      *
      *  The result of the operation is stored in the error code.
+     *
+     *  If any `error_code` other than `StompError:Ok` is set, none of the frame lookup
+     *  methods should be used as they may store invalid values.
      */
     StompFrame(StompError& error_code, const std::string& content);
 

@@ -60,7 +60,7 @@ static const auto stomp_errors_strings{MakeBimap<StompError, std::string_view>({
     // clang-format off
     {StompError::Ok,                "Ok"                },
     {StompError::UndefinedError,    "UndefinedError"    },
-    // clang-format off
+    // clang-format on
 })};
 
 std::string_view ToStringView(const StompCommand& command)
@@ -128,12 +128,27 @@ std::string NetworkMonitor::ToString(const StompError& error)
 
 StompFrame::StompFrame()
 {
-    //
+    // TODO
 }
 
 StompFrame::StompFrame(StompError& error_code, const std::string& content)
 {
+    // TODO: Avoid unnecessary re-scans of the same plain-text STOMP frame, since a single
+    //       scan should be enough to gather all the information we need.
+    // CTOR SHOULD:
+    //       - check that it is formally correct according to the protocol,
+    //       - checks that it contains the expected headers for the specific command,
+    //       - and interprets the data for later use.
     //
+    // - Convert the STOMP command, which is a string, into the corresponding StompCommand
+    //   enum.
+    // - Organize the STOMP headers in a map so that it's easier to access a specific
+    //   header and its value when needed.
+    // - Provide a direct view into the body of the frame, which is what the user will
+    //   care about when processing the frame.
+
+    // TODO: If either a parser or validation error occur, break further parsings. No need
+    //       to reset any already set field. Return a descriptive error is sufficent.
 }
 
 StompFrame::StompFrame(StompError& error_code, std::string&& content)
