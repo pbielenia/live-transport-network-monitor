@@ -58,8 +58,22 @@ static const auto stomp_headers_strings{MakeBimap<StompHeader, std::string_view>
 
 static const auto stomp_errors_strings{MakeBimap<StompError, std::string_view>({
     // clang-format off
-    {StompError::Ok,                "Ok"                },
-    {StompError::UndefinedError,    "UndefinedError"    },
+    {StompError::Ok,                         "Ok"                },
+    {StompError::UndefinedError,             "UndefinedError"},
+    {StompError::InvalidCommand,             "InvalidCommand"},
+    {StompError::InvalidHeader,              "InvalidHeader"},
+    {StompError::NoHeaderValue,              "NoHeaderValue"},
+    {StompError::EmptyHeaderValue,           "EmptyHeaderValue"},
+    {StompError::NoNewlineCharacters,        "NoNewlineCharacters"},
+    {StompError::MissingLastHeaderNewline,   "MissingLastHeaderNewline"},
+    {StompError::MissingBodyNewline,         "MissingBodyNewline"},
+    {StompError::UnrecognizedHeader,         "UnrecognizedHeader"},
+    {StompError::UnterminatedBody,           "UnterminatedBody"},
+    {StompError::JunkAfterBody,              "JunkAfterBody"},
+    {StompError::ContentLengthsDontMatch,    "ContentLengthsDontMatch"},
+    {StompError::MissingRequiredHeader,      "MissingRequiredHeader"},
+    {StompError::EmptyContent,               "EmptyContent"},
+    {StompError::MissingCommand,             "MissingCommand"}
     // clang-format on
 })};
 
@@ -149,11 +163,61 @@ StompFrame::StompFrame(StompError& error_code, const std::string& content)
 
     // TODO: If either a parser or validation error occur, break further parsings. No need
     //       to reset any already set field. Return a descriptive error is sufficent.
+
+    error_code = ParseFrame(content);
+    if (error_code != StompError::Ok) {
+        return;
+    }
+    error_code = ValidateFrame();
 }
 
 StompFrame::StompFrame(StompError& error_code, std::string&& content)
 {
-    //
+    error_code = ParseFrame(content);
+    if (error_code != StompError::Ok) {
+        return;
+    }
+    error_code = ValidateFrame();
+}
+
+
+StompError StompFrame::ParseFrame(const std::string_view frame)
+{
+    static const char end_of_line_character{'\n'};
+    static const char colon_character{':'};
+    static const char null_character{'\0'};
+
+    if (frame.empty()) {
+        return StompError::EmptyContent;
+    }
+
+    if (frame.at(0) == end_of_line_character) {
+        return StompError::MissingCommand;
+    }
+
+    const auto command_end = frame.find(end_of_line_character);
+    if (command_end == std::string::npos) {
+        return StompError::NoNewlineCharacters;
+    }
+
+    // Parse command
+    const auto command_plain{frame.substr(0, command_end)};
+    const auto command{stomp_commands_strings.right.find(command_plain)};
+    if (command == stomp_commands_strings.right.end()) {
+        return StompError::InvalidCommand;
+    }
+    command_ = command->second;
+
+    // Parse headers
+    // start from command_end + 1
+
+
+    return StompError::InvalidCommand;
+}
+
+StompError StompFrame::ValidateFrame()
+{
+    return StompError::ContentLengthsDontMatch;
 }
 
 StompFrame::StompFrame(const StompFrame& other)

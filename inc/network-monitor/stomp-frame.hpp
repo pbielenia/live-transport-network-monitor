@@ -77,13 +77,16 @@ enum class StompError {
     InvalidHeader,
     NoHeaderValue,
     EmptyHeaderValue,
-    MissingBodyNewline,
+    NoNewlineCharacters,
     MissingLastHeaderNewline,
+    MissingBodyNewline,
     UnrecognizedHeader,
     UnterminatedBody,
     JunkAfterBody,
     ContentLengthsDontMatch,
-    MissingRequiredHeader
+    MissingRequiredHeader,
+    EmptyContent,
+    MissingCommand,
 };
 
 /*! \brief Print operator for the `StompError` class.
@@ -155,6 +158,9 @@ class StompFrame {
 
    private:
     using Headers = std::unordered_map<StompHeader, std::string_view>;
+
+    StompError ParseFrame(const std::string_view frame);
+    StompError ValidateFrame();
 
     std::string plain_content_{};
     StompCommand command_{StompCommand::Invalid};
