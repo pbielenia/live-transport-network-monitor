@@ -63,7 +63,13 @@ static const std::vector<StompError> stomp_errors{
     StompError::InvalidCommand,
     StompError::InvalidHeader,
     StompError::NoHeaderValue,
-    StompError::MissingBodyNewline
+    StompError::MissingBodyNewline,
+    StompError::MissingLastHeaderNewline,
+    StompError::UnrecognizedHeader,
+    StompError::UnterminatedBody,
+    StompError::JunkAfterBody,
+    StompError::ContentLengthsDontMatch,
+    StompError::MissingRequiredHeader
     // clang-format on
 };
 
@@ -396,7 +402,6 @@ BOOST_AUTO_TEST_CASE(parse_invalid_command)
         "\n"
         "Frame body\0"};
 
-
     ExpectedFrame expected;
     expected.SetError(StompError::InvalidCommand);
 
@@ -456,6 +461,327 @@ BOOST_AUTO_TEST_CASE(parse_missing_body_newline)
     StompFrame frame{error, std::move(plain)};
 
     expected.Check(error, frame);
+}
+
+BOOST_AUTO_TEST_CASE(parse_missing_last_header_newline)
+{
+    std::string plain{
+        "CONNECT\n"
+        "accept-version:42\n"
+        "host:host.com"};
+
+    ExpectedFrame expected;
+    expected.SetError(StompError::MissingLastHeaderNewline);
+
+    StompError error;
+    StompFrame frame{error, std::move(plain)};
+
+    expected.Check(error, frame);
+}
+
+BOOST_AUTO_TEST_CASE(parse_unrecognize_header)
+{
+    std::string plain{
+        "CONNECT\n"
+        "bad-header:42\n"
+        "host:host.com\n"
+        "\n"
+        "\0"};
+
+    ExpectedFrame expected;
+    expected.SetError(StompError::UnrecognizedHeader);
+
+    StompError error;
+    StompFrame frame{error, std::move(plain)};
+
+    expected.Check(error, frame);
+}
+
+BOOST_AUTO_TEST_CASE(parse_empty_header_value)
+{
+    std::string plain{
+        "CONNECT\n"
+        "accept-version:\n"
+        "host:host.com\n"
+        "\n"
+        "\0"};
+
+    ExpectedFrame expected;
+    expected.SetError(StompError::NoHeaderValue);
+
+    StompError error;
+    StompFrame frame{error, std::move(plain)};
+
+    expected.Check(error, frame);
+}
+
+BOOST_AUTO_TEST_CASE(parse_newline_after_command)
+{
+    std::string plain{
+        "DISCONNECT\n"
+        "\n"
+        "version:42\n"
+        "host:host.com\n"
+        "\n"
+        "Frame body\0"};
+
+    ExpectedFrame expected;
+    expected.SetError(StompError::Ok);
+    expected.SetCommand(StompCommand::Disconnect);
+    expected.AddHeader(StompHeader::Version, "42");
+    expected.AddHeader(StompHeader::Host, "host.com");
+    expected.SetBody("Frame body");
+
+    StompError error;
+    StompFrame frame{error, std::move(plain)};
+
+    expected.Check(error, frame);
+}
+
+BOOST_AUTO_TEST_CASE(parse_double_colon_in_header_line, *boost::unit_test::disabled())
+{
+    std::string plain{
+        "CONNECT\n"
+        "accept-version:42:43\n"
+        "host:host.com\n"
+        "\n"
+        "Frame body\0"};
+    // StompError::Ok?
+}
+
+BOOST_AUTO_TEST_CASE(parse_repeated_headers, *boost::unit_test::disabled())
+{
+    std::string plain{
+        "CONNECT\n"
+        "accept-version:42\n"
+        "accept-version:43\n"
+        "host:host.com\n"
+        "\n"
+        "Frame body\0"};
+
+    // StompError::Ok?
+}
+
+BOOST_AUTO_TEST_CASE(parse_repeated_headers_error_in_second)
+{
+    std::string plain{
+        "CONNECT\n"
+        "accept-version:42\n"
+        "accept-version:\n"
+        "\n"
+        "Frame body\0"};
+
+    ExpectedFrame expected;
+    expected.SetError(StompError::EmptyHeaderValue);
+
+    StompError error;
+    StompFrame frame{error, std::move(plain)};
+
+    expected.Check(error, frame);
+}
+
+BOOST_AUTO_TEST_CASE(parse_unterminated_body)
+{
+    std::string plain{
+        "CONNECT\n"
+        "accept-version:42\n"
+        "host:host.com\n"
+        "\n"
+        "Frame body"};
+
+    ExpectedFrame expected;
+    expected.SetError(StompError::UnterminatedBody);
+
+    StompError error;
+    StompFrame frame{error, std::move(plain)};
+
+    expected.Check(error, frame);
+}
+
+BOOST_AUTO_TEST_CASE(parse_unterminated_body_content_length)
+{
+    std::string plain{
+        "CONNECT\n"
+        "accept-version:42\n"
+        "host:host.com\n"
+        "content-length:10\n"
+        "\n"
+        "Frame body"};
+
+    ExpectedFrame expected;
+    expected.SetError(StompError::UnterminatedBody);
+
+    StompError error;
+    StompFrame frame{error, std::move(plain)};
+
+    expected.Check(error, frame);
+}
+
+BOOST_AUTO_TEST_CASE(parse_junk_after_body)
+{
+    std::string plain{
+        "CONNECT\n"
+        "accept-version:42\n"
+        "host:host.com\n"
+        "\n"
+        "Frame body\0\n\njunk\n"};
+
+    ExpectedFrame expected;
+    expected.SetError(StompError::JunkAfterBody);
+
+    StompError error;
+    StompFrame frame{error, std::move(plain)};
+
+    expected.Check(error, frame);
+}
+
+BOOST_AUTO_TEST_CASE(parse_junk_after_body_content_length)
+{
+    std::string plain{
+        "CONNECT\n"
+        "accept-version:42\n"
+        "host:host.com\n"
+        "content-length:10\n"
+        "\n"
+        "Frame body\0\n\njunk\n"};
+
+    ExpectedFrame expected;
+    expected.SetError(StompError::JunkAfterBody);
+
+    StompError error;
+    StompFrame frame{error, std::move(plain)};
+
+    expected.Check(error, frame);
+}
+
+BOOST_AUTO_TEST_CASE(parse_newlines_after_body)
+{
+    std::string plain{
+        "CONNECT\n"
+        "accept-version:42\n"
+        "host:host.com\n"
+        "\n"
+        "Frame body\0\n\n\n"};
+
+    ExpectedFrame expected;
+    expected.SetError(StompError::Ok);
+    expected.SetCommand(StompCommand::Connect);
+    expected.AddHeader(StompHeader::AcceptVersion, "42");
+    expected.AddHeader(StompHeader::Host, "host.com");
+    expected.SetBody("Frame body");
+
+    StompError error;
+    StompFrame frame{error, std::move(plain)};
+
+    expected.Check(error, frame);
+}
+
+BOOST_AUTO_TEST_CASE(parse_newlines_after_body_content_length)
+{
+    std::string plain{
+        "CONNECT\n"
+        "accept-version:42\n"
+        "host:host.com\n"
+        "content-length:10\n"
+        "\n"
+        "Frame body\0\n\n\n"};
+
+    ExpectedFrame expected;
+    expected.SetError(StompError::Ok);
+    expected.SetCommand(StompCommand::Connect);
+    expected.AddHeader(StompHeader::AcceptVersion, "42");
+    expected.AddHeader(StompHeader::Host, "host.com");
+    expected.AddHeader(StompHeader::ContentLength, "10");
+    expected.SetBody("Frame body");
+
+    StompError error;
+    StompFrame frame{error, std::move(plain)};
+
+    expected.Check(error, frame);
+}
+
+BOOST_AUTO_TEST_CASE(parse_content_length_wrong_number)
+{
+    std::string plain{
+        "CONNECT\n"
+        "accept-version:42\n"
+        "host:host.com\n"
+        "content-length:9\n"  // This is one byte off
+        "\n"
+        "Frame body\0"};
+
+    ExpectedFrame expected;
+    expected.SetError(StompError::ContentLengthsDontMatch);
+
+    StompError error;
+    StompFrame frame{error, std::move(plain)};
+
+    expected.Check(error, frame);
+}
+
+BOOST_AUTO_TEST_CASE(parse_content_length_exceeding)
+{
+    std::string plain{
+        "CONNECT\n"
+        "accept-version:42\n"
+        "host:host.com\n"
+        "content-length:15\n"  // Way above the actual body length
+        "\n"
+        "Frame body\0"};
+
+    ExpectedFrame expected;
+    expected.SetError(StompError::ContentLengthsDontMatch);
+
+    StompError error;
+    StompFrame frame{error, std::move(plain)};
+
+    expected.Check(error, frame);
+}
+
+BOOST_AUTO_TEST_CASE(parse_required_headers)
+{
+    StompError error;
+    {
+        std::string plain{
+            "CONNECT\n"
+            "\n"
+            "\0"};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "CONNECT\n"
+            "accept-version:42\n"
+            "\n"
+            "\0"};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "CONNECT\n"
+            "accept-version:42\n"
+            "host:host.com\n"
+            "\n"
+            "\0"};
+        ExpectedFrame expected;
+        expected.SetError(StompError::Ok);
+        expected.AddHeader(StompHeader::AcceptVersion, "42");
+        expected.AddHeader(StompHeader::Host, "host.com");
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
 }
 
 // TODO: test each ctor

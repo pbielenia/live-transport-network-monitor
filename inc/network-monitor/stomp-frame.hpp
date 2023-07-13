@@ -76,12 +76,14 @@ enum class StompError {
     InvalidCommand,
     InvalidHeader,
     NoHeaderValue,
+    EmptyHeaderValue,
     MissingBodyNewline,
-    // TODO: Add enum values here
-    // ...
-    // parsing error - error in the structure of the frame
-    // validation error - parsed correctly, but missing required headers
-    //
+    MissingLastHeaderNewline,
+    UnrecognizedHeader,
+    UnterminatedBody,
+    JunkAfterBody,
+    ContentLengthsDontMatch,
+    MissingRequiredHeader
 };
 
 /*! \brief Print operator for the `StompError` class.
