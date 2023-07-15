@@ -58,22 +58,23 @@ static const auto stomp_headers_strings{MakeBimap<StompHeader, std::string_view>
 
 static const auto stomp_errors_strings{MakeBimap<StompError, std::string_view>({
     // clang-format off
-    {StompError::Ok,                         "Ok"                },
-    {StompError::UndefinedError,             "UndefinedError"},
-    {StompError::InvalidCommand,             "InvalidCommand"},
-    {StompError::InvalidHeader,              "InvalidHeader"},
-    {StompError::NoHeaderValue,              "NoHeaderValue"},
-    {StompError::EmptyHeaderValue,           "EmptyHeaderValue"},
-    {StompError::NoNewlineCharacters,        "NoNewlineCharacters"},
-    {StompError::MissingLastHeaderNewline,   "MissingLastHeaderNewline"},
-    {StompError::MissingBodyNewline,         "MissingBodyNewline"},
-    {StompError::UnrecognizedHeader,         "UnrecognizedHeader"},
-    {StompError::UnterminatedBody,           "UnterminatedBody"},
-    {StompError::JunkAfterBody,              "JunkAfterBody"},
-    {StompError::ContentLengthsDontMatch,    "ContentLengthsDontMatch"},
-    {StompError::MissingRequiredHeader,      "MissingRequiredHeader"},
-    {StompError::EmptyContent,               "EmptyContent"},
-    {StompError::MissingCommand,             "MissingCommand"}
+    {StompError::Ok,                         "Ok"                        },
+    {StompError::UndefinedError,             "UndefinedError"            },
+    {StompError::InvalidCommand,             "InvalidCommand"            },
+    {StompError::InvalidHeader,              "InvalidHeader"             },
+    {StompError::NoHeaderValue,              "NoHeaderValue"             },
+    {StompError::EmptyHeaderValue,           "EmptyHeaderValue"          },
+    {StompError::NoNewlineCharacters,        "NoNewlineCharacters"       },
+    {StompError::MissingLastHeaderNewline,   "MissingLastHeaderNewline"  },
+    {StompError::MissingBodyNewline,         "MissingBodyNewline"        },
+    {StompError::UnrecognizedHeader,         "UnrecognizedHeader"        },
+    {StompError::UnterminatedBody,           "UnterminatedBody"          },
+    {StompError::JunkAfterBody,              "JunkAfterBody"             },
+    {StompError::ContentLengthsDontMatch,    "ContentLengthsDontMatch"   },
+    {StompError::MissingRequiredHeader,      "MissingRequiredHeader"     },
+    {StompError::EmptyContent,               "EmptyContent"              },
+    {StompError::MissingCommand,             "MissingCommand"            },
+    {StompError::NoHeaderName,               "NoHeaderName"              }
     // clang-format on
 })};
 
@@ -180,39 +181,143 @@ StompFrame::StompFrame(StompError& error_code, std::string&& content)
     error_code = ValidateFrame();
 }
 
-
 StompError StompFrame::ParseFrame(const std::string_view frame)
 {
-    static const char end_of_line_character{'\n'};
+    static const char newline_character{'\n'};
     static const char colon_character{':'};
+
+    // TODO: Since std::string_view cuts off everything what comes after '\0'. See how
+    //       the creators solved this problem. I don't have any idea how to detect
+    //       the '\0' character now.
     static const char null_character{'\0'};
 
     if (frame.empty()) {
         return StompError::EmptyContent;
     }
 
-    if (frame.at(0) == end_of_line_character) {
+    if (frame.at(0) == newline_character) {
         return StompError::MissingCommand;
     }
 
-    const auto command_end = frame.find(end_of_line_character);
+    const auto command_end{frame.find(newline_character)};
     if (command_end == std::string::npos) {
         return StompError::NoNewlineCharacters;
     }
 
     // Parse command
-    const auto command_plain{frame.substr(0, command_end)};
-    const auto command{stomp_commands_strings.right.find(command_plain)};
+    auto command_plain{frame.substr(0, command_end)};
+    auto command{stomp_commands_strings.right.find(command_plain)};
     if (command == stomp_commands_strings.right.end()) {
         return StompError::InvalidCommand;
     }
     command_ = command->second;
 
     // Parse headers
-    // start from command_end + 1
+    // Headers are optional.
+    auto next_line_start{command_end + 1};
+    while (1) {
+        // Check if there's something more in the frame.
+        if (next_line_start >= frame.size()) {
+            return StompError::MissingBodyNewline;
+        }
 
+        if (frame.at(next_line_start) == newline_character) {
+            // CONNECT\n
+            // \n
+            //
+            // No headers, go parse the body.
+            break;
+        }
+        if (frame.at(next_line_start) == colon_character) {
+            // CONNECT\n
+            // :
+            return StompError::NoHeaderName;
+        }
+        if (frame.at(next_line_start) == null_character) {
+            // CONNECT\n
+            // \0
+            return StompError::MissingBodyNewline;
+        }
 
-    return StompError::InvalidCommand;
+        const auto next_colon_position{frame.find(colon_character, next_line_start)};
+        const auto next_newline_position{frame.find(newline_character, next_line_start)};
+
+        if (next_colon_position == std::string::npos) {
+            // CONNECT\n
+            // header\n
+            //       ^ no header value
+            // \n
+            // \0
+            return StompError::NoHeaderValue;
+        }
+        if (next_newline_position == std::string::npos) {
+            // CONNECT\n
+            // header:value
+            //     <-- missing newline
+            // \0
+            return StompError::MissingLastHeaderNewline;
+        }
+        if (next_newline_position < next_colon_position) {
+            // CONNECT\n
+            // header-1\n
+            //         ^ missing colon
+            // header-2:value\n
+            // \0
+            return StompError::NoHeaderValue;
+        }
+        if (frame.at(next_colon_position + 1) == frame.at(next_newline_position)) {
+            // CONNECT\n
+            // header:\n
+            //       ^ ^ missing header value
+            return StompError::EmptyHeaderValue;
+        }
+
+        // CONNECT\n
+        // header-1:
+
+        // Read header.
+        const auto header_plain{
+            frame.substr(next_line_start, next_colon_position - next_line_start)};
+        const auto header{stomp_headers_strings.right.find(header_plain)};
+        if (header == stomp_headers_strings.right.end()) {
+            return StompError::InvalidHeader;
+        }
+
+        // Find the value. It's known '\n' is in a further part, so no frame end
+        // concerns. Also the value will be no empty.
+        const auto value{frame.substr(next_colon_position + 1,
+                                      next_newline_position - next_colon_position - 1)};
+
+        headers_.emplace(header->second, value);
+        next_line_start = next_newline_position + 1;
+    }
+
+    // Parse body
+    if (next_line_start >= frame.size()) {
+        // CONNECT\n
+        // \n
+        //     <-- missing null
+        return StompError::UnterminatedBody;
+    }
+    const auto null_position{frame.find(null_character)};
+    if (null_position == std::string::npos) {
+        // CONNECT\n
+        // \n
+        // Frame body
+        //            ^ missing null
+        return StompError::UnterminatedBody;
+    }
+    if (null_position != frame.size()) {
+        // CONNECT\n
+        // \n
+        // Frame body\0junk
+        //             ^ unexpected characters
+        return StompError::JunkAfterBody;
+    }
+
+    body_ = frame.substr(next_line_start, null_position - next_line_start);
+
+    return StompError::Ok;
 }
 
 StompError StompFrame::ValidateFrame()

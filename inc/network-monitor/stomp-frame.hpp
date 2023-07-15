@@ -87,6 +87,7 @@ enum class StompError {
     MissingRequiredHeader,
     EmptyContent,
     MissingCommand,
+    NoHeaderName
 };
 
 /*! \brief Print operator for the `StompError` class.
