@@ -8,6 +8,8 @@ using NetworkMonitor::StompError;
 using NetworkMonitor::StompFrame;
 using NetworkMonitor::StompHeader;
 
+using namespace std::string_literals;
+
 BOOST_AUTO_TEST_SUITE(network_monitor);
 
 BOOST_AUTO_TEST_SUITE(stomp_frame);
@@ -233,7 +235,7 @@ void ExpectedFrame::SetBody(std::string&& body)
 void ExpectedFrame::Check(StompError parse_error, const StompFrame& parsed_frame) const
 {
     if (check_error) {
-        BOOST_CHECK_EQUAL(parse_error, expected_error);
+        BOOST_REQUIRE_EQUAL(parse_error, expected_error);
         if (expected_error != StompError::Ok) {
             BOOST_CHECK(parse_error != StompError::Ok);
             // An error occurred, so accessing other fields may be undefined.
@@ -272,7 +274,7 @@ void ExpectedFrame::CheckHeader(StompHeader header, const StompFrame& parsed_fra
 
 BOOST_AUTO_TEST_CASE(parse_empty_content)
 {
-    std::string plain{""};
+    std::string plain{""s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::EmptyContent);
@@ -291,7 +293,7 @@ BOOST_AUTO_TEST_CASE(parse_missing_command)
         "host:host.com\n"
         "content-length:0\n"
         "\n"
-        "\0"};
+        "\0"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::MissingCommand);
@@ -307,7 +309,7 @@ BOOST_AUTO_TEST_CASE(parse_missing_command_newline)
     std::string plain{
         "CONNECT"
         "accept-version:42"
-        "\0"};
+        "\0"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::NoNewlineCharacters);
@@ -320,7 +322,7 @@ BOOST_AUTO_TEST_CASE(parse_missing_command_newline)
 
 BOOST_AUTO_TEST_CASE(parse_only_command_invalid)
 {
-    std::string plain{"CONNECT\n"};
+    std::string plain{"CONNECT\n"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::MissingBodyNewline);
@@ -338,7 +340,7 @@ BOOST_AUTO_TEST_CASE(parse_well_formed)
         "accept-version:42\n"
         "host:host.com\n"
         "\n"
-        "Frame body\0"};
+        "Frame body\0"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::Ok);
@@ -361,7 +363,7 @@ BOOST_AUTO_TEST_CASE(parse_well_formed_content_length)
         "host:host.com\n"
         "content-length:10\n"
         "\n"
-        "Frame body\0"};
+        "Frame body\0"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::Ok);
@@ -384,7 +386,7 @@ BOOST_AUTO_TEST_CASE(parse_empty_body)
         "accept-version:42\n"
         "host:host.com\n"
         "\n"
-        "\0"};
+        "\0"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::Ok);
@@ -407,7 +409,7 @@ BOOST_AUTO_TEST_CASE(parse_empty_body_content_length)
         "host:host.com\n"
         "content-length:0\n"
         "\n"
-        "\0"};
+        "\0"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::Ok);
@@ -428,7 +430,7 @@ BOOST_AUTO_TEST_CASE(parse_empty_headers)
     std::string plain{
         "DISCONNECT\n"
         "\n"
-        "Frame body\0"};
+        "Frame body\0"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::Ok);
@@ -447,7 +449,7 @@ BOOST_AUTO_TEST_CASE(parse_only_command)
     std::string plain{
         "DISCONNECT\n"
         "\n"
-        "\0"};
+        "\0"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::Ok);
@@ -468,7 +470,7 @@ BOOST_AUTO_TEST_CASE(parse_invalid_command)
         "accept-version:42\n"
         "host:host.com\n"
         "\n"
-        "Frame body\0"};
+        "Frame body\0"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::InvalidCommand);
@@ -486,7 +488,7 @@ BOOST_AUTO_TEST_CASE(parse_invalid_header)
         "accept-version:42\n"
         "header_invalid:value\n"
         "\n"
-        "Frame body\0"};
+        "Frame body\0"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::InvalidHeader);
@@ -504,7 +506,7 @@ BOOST_AUTO_TEST_CASE(parse_header_no_value)
         "accept-version:42\n"
         "login\n"
         "\n"
-        "Frame body\0"};
+        "Frame body\0"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::NoHeaderValue);
@@ -520,7 +522,7 @@ BOOST_AUTO_TEST_CASE(parse_missing_body_newline_with_headers)
     std::string plain{
         "CONNECT\n"
         "accept-version:42\n"
-        "host:host.com\n"};
+        "host:host.com\n"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::MissingBodyNewline);
@@ -535,7 +537,7 @@ BOOST_AUTO_TEST_CASE(parse_missing_body_newline_no_headers)
 {
     std::string plain{
         "CONNECT\n"
-        "\0"};
+        "\0"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::MissingBodyNewline);
@@ -551,7 +553,7 @@ BOOST_AUTO_TEST_CASE(parse_missing_last_header_newline)
     std::string plain{
         "CONNECT\n"
         "accept-version:42\n"
-        "host:host.com"};
+        "host:host.com"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::MissingLastHeaderNewline);
@@ -569,7 +571,7 @@ BOOST_AUTO_TEST_CASE(parse_unrecognize_header)
         "bad-header:42\n"
         "host:host.com\n"
         "\n"
-        "\0"};
+        "\0"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::UnrecognizedHeader);
@@ -587,7 +589,7 @@ BOOST_AUTO_TEST_CASE(parse_empty_header_value)
         "accept-version:\n"
         "host:host.com\n"
         "\n"
-        "\0"};
+        "\0"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::EmptyHeaderValue);
@@ -606,7 +608,7 @@ BOOST_AUTO_TEST_CASE(parse_newline_after_command)
         "version:42\n"
         "host:host.com\n"
         "\n"
-        "Frame body\0"};
+        "Frame body\0"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::Ok);
@@ -627,7 +629,7 @@ BOOST_AUTO_TEST_CASE(parse_double_colon_in_header_line, *boost::unit_test::disab
         "accept-version:42:43\n"
         "host:host.com\n"
         "\n"
-        "Frame body\0"};
+        "Frame body\0"s};
     // StompError::Ok?
 }
 
@@ -639,7 +641,7 @@ BOOST_AUTO_TEST_CASE(parse_repeated_headers, *boost::unit_test::disabled())
         "accept-version:43\n"
         "host:host.com\n"
         "\n"
-        "Frame body\0"};
+        "Frame body\0"s};
 
     // StompError::Ok?
 }
@@ -651,7 +653,7 @@ BOOST_AUTO_TEST_CASE(parse_repeated_headers_error_in_second)
         "accept-version:42\n"
         "accept-version:\n"
         "\n"
-        "Frame body\0"};
+        "Frame body\0"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::EmptyHeaderValue);
@@ -669,7 +671,7 @@ BOOST_AUTO_TEST_CASE(parse_unterminated_body)
         "accept-version:42\n"
         "host:host.com\n"
         "\n"
-        "Frame body"};
+        "Frame body"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::UnterminatedBody);
@@ -688,7 +690,7 @@ BOOST_AUTO_TEST_CASE(parse_unterminated_body_content_length)
         "host:host.com\n"
         "content-length:10\n"
         "\n"
-        "Frame body"};
+        "Frame body"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::UnterminatedBody);
@@ -706,7 +708,7 @@ BOOST_AUTO_TEST_CASE(parse_junk_after_body)
         "accept-version:42\n"
         "host:host.com\n"
         "\n"
-        "Frame body\0\n\njunk\n"};
+        "Frame body\0\n\njunk\n"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::JunkAfterBody);
@@ -725,7 +727,7 @@ BOOST_AUTO_TEST_CASE(parse_junk_after_body_content_length)
         "host:host.com\n"
         "content-length:10\n"
         "\n"
-        "Frame body\0\n\njunk\n"};
+        "Frame body\0\n\njunk\n"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::JunkAfterBody);
@@ -743,7 +745,7 @@ BOOST_AUTO_TEST_CASE(parse_newlines_after_body)
         "accept-version:42\n"
         "host:host.com\n"
         "\n"
-        "Frame body\0\n\n\n"};
+        "Frame body\0\n\n\n"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::Ok);
@@ -766,7 +768,7 @@ BOOST_AUTO_TEST_CASE(parse_newlines_after_body_content_length)
         "host:host.com\n"
         "content-length:10\n"
         "\n"
-        "Frame body\0\n\n\n"};
+        "Frame body\0\n\n\n"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::Ok);
@@ -790,7 +792,7 @@ BOOST_AUTO_TEST_CASE(parse_content_length_wrong_number)
         "host:host.com\n"
         "content-length:9\n"  // This is one byte off
         "\n"
-        "Frame body\0"};
+        "Frame body\0"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::ContentLengthsDontMatch);
@@ -809,7 +811,7 @@ BOOST_AUTO_TEST_CASE(parse_content_length_exceeding)
         "host:host.com\n"
         "content-length:15\n"  // Way above the actual body length
         "\n"
-        "Frame body\0"};
+        "Frame body\0"s};
 
     ExpectedFrame expected;
     expected.SetError(StompError::ContentLengthsDontMatch);
@@ -827,7 +829,7 @@ BOOST_AUTO_TEST_CASE(parse_required_headers)
         std::string plain{
             "CONNECT\n"
             "\n"
-            "\0"};
+            "\0"s};
         ExpectedFrame expected;
         expected.SetError(StompError::MissingRequiredHeader);
 
@@ -840,7 +842,7 @@ BOOST_AUTO_TEST_CASE(parse_required_headers)
             "CONNECT\n"
             "accept-version:42\n"
             "\n"
-            "\0"};
+            "\0"s};
         ExpectedFrame expected;
         expected.SetError(StompError::MissingRequiredHeader);
 
@@ -854,7 +856,7 @@ BOOST_AUTO_TEST_CASE(parse_required_headers)
             "accept-version:42\n"
             "host:host.com\n"
             "\n"
-            "\0"};
+            "\0"s};
         ExpectedFrame expected;
         expected.SetError(StompError::Ok);
         expected.AddHeader(StompHeader::AcceptVersion, "42");

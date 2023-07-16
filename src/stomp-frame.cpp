@@ -185,10 +185,6 @@ StompError StompFrame::ParseFrame(const std::string_view frame)
 {
     static const char newline_character{'\n'};
     static const char colon_character{':'};
-
-    // TODO: Since std::string_view cuts off everything what comes after '\0'. See how
-    //       the creators solved this problem. I don't have any idea how to detect
-    //       the '\0' character now.
     static const char null_character{'\0'};
 
     if (frame.empty()) {
@@ -307,7 +303,7 @@ StompError StompFrame::ParseFrame(const std::string_view frame)
         //            ^ missing null
         return StompError::UnterminatedBody;
     }
-    if (null_position != frame.size()) {
+    if (null_position + 1 != frame.size()) {
         // CONNECT\n
         // \n
         // Frame body\0junk
