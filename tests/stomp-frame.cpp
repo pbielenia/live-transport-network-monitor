@@ -548,6 +548,23 @@ BOOST_AUTO_TEST_CASE(parse_missing_body_newline_no_headers)
     expected.Check(error, frame);
 }
 
+BOOST_AUTO_TEST_CASE(parse_missing_body_newline_with_body)
+{
+        std::string plain{
+        "CONNECT\n"
+        "accept-version:42\n"
+        "host:host.com\n"
+        "Frame body\0"s};
+
+    ExpectedFrame expected;
+    expected.SetError(StompError::MissingBodyNewline);
+
+    StompError error;
+    StompFrame frame{error, std::move(plain)};
+
+    expected.Check(error, frame);
+}
+
 BOOST_AUTO_TEST_CASE(parse_missing_last_header_newline)
 {
     std::string plain{
@@ -564,7 +581,7 @@ BOOST_AUTO_TEST_CASE(parse_missing_last_header_newline)
     expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_unrecognize_header)
+BOOST_AUTO_TEST_CASE(parse_unrecognized_header)
 {
     std::string plain{
         "CONNECT\n"
@@ -633,7 +650,7 @@ BOOST_AUTO_TEST_CASE(parse_double_colon_in_header_line, *boost::unit_test::disab
     // StompError::Ok?
 }
 
-BOOST_AUTO_TEST_CASE(parse_repeated_headers, *boost::unit_test::disabled())
+BOOST_AUTO_TEST_CASE(parse_repeated_headers)
 {
     std::string plain{
         "CONNECT\n"
@@ -643,7 +660,17 @@ BOOST_AUTO_TEST_CASE(parse_repeated_headers, *boost::unit_test::disabled())
         "\n"
         "Frame body\0"s};
 
-    // StompError::Ok?
+    ExpectedFrame expected;
+    expected.SetError(StompError::Ok);
+    expected.SetCommand(StompCommand::Connect);
+    expected.AddHeader(StompHeader::AcceptVersion, "42");
+    expected.AddHeader(StompHeader::Host, "host.com");
+    expected.SetBody("Frame body\0");
+
+    StompError error;
+    StompFrame frame{error, std::move(plain)};
+
+    expected.Check(error, frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_repeated_headers_error_in_second)

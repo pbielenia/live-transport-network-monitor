@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <boost/bimap.hpp>
 #include <network-monitor/stomp-frame.hpp>
 
@@ -187,6 +188,8 @@ StompError StompFrame::ParseFrame(const std::string_view frame)
     static const char colon_character{':'};
     static const char null_character{'\0'};
 
+    // Run pre-checks
+
     if (frame.empty()) {
         return StompError::EmptyContent;
     }
@@ -198,6 +201,14 @@ StompError StompFrame::ParseFrame(const std::string_view frame)
     const auto command_end{frame.find(newline_character)};
     if (command_end == std::string::npos) {
         return StompError::NoNewlineCharacters;
+    }
+
+    // If no "\n\n" pattern, then the body's newline is missing.
+    const auto double_newline_pointer = std::adjacent_find(
+        frame.begin(), frame.end(),
+        [](const auto& a, const auto& b) { return a == b && a == '\n'; });
+    if (double_newline_pointer == frame.end()) {
+        return StompError::MissingBodyNewline;
     }
 
     // Parse command
@@ -240,10 +251,9 @@ StompError StompFrame::ParseFrame(const std::string_view frame)
 
         if (next_colon_position == std::string::npos) {
             // CONNECT\n
-            // header\n
+            // header-1:value\n
+            // header-2\n
             //       ^ no header value
-            // \n
-            // \0
             return StompError::NoHeaderValue;
         }
         if (next_newline_position == std::string::npos) {
@@ -289,6 +299,14 @@ StompError StompFrame::ParseFrame(const std::string_view frame)
     }
 
     // Parse body
+
+    // CONNECT\n
+    // header-1:value
+    // \n <-- check if the newline is present
+    if (frame.at(next_line_start != newline_character)) {
+        return StompError::MissingBodyNewline;
+    }
+
     if (next_line_start >= frame.size()) {
         // CONNECT\n
         // \n
@@ -318,7 +336,10 @@ StompError StompFrame::ParseFrame(const std::string_view frame)
 
 StompError StompFrame::ValidateFrame()
 {
-    return StompError::ContentLengthsDontMatch;
+    // Check if required headers are present.
+    // if (body_.length())
+    // return StompError::ContentLengthsDontMatch;
+    return StompError::Ok;
 }
 
 StompFrame::StompFrame(const StompFrame& other)
@@ -345,24 +366,24 @@ StompFrame& StompFrame::operator=(StompFrame&& other)
 
 StompCommand StompFrame::GetCommand() const
 {
-    //
-    return StompCommand::Invalid;
+    return command_;
 }
 
 const bool StompFrame::HasHeader(const StompHeader& header) const
 {
-    //
-    return false;
+    return static_cast<bool>(headers_.count(header));
 }
 
 const std::string_view& StompFrame::GetHeaderValue(const StompHeader& header) const
 {
-    //
-    return ToStringView(StompHeader::Invalid);
+    static const std::string_view empty_header_value{""};
+    if (HasHeader(header)) {
+        return headers_.at(header);
+    }
+    return empty_header_value;
 }
 
 const std::string_view& StompFrame::GetBody() const
 {
-    //
     return body_;
 }
