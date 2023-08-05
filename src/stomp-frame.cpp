@@ -59,23 +59,23 @@ static const auto stomp_headers_strings{MakeBimap<StompHeader, std::string_view>
 
 static const auto stomp_errors_strings{MakeBimap<StompError, std::string_view>({
     // clang-format off
-    {StompError::Ok,                         "Ok"                        },
-    {StompError::UndefinedError,             "UndefinedError"            },
-    {StompError::InvalidCommand,             "InvalidCommand"            },
-    {StompError::InvalidHeader,              "InvalidHeader"             },
-    {StompError::NoHeaderValue,              "NoHeaderValue"             },
-    {StompError::EmptyHeaderValue,           "EmptyHeaderValue"          },
-    {StompError::NoNewlineCharacters,        "NoNewlineCharacters"       },
-    {StompError::MissingLastHeaderNewline,   "MissingLastHeaderNewline"  },
-    {StompError::MissingBodyNewline,         "MissingBodyNewline"        },
-    {StompError::UnrecognizedHeader,         "UnrecognizedHeader"        },
-    {StompError::UnterminatedBody,           "UnterminatedBody"          },
-    {StompError::JunkAfterBody,              "JunkAfterBody"             },
-    {StompError::ContentLengthsDontMatch,    "ContentLengthsDontMatch"   },
-    {StompError::MissingRequiredHeader,      "MissingRequiredHeader"     },
-    {StompError::EmptyContent,               "EmptyContent"              },
-    {StompError::MissingCommand,             "MissingCommand"            },
-    {StompError::NoHeaderName,               "NoHeaderName"              }
+    {StompError::Ok,                            "Ok"                            },
+    {StompError::UndefinedError,                "UndefinedError"                },
+    {StompError::InvalidCommand,                "InvalidCommand"                },
+    {StompError::InvalidHeader,                 "InvalidHeader"                 },
+    {StompError::InvalidHeaderValue,            "InvalidHeaderValue"            },
+    {StompError::NoHeaderValue,                 "NoHeaderValue"                 },
+    {StompError::EmptyHeaderValue,              "EmptyHeaderValue"              },
+    {StompError::NoNewlineCharacters,           "NoNewlineCharacters"           },
+    {StompError::MissingLastHeaderNewline,      "MissingLastHeaderNewline"      },
+    {StompError::MissingBodyNewline,            "MissingBodyNewline"            },
+    {StompError::MissingClosingNullCharacter,   "MissingClosingNullCharacter"   },
+    {StompError::JunkAfterBody,                 "JunkAfterBody"                 },
+    {StompError::ContentLengthsDontMatch,       "ContentLengthsDontMatch"       },
+    {StompError::MissingRequiredHeader,         "MissingRequiredHeader"         },
+    {StompError::NoData,                        "NoData"                        },
+    {StompError::MissingCommand,                "MissingCommand"                },
+    {StompError::NoHeaderName,                  "NoHeaderName"                  }
     // clang-format on
 })};
 
@@ -191,11 +191,15 @@ StompError StompFrame::ParseFrame(const std::string_view frame)
     // Run pre-checks
 
     if (frame.empty()) {
-        return StompError::EmptyContent;
+        return StompError::NoData;
     }
 
     if (frame.at(0) == newline_character) {
         return StompError::MissingCommand;
+    }
+
+    if (frame.back() != null_character) {
+        return StompError::MissingClosingNullCharacter;
     }
 
     const auto command_end{frame.find(newline_character)};
@@ -303,15 +307,16 @@ StompError StompFrame::ParseFrame(const std::string_view frame)
     // CONNECT\n
     // header-1:value
     // \n <-- check if the newline is present
-    if (frame.at(next_line_start != newline_character)) {
+    if (frame.at(next_line_start) != newline_character) {
         return StompError::MissingBodyNewline;
     }
+    next_line_start++;
 
     if (next_line_start >= frame.size()) {
         // CONNECT\n
         // \n
         //     <-- missing null
-        return StompError::UnterminatedBody;
+        return StompError::MissingClosingNullCharacter;
     }
     const auto null_position{frame.find(null_character)};
     if (null_position == std::string::npos) {
@@ -319,26 +324,46 @@ StompError StompFrame::ParseFrame(const std::string_view frame)
         // \n
         // Frame body
         //            ^ missing null
-        return StompError::UnterminatedBody;
-    }
-    if (null_position + 1 != frame.size()) {
-        // CONNECT\n
-        // \n
-        // Frame body\0junk
-        //             ^ unexpected characters
-        return StompError::JunkAfterBody;
+        return StompError::MissingClosingNullCharacter;
     }
 
-    body_ = frame.substr(next_line_start, null_position - next_line_start);
+    if (HasHeader(StompHeader::ContentLength)) {
+        // -2 excludes the closing null character.
+        body_ = frame.substr(next_line_start, frame.size() - next_line_start - 1);
+    } else {
+        if (null_position + 1 != frame.size()) {
+            // CONNECT\n
+            // \n
+            // Frame body\0junk
+            //             ^ unexpected characters
+            return StompError::JunkAfterBody;
+        }
+        body_ = frame.substr(next_line_start, null_position - next_line_start);
+    }
 
     return StompError::Ok;
 }
 
 StompError StompFrame::ValidateFrame()
 {
+    // Check if content-length match body_'s length.
+    if (HasHeader(StompHeader::ContentLength)) {
+        int expected_content_length{};
+        try {
+            expected_content_length =
+                std::stoi(GetHeaderValue(StompHeader::ContentLength).data());
+        } catch (const std::exception& exception) {
+            return StompError::InvalidHeaderValue;
+        }
+        if (expected_content_length != body_.length()) {
+            return StompError::ContentLengthsDontMatch;
+        }
+    }
+
     // Check if required headers are present.
     // if (body_.length())
     // return StompError::ContentLengthsDontMatch;
+
     return StompError::Ok;
 }
 
