@@ -550,7 +550,7 @@ BOOST_AUTO_TEST_CASE(parse_missing_body_newline_no_headers)
 
 BOOST_AUTO_TEST_CASE(parse_missing_body_newline_with_body)
 {
-        std::string plain{
+    std::string plain{
         "CONNECT\n"
         "accept-version:42\n"
         "host:host.com\n"
@@ -880,14 +880,466 @@ BOOST_AUTO_TEST_CASE(parse_required_headers)
     {
         std::string plain{
             "CONNECT\n"
+            "host:host.com\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "CONNECT\n"
             "accept-version:42\n"
             "host:host.com\n"
             "\n"
             "\0"s};
         ExpectedFrame expected;
         expected.SetError(StompError::Ok);
+        expected.SetCommand(StompCommand::Connect);
         expected.AddHeader(StompHeader::AcceptVersion, "42");
         expected.AddHeader(StompHeader::Host, "host.com");
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "CONNECTED\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "CONNECTED\n"
+            "version:42\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::Ok);
+        expected.SetCommand(StompCommand::Connected);
+        expected.AddHeader(StompHeader::Version, "42");
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "SEND\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "SEND\n"
+            "destination:/queue/a\n"
+            "\n"
+            "Frame body\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::Ok);
+        expected.SetCommand(StompCommand::Send);
+        expected.AddHeader(StompHeader::Destination, "/queue/a");
+        expected.SetBody("Frame body");
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "SUBSCRIBE\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "SUBSCRIBE\n"
+            "id:0\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "SUBSCRIBE\n"
+            "destination:/queue/foo\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "SUBSCRIBE\n"
+            "id:0\n"
+            "destination:/queue/foo\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::Ok);
+        expected.SetCommand(StompCommand::Subscribe);
+        expected.AddHeader(StompHeader::Destination, "/queue/foo");
+        expected.SetBody("Frame body");
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "UNSUBSCRIBE\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "UNSUBSCRIBE\n"
+            "id:0\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::Ok);
+        expected.SetCommand(StompCommand::Unsubscribe);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "ACK\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "ACK\n"
+            "id:12345\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::Ok);
+        expected.SetCommand(StompCommand::Ack);
+        expected.AddHeader(StompHeader::Id, "12345");
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "NACK\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "NACK\n"
+            "id:12345\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::Ok);
+        expected.SetCommand(StompCommand::NAck);
+        expected.AddHeader(StompHeader::Id, "12345");
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "BEGIN\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "BEGIN\n"
+            "transaction:tx1\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::Ok);
+        expected.SetCommand(StompCommand::NAck);
+        expected.AddHeader(StompHeader::Transaction, "tx1");
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "COMMIT\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "COMMIT\n"
+            "transaction:tx1\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::Ok);
+        expected.SetCommand(StompCommand::Commit);
+        expected.AddHeader(StompHeader::Transaction, "tx1");
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "ABORT\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "ABORT\n"
+            "transaction:tx1\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::Ok);
+        expected.SetCommand(StompCommand::Abort);
+        expected.AddHeader(StompHeader::Transaction, "tx1");
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "DISCONNECT\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::Ok);
+        expected.SetCommand(StompCommand::Disconnect);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "MESSAGE\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "MESSAGE\n"
+            "subscription:0\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "MESSAGE\n"
+            "message-id:007\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "MESSAGE\n"
+            "destination:/queue/a\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "MESSAGE\n"
+            "subscription:0\n"
+            "message-id:007\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "MESSAGE\n"
+            "subscription:0\n"
+            "destination:/queue/a\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+
+    {
+        std::string plain{
+            "MESSAGE\n"
+            "message-id:007\n"
+            "destination:/queue/a\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "MESSAGE\n"
+            "subscription:0\n"
+            "message-id:007\n"
+            "destination:/queue/a\n"
+            "\n"
+            "hello queue a\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::Ok);
+        expected.SetCommand(StompCommand::Message);
+        expected.AddHeader(StompHeader::Subscription, "0");
+        expected.AddHeader(StompHeader::MessageId, "007");
+        expected.AddHeader(StompHeader::Destination, "/queue/a");
+        expected.SetBody("hello queue a");
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "RECEIPT\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::MissingRequiredHeader);
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "RECEIPT\n"
+            "receipt-id:77\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::Ok);
+        expected.SetCommand(StompCommand::Receipt);
+        expected.AddHeader(StompHeader::ReceiptId, "77");
+
+        StompFrame frame{error, std::move(plain)};
+
+        expected.Check(error, frame);
+    }
+    {
+        std::string plain{
+            "ERROR\n"
+            "\n"
+            "\0"s};
+        ExpectedFrame expected;
+        expected.SetError(StompError::Ok);
+        expected.SetCommand(StompCommand::Error);
 
         StompFrame frame{error, std::move(plain)};
 
