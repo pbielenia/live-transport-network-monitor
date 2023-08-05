@@ -102,8 +102,7 @@ std::string ToString(const StompError& error);
  */
 class StompFrame {
    public:
-    /*! \brief Default constructor. Corresponds to an empty, invalid STOMP
-     *         frame.
+    /*! \brief Default constructor. Corresponds to an empty, invalid STOMP frame.
      */
     StompFrame();
 

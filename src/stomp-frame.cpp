@@ -161,30 +161,10 @@ std::string NetworkMonitor::ToString(const StompError& error)
     return std::string(ToStringView(error));
 }
 
-StompFrame::StompFrame()
-{
-    // TODO
-}
+StompFrame::StompFrame() = default;
 
 StompFrame::StompFrame(StompError& error_code, const std::string& content)
 {
-    // TODO: Avoid unnecessary re-scans of the same plain-text STOMP frame, since a single
-    //       scan should be enough to gather all the information we need.
-    // CTOR SHOULD:
-    //       - check that it is formally correct according to the protocol,
-    //       - checks that it contains the expected headers for the specific command,
-    //       - and interprets the data for later use.
-    //
-    // - Convert the STOMP command, which is a string, into the corresponding StompCommand
-    //   enum.
-    // - Organize the STOMP headers in a map so that it's easier to access a specific
-    //   header and its value when needed.
-    // - Provide a direct view into the body of the frame, which is what the user will
-    //   care about when processing the frame.
-
-    // TODO: If either a parser or validation error occur, break further parsings. No need
-    //       to reset any already set field. Return a descriptive error is sufficent.
-
     error_code = ParseFrame(content);
     if (error_code != StompError::Ok) {
         return;
@@ -199,6 +179,40 @@ StompFrame::StompFrame(StompError& error_code, std::string&& content)
         return;
     }
     error_code = ValidateFrame();
+}
+
+StompFrame::StompFrame(const StompFrame& other)
+    : plain_content_{other.plain_content_},
+      command_{other.command_},
+      headers_{other.headers_},
+      body_{other.body_}
+{
+}
+
+StompFrame::StompFrame(StompFrame&& other)
+    : plain_content_{std::move(other.plain_content_)},
+      command_{std::move(other.command_)},
+      headers_{std::move(other.headers_)},
+      body_{std::move(other.body_)}
+{
+}
+
+StompFrame& StompFrame::operator=(const StompFrame& other)
+{
+    plain_content_ = other.plain_content_;
+    command_ = other.command_;
+    headers_ = other.headers_;
+    body_ = other.body_;
+    return *this;
+}
+
+StompFrame& StompFrame::operator=(StompFrame&& other)
+{
+    plain_content_ = std::move(other.plain_content_);
+    command_ = std::move(other.command_);
+    headers_ = std::move(other.headers_);
+    body_ = std::move(other.body_);
+    return *this;
 }
 
 StompError StompFrame::ParseFrame(const std::string_view frame)
@@ -388,28 +402,6 @@ StompError StompFrame::ValidateFrame()
     }
 
     return StompError::Ok;
-}
-
-StompFrame::StompFrame(const StompFrame& other)
-{
-    //
-}
-
-StompFrame::StompFrame(StompFrame&& other)
-{
-    //
-}
-
-StompFrame& StompFrame::operator=(const StompFrame& other)
-{
-    //
-    return *this;
-}
-
-StompFrame& StompFrame::operator=(StompFrame&& other)
-{
-    //
-    return *this;
 }
 
 StompCommand StompFrame::GetCommand() const

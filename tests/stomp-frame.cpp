@@ -843,6 +843,111 @@ BOOST_AUTO_TEST_CASE(parse_invalid_content_length_value)
     expected.Check(error, frame);
 }
 
+BOOST_AUTO_TEST_CASE(copy_constructor)
+{
+    std::string plain{
+        "CONNECT\n"
+        "accept-version:42\n"
+        "host:host.com\n"
+        "content-length:10\n"
+        "\n"
+        "Frame body\0"s};
+
+    ExpectedFrame expected;
+    expected.SetError(StompError::Ok);
+    expected.AddHeader(StompHeader::AcceptVersion, "42");
+    expected.AddHeader(StompHeader::Host, "host.com");
+    expected.AddHeader(StompHeader::ContentLength, "10");
+    expected.SetBody("Frame body");
+
+    StompError error;
+    StompFrame parsed_frame{error, std::move(plain)};
+
+    expected.Check(error, parsed_frame);
+
+    const auto other_frame{parsed_frame};
+    expected.Check(error, other_frame);
+}
+
+BOOST_AUTO_TEST_CASE(move_constructor)
+{
+    std::string plain{
+        "CONNECT\n"
+        "accept-version:42\n"
+        "host:host.com\n"
+        "content-length:10\n"
+        "\n"
+        "Frame body\0"s};
+
+    ExpectedFrame expected;
+    expected.SetError(StompError::Ok);
+    expected.AddHeader(StompHeader::AcceptVersion, "42");
+    expected.AddHeader(StompHeader::Host, "host.com");
+    expected.AddHeader(StompHeader::ContentLength, "10");
+    expected.SetBody("Frame body");
+
+    StompError error;
+    StompFrame parsed_frame{error, std::move(plain)};
+
+    expected.Check(error, parsed_frame);
+
+    const auto other_frame{std::move(parsed_frame)};
+    expected.Check(error, other_frame);
+}
+
+BOOST_AUTO_TEST_CASE(move_assignment_operator)
+{
+    std::string plain{
+        "CONNECT\n"
+        "accept-version:42\n"
+        "host:host.com\n"
+        "content-length:10\n"
+        "\n"
+        "Frame body\0"s};
+
+    ExpectedFrame expected;
+    expected.SetError(StompError::Ok);
+    expected.AddHeader(StompHeader::AcceptVersion, "42");
+    expected.AddHeader(StompHeader::Host, "host.com");
+    expected.AddHeader(StompHeader::ContentLength, "10");
+    expected.SetBody("Frame body");
+
+    StompError error;
+    StompFrame parsed_frame{error, std::move(plain)};
+
+    expected.Check(error, parsed_frame);
+
+    const auto other_frame = std::move(parsed_frame);
+    expected.Check(error, other_frame);
+}
+
+BOOST_AUTO_TEST_CASE(copy_assignment_operator)
+{
+    std::string plain{
+        "CONNECT\n"
+        "accept-version:42\n"
+        "host:host.com\n"
+        "content-length:10\n"
+        "\n"
+        "Frame body\0"s};
+
+    ExpectedFrame expected;
+    expected.SetError(StompError::Ok);
+    expected.AddHeader(StompHeader::AcceptVersion, "42");
+    expected.AddHeader(StompHeader::Host, "host.com");
+    expected.AddHeader(StompHeader::ContentLength, "10");
+    expected.SetBody("Frame body");
+
+    StompError error;
+    StompFrame parsed_frame{error, std::move(plain)};
+
+    expected.Check(error, parsed_frame);
+
+    const auto other_frame = parsed_frame;
+    expected.Check(error, other_frame);
+}
+
+
 BOOST_AUTO_TEST_CASE(parse_required_headers)
 {
     StompError error;
