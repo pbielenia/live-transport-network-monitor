@@ -1004,8 +1004,8 @@ BOOST_AUTO_TEST_CASE(parse_required_headers)
         ExpectedFrame expected;
         expected.SetError(StompError::Ok);
         expected.SetCommand(StompCommand::Subscribe);
+        expected.AddHeader(StompHeader::Id, "0");
         expected.AddHeader(StompHeader::Destination, "/queue/foo");
-        expected.SetBody("Frame body");
 
         StompFrame frame{error, std::move(plain)};
 
@@ -1111,7 +1111,7 @@ BOOST_AUTO_TEST_CASE(parse_required_headers)
             "\0"s};
         ExpectedFrame expected;
         expected.SetError(StompError::Ok);
-        expected.SetCommand(StompCommand::NAck);
+        expected.SetCommand(StompCommand::Begin);
         expected.AddHeader(StompHeader::Transaction, "tx1");
 
         StompFrame frame{error, std::move(plain)};

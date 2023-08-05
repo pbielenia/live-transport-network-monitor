@@ -79,6 +79,25 @@ static const auto stomp_errors_strings{MakeBimap<StompError, std::string_view>({
     // clang-format on
 })};
 
+static const std::map<StompCommand, std::set<StompHeader>> headers_required_by_commands{
+    // clang-format off
+    {StompCommand::Connect, {StompHeader::AcceptVersion, StompHeader::Host}},
+    {StompCommand::Connected, {StompHeader::Version}},
+    {StompCommand::Send, {StompHeader::Destination}},
+    {StompCommand::Subscribe, {StompHeader::Destination, StompHeader::Id}},
+    {StompCommand::Unsubscribe, {StompHeader::Id}},
+    {StompCommand::Ack, {StompHeader::Id}},
+    {StompCommand::NAck, {StompHeader::Id}},
+    {StompCommand::Begin, {StompHeader::Transaction}},
+    {StompCommand::Commit, {StompHeader::Transaction}},
+    {StompCommand::Abort, {StompHeader::Transaction}},
+    {StompCommand::Disconnect, {}},
+    {StompCommand::Message, {StompHeader::Destination, StompHeader::MessageId, StompHeader::Subscription}},
+    {StompCommand::Receipt, {StompHeader::ReceiptId}},
+    {StompCommand::Error, {}}
+    // clang-format on
+};
+
 std::string_view ToStringView(const StompCommand& command)
 {
     const auto string_representation{stomp_commands_strings.left.find(command)};
@@ -360,9 +379,13 @@ StompError StompFrame::ValidateFrame()
         }
     }
 
-    // Check if required headers are present.
-    // if (body_.length())
-    // return StompError::ContentLengthsDontMatch;
+    // Check for required headers.
+    const auto required_headers = headers_required_by_commands.at(command_);
+    for (const auto required_header : required_headers) {
+        if (!HasHeader(required_header)) {
+            return StompError::MissingRequiredHeader;
+        }
+    }
 
     return StompError::Ok;
 }
