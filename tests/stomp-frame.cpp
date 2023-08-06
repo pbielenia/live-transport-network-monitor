@@ -1446,8 +1446,6 @@ BOOST_AUTO_TEST_CASE(parse_required_headers)
     }
 }
 
-// TODO: test each ctor
-// TODO: test copy and move operators
 // TODO: test what GetHeaderValue returns when HasHeader returns false
 // TODO: test enums' ToString and operator<<
 

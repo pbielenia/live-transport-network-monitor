@@ -44,11 +44,12 @@ target_include_directories(${NETWORK_MONITOR_LIBRARY_NAME}
 
 # Tests
 add_executable(${NETWORK_MONITOR_TESTS_EXE_NAME}
-    "${CMAKE_CURRENT_SOURCE_DIR}/tests/main.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/tests/websocket-client.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/file-downloader.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/main.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/stomp-client.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/stomp-frame.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/transport-network.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/websocket-client.cpp"
 )
 target_compile_features(${NETWORK_MONITOR_LIBRARY_NAME}
     PRIVATE
