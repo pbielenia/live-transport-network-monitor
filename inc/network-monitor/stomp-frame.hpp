@@ -159,7 +159,7 @@ class StompFrame {
    private:
     using Headers = std::unordered_map<StompHeader, std::string_view>;
 
-    StompError ParseFrame(const std::string_view frame);
+    StompError ParseFrame();
     StompError ValidateFrame();
 
     std::string plain_content_{};
