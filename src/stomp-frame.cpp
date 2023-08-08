@@ -81,20 +81,20 @@ static const auto stomp_errors_strings{MakeBimap<StompError, std::string_view>({
 
 static const std::map<StompCommand, std::set<StompHeader>> headers_required_by_commands{
     // clang-format off
-    {StompCommand::Connect, {StompHeader::AcceptVersion, StompHeader::Host}},
-    {StompCommand::Connected, {StompHeader::Version}},
-    {StompCommand::Send, {StompHeader::Destination}},
-    {StompCommand::Subscribe, {StompHeader::Destination, StompHeader::Id}},
+    {StompCommand::Connect,     {StompHeader::AcceptVersion, StompHeader::Host}},
+    {StompCommand::Connected,   {StompHeader::Version}},
+    {StompCommand::Send,        {StompHeader::Destination}},
+    {StompCommand::Subscribe,   {StompHeader::Destination, StompHeader::Id}},
     {StompCommand::Unsubscribe, {StompHeader::Id}},
-    {StompCommand::Ack, {StompHeader::Id}},
-    {StompCommand::NAck, {StompHeader::Id}},
-    {StompCommand::Begin, {StompHeader::Transaction}},
-    {StompCommand::Commit, {StompHeader::Transaction}},
-    {StompCommand::Abort, {StompHeader::Transaction}},
-    {StompCommand::Disconnect, {}},
-    {StompCommand::Message, {StompHeader::Destination, StompHeader::MessageId, StompHeader::Subscription}},
-    {StompCommand::Receipt, {StompHeader::ReceiptId}},
-    {StompCommand::Error, {}}
+    {StompCommand::Ack,         {StompHeader::Id}},
+    {StompCommand::NAck,        {StompHeader::Id}},
+    {StompCommand::Begin,       {StompHeader::Transaction}},
+    {StompCommand::Commit,      {StompHeader::Transaction}},
+    {StompCommand::Abort,       {StompHeader::Transaction}},
+    {StompCommand::Disconnect,  {}},
+    {StompCommand::Message,     {StompHeader::Destination, StompHeader::MessageId, StompHeader::Subscription}},
+    {StompCommand::Receipt,     {StompHeader::ReceiptId}},
+    {StompCommand::Error,       {}}
     // clang-format on
 };
 
