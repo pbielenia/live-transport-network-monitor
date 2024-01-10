@@ -1446,6 +1446,36 @@ BOOST_AUTO_TEST_CASE(parse_required_headers)
     }
 }
 
+BOOST_AUTO_TEST_CASE(to_string_method)
+{
+    std::string plain{
+        "MESSAGE\n"
+        "subscription:0\n"
+        "message-id:007\n"
+        "destination:/queue/a\n"
+        "\n"
+        "hello queue a\0"s};
+    const auto& plain_size{plain.size()};
+
+    StompError error;
+    StompFrame frame{error, std::move(plain)};
+
+    BOOST_REQUIRE(error == StompError::Ok);
+
+    const auto& frame_text{frame.ToString()};
+
+    // Sizes match.
+    BOOST_CHECK_EQUAL(plain_size, frame_text.size());
+    // Starts with the command.
+    BOOST_CHECK_EQUAL(frame_text.find("MESSAGE\n"), 0);
+    // Ends with the body with a new line preceding.
+    BOOST_CHECK_EQUAL(frame_text.find("\nhello queue a\0"), 59);
+    // Has all the headers in any order.
+    BOOST_CHECK(frame_text.find("subscription:0\n"));
+    BOOST_CHECK(frame_text.find("message-id:007\n"));
+    BOOST_CHECK(frame_text.find("destination:/queue/a\n"));
+}
+
 // TODO: test what GetHeaderValue returns when HasHeader returns false
 // TODO: test enums' ToString and operator<<
 

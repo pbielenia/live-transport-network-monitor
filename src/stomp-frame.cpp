@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <sstream>
 #include <boost/bimap.hpp>
 #include <network-monitor/stomp-frame.hpp>
 
@@ -430,7 +431,24 @@ const std::string_view& StompFrame::GetHeaderValue(const StompHeader& header) co
     return empty_header_value;
 }
 
+const StompFrame::Headers& StompFrame::GetAllHeaders() const
+{
+    return headers_;
+}
+
 const std::string_view& StompFrame::GetBody() const
 {
     return body_;
+}
+
+std::string StompFrame::ToString() const {
+    std::ostringstream stream;
+    stream << GetCommand() << "\n";
+    for (const auto& [header, value] : GetAllHeaders()) {
+        stream << header << ":" << value << "\n";
+    }
+    stream << "\n" << GetBody();
+    stream.put('\0');
+
+    return stream.str();
 }

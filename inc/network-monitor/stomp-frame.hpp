@@ -101,7 +101,9 @@ std::string ToString(const StompError& error);
 /* \brief STOMP frame representation, supporting STOMP v1.2.
  */
 class StompFrame {
-   public:
+  public:
+    using Headers = std::unordered_map<StompHeader, std::string_view>;
+
     /*! \brief Default constructor. Corresponds to an empty, invalid STOMP frame.
      */
     StompFrame();
@@ -148,17 +150,23 @@ class StompFrame {
 
     /*! \brief Get the value for the specified header.
      *
-     *   \returns An empty std::string_view if the header is not in the frame.
+     *  \returns An empty std::string_view if the header is not in the frame.
      */
     const std::string_view& GetHeaderValue(const StompHeader& header) const;
+
+    /*! \brief Get the values of all contained headers.
+     */
+    const Headers& GetAllHeaders() const;
 
     /*! \brief Get the frame body.
      */
     const std::string_view& GetBody() const;
 
-   private:
-    using Headers = std::unordered_map<StompHeader, std::string_view>;
+    /*! \brief Get a text representation of the frame.
+     */
+    std::string ToString() const;
 
+   private:
     StompError ParseFrame();
     StompError ValidateFrame();
 
