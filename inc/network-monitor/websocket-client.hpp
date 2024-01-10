@@ -70,6 +70,11 @@ class WebSocketClient {
      */
     void Close(std::function<void(boost::system::error_code)> on_close = nullptr);
 
+    // TODO: add brief
+    void GetServerUrl() const;
+    // TODO: add brief
+    void GetServerPort() const;
+
    private:
     void SaveProvidedCallbacks(
         std::function<void(boost::system::error_code)> on_connect = nullptr,
@@ -338,6 +343,18 @@ void WebSocketClient<Resolver, WebSocketStream>::Close(
                                       }
                                   });
     closed_ = true;
+}
+
+template <typename Resolver, typename WebSocketStream>
+void WebSocketClient<Resolver, WebSocketStream>::GetServerUrl() const
+{
+    return server_url_;
+}
+
+template <typename Resolver, typename WebSocketStream>
+void WebSocketClient<Resolver, WebSocketStream>::GetServerPort() const
+{
+    return server_port_;
 }
 
 using BoostWebSocketClient = WebSocketClient<
