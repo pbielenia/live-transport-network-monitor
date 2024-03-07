@@ -71,9 +71,9 @@ class WebSocketClient {
     void Close(std::function<void(boost::system::error_code)> on_close = nullptr);
 
     // TODO: add brief
-    void GetServerUrl() const;
+    const std::string& GetServerUrl() const;
     // TODO: add brief
-    void GetServerPort() const;
+    const std::string& GetServerPort() const;
 
    private:
     void SaveProvidedCallbacks(
@@ -346,13 +346,13 @@ void WebSocketClient<Resolver, WebSocketStream>::Close(
 }
 
 template <typename Resolver, typename WebSocketStream>
-void WebSocketClient<Resolver, WebSocketStream>::GetServerUrl() const
+const std::string& WebSocketClient<Resolver, WebSocketStream>::GetServerUrl() const
 {
     return server_url_;
 }
 
 template <typename Resolver, typename WebSocketStream>
-void WebSocketClient<Resolver, WebSocketStream>::GetServerPort() const
+const std::string& WebSocketClient<Resolver, WebSocketStream>::GetServerPort() const
 {
     return server_port_;
 }
