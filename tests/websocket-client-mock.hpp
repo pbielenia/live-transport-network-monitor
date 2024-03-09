@@ -41,7 +41,7 @@ class WebSocketClientMock {
    private:
     void MockIncomingMessages();
 
-    boost::asio::io_context& io_context_;
+    boost::asio::strand<boost::asio::io_context::executor_type> async_context_;
     const std::string server_url_;
 
     bool connected_{false};

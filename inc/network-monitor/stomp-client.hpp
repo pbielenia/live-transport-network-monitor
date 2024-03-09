@@ -173,7 +173,7 @@ class StompClient {
     std::string user_password_;
 
     WebSocketClient websocket_client_;
-    boost::asio::io_context& io_context_;
+    boost::asio::strand<boost::asio::io_context::executor_type> async_context_;
 
     bool websocket_connected_{false};
 };
@@ -185,7 +185,7 @@ StompClient<WebSocketClient>::StompClient(const std::string& url,
                                           boost::asio::io_context& io_context,
                                           boost::asio::ssl::context& tls_context)
     : websocket_client_{url, endpoint, port, io_context, tls_context},
-      io_context_{io_context}
+      async_context_{boost::asio::make_strand(io_context)}
 {
 }
 
@@ -214,14 +214,8 @@ void StompClient<WebSocketClient>::Close(std::function<void(StompClientError)> o
 {
     // TODO: log StompClient: Closing connection to STOMP server
     // TODO: clear subscriptions
-
-    // TODO: throws weird errors if otherwise
-    if (!websocket_connected_) {
-        return;
-    }
-
     websocket_client_.Close(
-        [this, &on_closed](auto result) { OnWebSocketClosed(result, on_closed); });
+        [this, on_closed](auto result) { OnWebSocketClosed(result, on_closed); });
 }
 
 template <typename WebSocketClient>
@@ -323,7 +317,7 @@ void StompClient<WebSocketClient>::OnWebSocketDisconnected(
     if (on_disconnected_callback_) {
         auto error{result ? StompClientError::WebSocketServerDisconnected
                           : StompClientError::Ok};
-        boost::asio::post(io_context_,
+        boost::asio::post(async_context_,
                           [this, error]() { on_disconnected_callback_(error); });
     }
 }
@@ -336,7 +330,7 @@ void StompClient<WebSocketClient>::OnWebSocketClosed(
     if (on_close_callback) {
         auto error{result.failed() ? StompClientError::CouldNotCloseWebSocketConnection
                                    : StompClientError::Ok};
-        boost::asio::post(io_context_,
+        boost::asio::post(async_context_,
                           [on_close_callback, error]() { on_close_callback(error); });
     }
 }
@@ -353,8 +347,8 @@ void StompClient<WebSocketClient>::CallOnConnectedCallbackWithErrorIfValid(
     StompClientError error)
 {
     if (on_connected_callback_) {
-        boost::asio::post(io_context_, [on_connected_callback = on_connected_callback_,
-                                        error]() { on_connected_callback(error); });
+        boost::asio::post(async_context_, [on_connected_callback = on_connected_callback_,
+                                           error]() { on_connected_callback(error); });
     }
 }
 

@@ -10,7 +10,7 @@ inline boost::system::error_code WebSocketClientMock::close_error_code{};
 inline std::queue<std::string> WebSocketClientMock::message_queue{};
 inline bool WebSocketClientMock::trigger_disconnection{false};
 inline std::function<void(const std::string&)> WebSocketClientMock::respond_to_send{
-    nullptr};
+    [](auto message) { return; }};
 inline std::string WebSocketClientMockForStomp::username{};
 inline std::string WebSocketClientMockForStomp::password{};
 
@@ -19,7 +19,7 @@ WebSocketClientMock::WebSocketClientMock(const std::string& url,
                                          const std::string& port,
                                          boost::asio::io_context& io_context,
                                          boost::asio::ssl::context& tls_context)
-    : io_context_{io_context},
+    : async_context_{boost::asio::make_strand(io_context)},
       server_url_{url}
 {
 }
@@ -37,14 +37,14 @@ void WebSocketClientMock::Connect(
         on_disconnected_callback_ = std::move(on_disconnected_callback);
     }
 
-    boost::asio::post(io_context_, [this, on_connected_callback]() {
+    boost::asio::post(async_context_, [this, on_connected_callback]() {
         if (on_connected_callback) {
             on_connected_callback(connect_error_code);
         }
     });
 
     if (connected_) {
-        boost::asio::post(io_context_, [this]() { MockIncomingMessages(); });
+        boost::asio::post(async_context_, [this]() { MockIncomingMessages(); });
     }
 }
 
@@ -53,7 +53,7 @@ void WebSocketClientMock::Send(
     std::function<void(boost::system::error_code)> on_sent_callback)
 {
     if (!connected_) {
-        boost::asio::post(io_context_, [on_sent_callback]() {
+        boost::asio::post(async_context_, [on_sent_callback]() {
             if (on_sent_callback) {
                 on_sent_callback(boost::asio::error::operation_aborted);
             }
@@ -61,7 +61,7 @@ void WebSocketClientMock::Send(
         return;
     }
 
-    boost::asio::post(io_context_, [this, on_sent_callback, message]() {
+    boost::asio::post(async_context_, [this, on_sent_callback, message]() {
         if (on_sent_callback) {
             on_sent_callback(send_error_code);
             respond_to_send(message);
@@ -75,14 +75,14 @@ void WebSocketClientMock::Close(
     if (connected_) {
         connected_ = false;
         // TODO: closed_ = true;
-        boost::asio::post(io_context_, [this, on_close_callback]() {
-            trigger_disconnection = true;
+        trigger_disconnection = true;
+        boost::asio::post(async_context_, [this, on_close_callback]() {
             if (on_close_callback) {
                 on_close_callback(close_error_code);
             }
         });
     } else {
-        boost::asio::post(io_context_, [this, on_close_callback]() {
+        boost::asio::post(async_context_, [this, on_close_callback]() {
             if (on_close_callback) {
                 on_close_callback(boost::asio::error::operation_aborted);
             }
@@ -99,7 +99,7 @@ void WebSocketClientMock::MockIncomingMessages()
 {
     if (!connected_ || trigger_disconnection) {
         trigger_disconnection = false;
-        boost::asio::post(io_context_, [this]() {
+        boost::asio::post(async_context_, [this]() {
             if (on_disconnected_callback_) {
                 on_disconnected_callback_(boost::asio::error::operation_aborted);
             }
@@ -107,7 +107,7 @@ void WebSocketClientMock::MockIncomingMessages()
         return;
     }
 
-    boost::asio::post(io_context_, [this]() {
+    boost::asio::post(async_context_, [this]() {
         if (!message_queue.empty()) {
             auto message{message_queue.front()};
             message_queue.pop();

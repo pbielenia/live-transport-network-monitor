@@ -39,8 +39,8 @@ StompClientTestFixture::StompClientTestFixture()
     WebSocketClientMock::connect_error_code = {};
     WebSocketClientMock::send_error_code = {};
     WebSocketClientMock::close_error_code = {};
-    WebSocketClientMockForStomp::username = {"correct_username"};
-    WebSocketClientMockForStomp::password = {"correct_password"};
+    WebSocketClientMockForStomp::username = "correct_username";
+    WebSocketClientMockForStomp::password = "correct_password";
 
     stomp_username = WebSocketClientMockForStomp::username;
     stomp_password = WebSocketClientMockForStomp::password;
@@ -51,6 +51,24 @@ StompClientTestFixture::StompClientTestFixture()
 BOOST_AUTO_TEST_SUITE(network_monitor);
 
 BOOST_FIXTURE_TEST_SUITE(stomp_client, StompClientTestFixture);
+
+// BOOST_AUTO_TEST_CASE(CallsOnConnectOnSuccess, *timeout(1))
+// {
+//     bool on_connected_called{false};
+
+//     NetworkMonitor::StompClient<WebSocketClientMockForStomp> stomp_client{
+//         url, endpoint, port, io_context, tls_context};
+
+//     auto on_connect_callback = [&on_connected_called, &stomp_client](auto result) {
+//         on_connected_called = true;
+//         BOOST_CHECK_EQUAL(result, StompClientError::Ok);
+//         stomp_client.Close();
+//     };
+//     stomp_client.Connect(stomp_username, stomp_password, on_connect_callback);
+//     io_context.run();
+
+//     BOOST_CHECK(on_connected_called);
+// }
 
 BOOST_AUTO_TEST_CASE(CallsOnConnectOnSuccess, *timeout(1))
 {
@@ -76,7 +94,7 @@ BOOST_AUTO_TEST_CASE(CallsOnConnectOnWebSocketConnectionFailure, *timeout(1))
 
     bool on_connected_called{false};
 
-    NetworkMonitor::StompClient<WebSocketClientMock> stomp_client{
+    NetworkMonitor::StompClient<WebSocketClientMockForStomp> stomp_client{
         url, endpoint, port, io_context, tls_context};
 
     auto on_connect_callback = [&on_connected_called, &stomp_client](auto result) {
@@ -90,20 +108,20 @@ BOOST_AUTO_TEST_CASE(CallsOnConnectOnWebSocketConnectionFailure, *timeout(1))
     BOOST_CHECK(on_connected_called);
 }
 
-BOOST_AUTO_TEST_CASE(ConnectsToServerWithNoOnConnectedCallback,
+BOOST_AUTO_TEST_CASE(DoesNotNeedOnConnectedCallbackToMakeConnection,
                      *boost::unit_test::disabled())
 {
     // TODO
 }
 
-BOOST_AUTO_TEST_CASE(FailsToAuthenticate)
+BOOST_AUTO_TEST_CASE(CallsOnDisconnectedAtStompAuthenticationFailure, *timeout(1))
 {
     std::string invalid_password = "invalid_password";
 
     bool on_connected_called{false};
     bool on_disconnected_called{false};
 
-    NetworkMonitor::StompClient<WebSocketClientMock> stomp_client{
+    NetworkMonitor::StompClient<WebSocketClientMockForStomp> stomp_client{
         url, endpoint, port, io_context, tls_context};
 
     auto on_connected_callback = [&on_connected_called, &stomp_client](auto result) {
@@ -115,12 +133,56 @@ BOOST_AUTO_TEST_CASE(FailsToAuthenticate)
         BOOST_CHECK_EQUAL(result, StompClientError::WebSocketServerDisconnected);
     };
 
-    stomp_client.Connect(stomp_username, stomp_password, on_connected_callback,
+    stomp_client.Connect(stomp_username, invalid_password, on_connected_callback,
                          on_disconnected_callback);
     io_context.run();
 
     BOOST_CHECK(!on_connected_called);
     BOOST_CHECK(on_disconnected_called);
+}
+
+BOOST_AUTO_TEST_CASE(CallsOnCloseWhenClosed, *timeout(1))
+{
+    NetworkMonitor::StompClient<WebSocketClientMockForStomp> stomp_client{
+        url, endpoint, port, io_context, tls_context};
+
+    bool closed{false};
+
+    auto on_close_callback{[&closed](auto result) {
+        closed = true;
+        BOOST_CHECK_EQUAL(result, StompClientError::Ok);
+    }};
+    auto on_connect_callback{[&stomp_client, &on_close_callback](auto result) {
+        BOOST_REQUIRE_EQUAL(result, StompClientError::Ok);
+        stomp_client.Close(on_close_callback);
+    }};
+
+    stomp_client.Connect(stomp_username, stomp_password, on_connect_callback);
+    io_context.run();
+    BOOST_CHECK(closed);
+}
+
+BOOST_AUTO_TEST_CASE(DoesNotNeedOnCloseCallbackToCloseConnection,
+                     *boost::unit_test::disabled())
+{
+    // TODO
+}
+
+BOOST_AUTO_TEST_CASE(CallsOnCloseWithErrorWhenCloseInvokedWhenNotConnected, *timeout(1))
+{
+    NetworkMonitor::StompClient<WebSocketClientMockForStomp> stomp_client{
+        url, endpoint, port, io_context, tls_context};
+
+    bool closed{false};
+
+    auto on_close_callback{[&closed](auto result) {
+        closed = true;
+        BOOST_CHECK_EQUAL(result, StompClientError::CouldNotCloseWebSocketConnection);
+    }};
+
+    stomp_client.Close(on_close_callback);
+    io_context.run();
+    BOOST_CHECK(closed);
 }
 
 /* StompClient::Connect()
