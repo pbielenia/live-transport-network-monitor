@@ -5,6 +5,7 @@
 
 #include "websocket-client-mock.hpp"
 
+using NetworkMonitor::StompClientError;
 using NetworkMonitor::StompCommand;
 using NetworkMonitor::StompError;
 using NetworkMonitor::StompFrame;
@@ -12,35 +13,47 @@ using NetworkMonitor::StompHeader;
 using NetworkMonitor::WebSocketClientMock;
 using NetworkMonitor::WebSocketClientMockForStomp;
 
+using timeout = boost::unit_test::timeout;
+
 struct StompClientTestFixture {
-    StompClientTestFixture()
-    {
-        WebSocketClientMockForStomp::username = "John";
-        WebSocketClientMockForStomp::password = "1234";
-        WebSocketClientMock::connect_error_code = {};
-        WebSocketClientMock::send_error_code = {};
-    }
+    StompClientTestFixture();
+
+    static void SetStompCredentials(const std::string& username,
+                                    const std::string& password);
+    static const std::string& GetStompUsername();
+    static const std::string& GetStompPassword();
+
+    std::string url{"some.echo-server.com"};
+    std::string endpoint{"/"};
+    std::string port{"443"};
+    std::string stomp_username{};
+    std::string stomp_password{};
+
+    boost::asio::ssl::context tls_context;
+    boost::asio::io_context io_context{};
 };
+
+StompClientTestFixture::StompClientTestFixture()
+    : tls_context{boost::asio::ssl::context::tlsv12_client}
+{
+    WebSocketClientMock::connect_error_code = {};
+    WebSocketClientMock::send_error_code = {};
+    WebSocketClientMock::close_error_code = {};
+    WebSocketClientMockForStomp::username = {"correct_username"};
+    WebSocketClientMockForStomp::password = {"correct_password"};
+
+    stomp_username = WebSocketClientMockForStomp::username;
+    stomp_password = WebSocketClientMockForStomp::password;
+
+    tls_context.load_verify_file(TESTS_CACERT_PEM);
+}
 
 BOOST_AUTO_TEST_SUITE(network_monitor);
 
 BOOST_FIXTURE_TEST_SUITE(stomp_client, StompClientTestFixture);
 
-BOOST_AUTO_TEST_CASE(CallsOnConnectOnSuccess)
+BOOST_AUTO_TEST_CASE(CallsOnConnectOnSuccess, *timeout(1))
 {
-    const std::string url{"some.echo-server.com"};
-    const std::string endpoint{"/"};
-    const std::string port{"443"};
-    const std::string username{"John"};
-    const std::string password{"1234"};
-
-    WebSocketClientMockForStomp::username = username;
-    WebSocketClientMockForStomp::password = password;
-
-    boost::asio::ssl::context tls_context{boost::asio::ssl::context::tlsv12_client};
-    tls_context.load_verify_file(TESTS_CACERT_PEM);
-    boost::asio::io_context io_context{};
-
     bool on_connected_called{false};
 
     NetworkMonitor::StompClient<WebSocketClientMockForStomp> stomp_client{
@@ -48,61 +61,87 @@ BOOST_AUTO_TEST_CASE(CallsOnConnectOnSuccess)
 
     auto on_connect_callback = [&on_connected_called, &stomp_client](auto result) {
         on_connected_called = true;
-        BOOST_CHECK_EQUAL(result, NetworkMonitor::StompClientError::Ok);
+        BOOST_CHECK_EQUAL(result, StompClientError::Ok);
         stomp_client.Close();
     };
-    stomp_client.Connect(username, password, on_connect_callback);
+    stomp_client.Connect(stomp_username, stomp_password, on_connect_callback);
     io_context.run();
 
     BOOST_CHECK(on_connected_called);
 }
 
-// BOOST_AUTO_TEST_CASE(CallsOnConnectOnFailure)
-// {
-//     const std::string url{"some.echo-server.com"};
-//     const std::string endpoint{"/"};
-//     const std::string port{"443"};
+BOOST_AUTO_TEST_CASE(CallsOnConnectOnWebSocketConnectionFailure, *timeout(1))
+{
+    WebSocketClientMock::connect_error_code = boost::asio::ssl::error::stream_truncated;
 
-//     boost::asio::ssl::context tls_context{boost::asio::ssl::context::tlsv12_client};
-//     tls_context.load_verify_file(TESTS_CACERT_PEM);
-//     boost::asio::io_context io_context{};
+    bool on_connected_called{false};
 
-//     WebSocketClientMock::connect_error_code = boost::asio::error::host_not_found;
+    NetworkMonitor::StompClient<WebSocketClientMock> stomp_client{
+        url, endpoint, port, io_context, tls_context};
 
-//     bool on_connected_called{false};
+    auto on_connect_callback = [&on_connected_called, &stomp_client](auto result) {
+        on_connected_called = true;
+        BOOST_CHECK_EQUAL(result, StompClientError::CouldNotConnectToWebSocketServer);
+        stomp_client.Close();
+    };
+    stomp_client.Connect(stomp_username, stomp_password, on_connect_callback);
+    io_context.run();
 
-//     auto on_connect_callback = [&on_connected_called](auto result) {
-//         on_connected_called = true;
-//         BOOST_CHECK_EQUAL(result, WebSocketClientMock::connect_error_code);
-//     };
+    BOOST_CHECK(on_connected_called);
+}
 
-//     NetworkMonitor::StompClient<WebSocketClientMock> stomp_client{
-//         url, endpoint, port, io_context, tls_context};
-//     stomp_client.Connect(on_connect_callback);
-//     io_context.run();
+BOOST_AUTO_TEST_CASE(ConnectsToServerWithNoOnConnectedCallback,
+                     *boost::unit_test::disabled())
+{
+    // TODO
+}
 
-//     BOOST_CHECK(on_connected_called);
-// }
+BOOST_AUTO_TEST_CASE(FailsToAuthenticate)
+{
+    std::string invalid_password = "invalid_password";
+
+    bool on_connected_called{false};
+    bool on_disconnected_called{false};
+
+    NetworkMonitor::StompClient<WebSocketClientMock> stomp_client{
+        url, endpoint, port, io_context, tls_context};
+
+    auto on_connected_callback = [&on_connected_called, &stomp_client](auto result) {
+        on_connected_called = true;
+    };
+    auto on_disconnected_callback = [&on_disconnected_called,
+                                     &stomp_client](auto result) {
+        on_disconnected_called = true;
+        BOOST_CHECK_EQUAL(result, StompClientError::WebSocketServerDisconnected);
+    };
+
+    stomp_client.Connect(stomp_username, stomp_password, on_connected_callback,
+                         on_disconnected_callback);
+    io_context.run();
+
+    BOOST_CHECK(!on_connected_called);
+    BOOST_CHECK(on_disconnected_called);
+}
 
 /* StompClient::Connect()
  * - on_connected invoked with success
  * - on_connected invoked with failure
- * - on_message invoked - it needs the Subscribe() first, isn't it?
  * - on_disconnect invoked
  *
  * StompClient::Close()
- * - on_close invoked
+ * - on_close invoked with success
+ * - on_close invoked with failure
  *
  * StompClient::Subscribe()
  * - on_subscribe called success
  * - on_subscribe called failure
+ * - on_message invoked
+ * - subcribe to one destination and receive message
+ * - subscribe to two destination and receive messages
  *
- *
- * - on_subscribe + on_message
+ * - on_disconnect callback called at STOMP bad authentication
+ * - on_disconnect callback called at server connection lost
  */
-
-// TODO: trigger client/server disconnection (which one? maybe both in separate test
-// cases?)
 
 BOOST_AUTO_TEST_SUITE_END();  // stomp_client
 

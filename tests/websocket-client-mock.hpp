@@ -66,6 +66,8 @@ class WebSocketClientMockForStomp : public WebSocketClientMock {
                                 boost::asio::io_context& io_context,
                                 boost::asio::ssl::context& tls_context);
 
+    const std::string stomp_version{"1.4"};
+
    private:
     void OnMessage(const std::string& message);
     bool ConnectFrameIsAuthenticated(const NetworkMonitor::StompFrame& frame);

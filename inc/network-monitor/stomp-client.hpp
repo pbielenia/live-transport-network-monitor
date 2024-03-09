@@ -19,6 +19,7 @@ enum class StompClientError {
     CouldNotSendConnectFrame,
     CouldNotParseMessageAsStompFrame,
     CouldNotCloseWebSocketConnection,
+    WebSocketServerDisconnected,
     UndefinedError
     // TODO
 };
@@ -41,6 +42,7 @@ static const auto stomp_client_error_strings{
         {StompClientError::CouldNotSendConnectFrame,              "CouldNotSendConnectFrame"              },
         {StompClientError::CouldNotParseMessageAsStompFrame,      "CouldNotParseMessageAsStompFrame"      },
         {StompClientError::CouldNotCloseWebSocketConnection,      "CouldNotCloseWebSocketConnection"      },
+        {StompClientError::WebSocketServerDisconnected,           "WebSocketServerDisconnected"           },
         {StompClientError::UndefinedError,                        "UndefinedError"                        }
     })
     // clang-format on
@@ -212,6 +214,12 @@ void StompClient<WebSocketClient>::Close(std::function<void(StompClientError)> o
 {
     // TODO: log StompClient: Closing connection to STOMP server
     // TODO: clear subscriptions
+
+    // TODO: throws weird errors if otherwise
+    if (!websocket_connected_) {
+        return;
+    }
+
     websocket_client_.Close(
         [this, &on_closed](auto result) { OnWebSocketClosed(result, on_closed); });
 }
@@ -310,7 +318,14 @@ template <typename WebSocketClient>
 void StompClient<WebSocketClient>::OnWebSocketDisconnected(
     boost::system::error_code result)
 {
-    //
+    // TODO: log: StompClient: WebSocket connection disconnected: {result.message()}
+    websocket_connected_ = false;
+    if (on_disconnected_callback_) {
+        auto error{result ? StompClientError::WebSocketServerDisconnected
+                          : StompClientError::Ok};
+        boost::asio::post(io_context_,
+                          [this, error]() { on_disconnected_callback_(error); });
+    }
 }
 
 template <typename WebSocketClient>

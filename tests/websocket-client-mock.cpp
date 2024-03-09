@@ -4,8 +4,6 @@
 
 using namespace NetworkMonitor;
 
-inline std::string WebSocketClientMockForStomp::username{};
-inline std::string WebSocketClientMockForStomp::password{};
 inline boost::system::error_code WebSocketClientMock::connect_error_code{};
 inline boost::system::error_code WebSocketClientMock::send_error_code{};
 inline boost::system::error_code WebSocketClientMock::close_error_code{};
@@ -13,6 +11,8 @@ inline std::queue<std::string> WebSocketClientMock::message_queue{};
 inline bool WebSocketClientMock::trigger_disconnection{false};
 inline std::function<void(const std::string&)> WebSocketClientMock::respond_to_send{
     nullptr};
+inline std::string WebSocketClientMockForStomp::username{};
+inline std::string WebSocketClientMockForStomp::password{};
 
 WebSocketClientMock::WebSocketClientMock(const std::string& url,
                                          const std::string& endpoint,
@@ -29,9 +29,9 @@ void WebSocketClientMock::Connect(
     std::function<void(boost::system::error_code, std::string&&)> on_message_callback,
     std::function<void(boost::system::error_code)> on_disconnected_callback)
 {
-    // TODO: pass error code in `on_connected_callback_` and do not follow with
-    // `MockIncomingMessages`
-    if (!connect_error_code.failed()) {
+    if (connect_error_code.failed()) {
+        connected_ = false;
+    } else {
         connected_ = true;
         on_message_callback_ = std::move(on_message_callback);
         on_disconnected_callback_ = std::move(on_disconnected_callback);
@@ -43,7 +43,9 @@ void WebSocketClientMock::Connect(
         }
     });
 
-    boost::asio::post(io_context_, [this]() { MockIncomingMessages(); });
+    if (connected_) {
+        boost::asio::post(io_context_, [this]() { MockIncomingMessages(); });
+    }
 }
 
 void WebSocketClientMock::Send(
@@ -71,16 +73,16 @@ void WebSocketClientMock::Close(
     std::function<void(boost::system::error_code)> on_close_callback)
 {
     if (connected_) {
+        connected_ = false;
+        // TODO: closed_ = true;
         boost::asio::post(io_context_, [this, on_close_callback]() {
-            connected_ = false;
-            // TODO: closed_ = true;
             trigger_disconnection = true;
             if (on_close_callback) {
                 on_close_callback(close_error_code);
             }
         });
     } else {
-        boost::asio::post(io_context_, [on_close_callback]() {
+        boost::asio::post(io_context_, [this, on_close_callback]() {
             if (on_close_callback) {
                 on_close_callback(boost::asio::error::operation_aborted);
             }
@@ -98,7 +100,9 @@ void WebSocketClientMock::MockIncomingMessages()
     if (!connected_ || trigger_disconnection) {
         trigger_disconnection = false;
         boost::asio::post(io_context_, [this]() {
-            on_disconnected_callback_(boost::asio::error::operation_aborted);
+            if (on_disconnected_callback_) {
+                on_disconnected_callback_(boost::asio::error::operation_aborted);
+            }
         });
         return;
     }
@@ -131,7 +135,8 @@ void WebSocketClientMockForStomp::OnMessage(const std::string& message)
     StompError error;
     StompFrame frame{error, message};
     if (error != StompError::Ok) {
-        // TODO: trigger disconnection
+        // TODO: log
+        trigger_disconnection = true;
         return;
     }
 
@@ -140,13 +145,15 @@ void WebSocketClientMockForStomp::OnMessage(const std::string& message)
         case StompCommand::Stomp:
         case StompCommand::Connect: {
             if (ConnectFrameIsAuthenticated(frame)) {
-                const std::string stomp_version{"1.4"};
                 message_queue.push(
                     stomp_frame::MakeConnectedFrame(stomp_version, {}, {}, {})
                         .ToString());
-                // TODO: else MakeErrorFrame and trigger disconnection
-                break;
+            } else {
+                message_queue.push(
+                    stomp_frame::MakeErrorFrame("Authentication failure", {}).ToString());
+                trigger_disconnection = true;
             }
+            break;
         }
         case StompCommand::Subscribe: {
             // TODO
