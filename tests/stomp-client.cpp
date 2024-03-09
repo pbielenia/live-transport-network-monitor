@@ -34,7 +34,8 @@ class WebSocketClientMock {
         std::function<void(boost::system::error_code, std::string&&)> on_message_callback,
         std::function<void(boost::system::error_code)> on_disconnected_callback)
     {
-        // TODO: pass error code in `on_connected_callback_` and do not follow with `MockIncomingMessages`
+        // TODO: pass error code in `on_connected_callback_` and do not follow with
+        // `MockIncomingMessages`
         if (!connect_error_code.failed()) {
             connected_ = true;
             on_message_callback_ = std::move(on_message_callback);
@@ -47,9 +48,7 @@ class WebSocketClientMock {
             }
         });
 
-        boost::asio::post(io_context_, [this](){
-            MockIncomingMessages();
-        });
+        boost::asio::post(io_context_, [this]() { MockIncomingMessages(); });
     }
 
     void Send(const std::string& message,
@@ -75,7 +74,7 @@ class WebSocketClientMock {
     void Close(std::function<void(boost::system::error_code)> on_close_callback = nullptr)
     {
         if (connected_) {
-            boost::asio::post(io_context_, [this, on_close_callback](){
+            boost::asio::post(io_context_, [this, on_close_callback]() {
                 connected_ = false;
                 // TODO: closed_ = true;
                 trigger_disconnection = true;
@@ -92,10 +91,7 @@ class WebSocketClientMock {
         }
     }
 
-    const std::string& GetServerUrl() const
-    {
-        return server_url_;
-    }
+    const std::string& GetServerUrl() const { return server_url_; }
 
    private:
     void MockIncomingMessages()
@@ -108,7 +104,7 @@ class WebSocketClientMock {
             return;
         }
 
-        boost::asio::post(io_context_, [this](){
+        boost::asio::post(io_context_, [this]() {
             if (!message_queue.empty()) {
                 auto message{message_queue.front()};
                 message_queue.pop();
@@ -129,21 +125,20 @@ class WebSocketClientMock {
 };
 
 class WebSocketClientMockForStomp : public WebSocketClientMock {
-public:
-    WebSocketClientMockForStomp(
-        const std::string& url,
-        const std::string& endpoint,
-        const std::string& port,
-        boost::asio::io_context& io_context,
-        boost::asio::ssl::context& tls_context
-    ) : WebSocketClientMock(url, endpoint, port, io_context, tls_context) {
-        respond_to_send = [this](auto message) {
-            OnMessage(message);
-        };
+   public:
+    WebSocketClientMockForStomp(const std::string& url,
+                                const std::string& endpoint,
+                                const std::string& port,
+                                boost::asio::io_context& io_context,
+                                boost::asio::ssl::context& tls_context)
+        : WebSocketClientMock(url, endpoint, port, io_context, tls_context)
+    {
+        respond_to_send = [this](auto message) { OnMessage(message); };
     }
-    
-private:
-    void OnMessage(const std::string& message) {
+
+   private:
+    void OnMessage(const std::string& message)
+    {
         StompError error;
         StompFrame frame{error, message};
         if (error != StompError::Ok) {
@@ -157,7 +152,9 @@ private:
             case StompCommand::Connect: {
                 if (ConnectFrameIsAuthenticated(frame)) {
                     const std::string stomp_version{"1.4"};
-                    message_queue.push(NetworkMonitor::stomp_frame::MakeConnectedFrame(stomp_version, {}, {}, {}).ToString());
+                    message_queue.push(NetworkMonitor::stomp_frame::MakeConnectedFrame(
+                                           stomp_version, {}, {}, {})
+                                           .ToString());
                     // TODO: else MakeErrorFrame and trigger disconnection
                     break;
                 }
@@ -171,14 +168,17 @@ private:
             }
         }
     }
-    
-    bool ConnectFrameIsAuthenticated(const NetworkMonitor::StompFrame& frame) {
+
+    bool ConnectFrameIsAuthenticated(const NetworkMonitor::StompFrame& frame)
+    {
         using namespace NetworkMonitor;
-        if (!frame.HasHeader(StompHeader::Login) || !frame.HasHeader(StompHeader::Passcode)) {
+        if (!frame.HasHeader(StompHeader::Login) ||
+            !frame.HasHeader(StompHeader::Passcode)) {
             return false;
         }
         bool authentication_matches{
-            frame.GetHeaderValue(StompHeader::Login) == username && frame.GetHeaderValue(StompHeader::Passcode) == password};
+            frame.GetHeaderValue(StompHeader::Login) == username &&
+            frame.GetHeaderValue(StompHeader::Passcode) == password};
         return authentication_matches;
     }
 };
@@ -190,7 +190,8 @@ inline boost::system::error_code WebSocketClientMock::send_error_code{};
 inline boost::system::error_code WebSocketClientMock::close_error_code{};
 inline std::queue<std::string> WebSocketClientMock::message_queue{};
 inline bool WebSocketClientMock::trigger_disconnection{false};
-inline std::function<void(const std::string&)> WebSocketClientMock::respond_to_send{nullptr};
+inline std::function<void(const std::string&)> WebSocketClientMock::respond_to_send{
+    nullptr};
 
 struct StompClientTestFixture {
     StompClientTestFixture()
@@ -281,7 +282,8 @@ BOOST_AUTO_TEST_CASE(CallsOnConnectOnSuccess)
  * - on_subscribe + on_message
  */
 
-// TODO: trigger client/server disconnection (which one? maybe both in separate test cases?)
+// TODO: trigger client/server disconnection (which one? maybe both in separate test
+// cases?)
 
 BOOST_AUTO_TEST_SUITE_END();  // stomp_client
 
