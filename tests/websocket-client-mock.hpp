@@ -60,6 +60,11 @@ class WebSocketClientMockForStomp : public WebSocketClientMock {
     static std::string username;
     static std::string password;
 
+    /*! \brief `endpoint` static member is used to test if StompClient passes endpoint
+     *         correctly.
+     */
+    static std::string endpoint;
+
     WebSocketClientMockForStomp(const std::string& url,
                                 const std::string& endpoint,
                                 const std::string& port,
@@ -70,7 +75,11 @@ class WebSocketClientMockForStomp : public WebSocketClientMock {
 
    private:
     void OnMessage(const std::string& message);
-    bool ConnectFrameIsAuthenticated(const NetworkMonitor::StompFrame& frame);
+    void HandleConnectMessage(const NetworkMonitor::StompFrame& frame);
+    void HandleSubscribeMessage(const NetworkMonitor::StompFrame& frame);
+
+    bool ConnectFrameIsValid(const NetworkMonitor::StompFrame& frame);
+    bool SubscribeFrameIsValid(const NetworkMonitor::StompFrame& frame);
 };
 
 }  // namespace NetworkMonitor
