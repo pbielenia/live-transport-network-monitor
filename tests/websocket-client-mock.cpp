@@ -161,7 +161,7 @@ void WebSocketClientMockForStomp::OnMessage(const std::string& message)
 void WebSocketClientMockForStomp::HandleConnectMessage(
     const NetworkMonitor::StompFrame& frame)
 {
-    if (ConnectFrameIsValid(frame)) {
+    if (FrameIsValidConnect(frame)) {
         message_queue.push(
             stomp_frame::MakeConnectedFrame(stomp_version, {}, {}, {}).ToString());
     } else {
@@ -174,7 +174,7 @@ void WebSocketClientMockForStomp::HandleConnectMessage(
 void WebSocketClientMockForStomp::HandleSubscribeMessage(
     const NetworkMonitor::StompFrame& frame)
 {
-    if (SubscribeFrameIsValid(frame)) {
+    if (FrameIsValidSubscribe(frame)) {
         auto receipt_id = frame.GetHeaderValue(StompHeader::Receipt);
         auto subscription_id = frame.GetHeaderValue(StompHeader::Id);
         // TODO: add log MockStompServer: __func__: Sending receipt
@@ -187,18 +187,17 @@ void WebSocketClientMockForStomp::HandleSubscribeMessage(
     }
 }
 
-bool WebSocketClientMockForStomp::ConnectFrameIsValid(
+bool WebSocketClientMockForStomp::FrameIsValidConnect(
     const NetworkMonitor::StompFrame& frame)
 {
     if (!frame.HasHeader(StompHeader::Login) || !frame.HasHeader(StompHeader::Passcode)) {
         return false;
     }
-    bool authentication_matches{frame.GetHeaderValue(StompHeader::Login) == username &&
-                                frame.GetHeaderValue(StompHeader::Passcode) == password};
-    return authentication_matches;
+    return frame.GetHeaderValue(StompHeader::Login) == username &&
+           frame.GetHeaderValue(StompHeader::Passcode) == password;
 }
 
-bool WebSocketClientMockForStomp::SubscribeFrameIsValid(
+bool WebSocketClientMockForStomp::FrameIsValidSubscribe(
     const NetworkMonitor::StompFrame& frame)
 {
     return (frame.GetHeaderValue(StompHeader::Destination) == endpoint &&

@@ -181,6 +181,7 @@ class StompClient {
 
     void HandleStompConnected(StompFrame&& frame);
     void HandleStompReceipt(StompFrame&& frame);
+    void HandleStompMessage(StompFrame&& frame);
 
     void CallOnConnectedCallbackWithErrorIfValid(StompClientError error);
 
@@ -339,6 +340,8 @@ void StompClient<WebSocketClient>::OnWebSocketMessageReceived(
         case StompCommand::Receipt:
             HandleStompReceipt(std::move(frame));
             break;
+        case StompCommand::Message:
+            HandleStompMessage(std::move(frame));
         // TODO
         default: {
             // TODO: log StompClient: Unexpected STOMP command: {frame.GetCommand()}
@@ -412,6 +415,7 @@ void StompClient<WebSocketClient>::HandleStompConnected(StompFrame&& frame)
 template <typename WebSocketClient>
 void StompClient<WebSocketClient>::HandleStompReceipt(StompFrame&& frame)
 {
+    // Supports only SUBSCRIBE frame.
     auto subscription_id{frame.GetHeaderValue(StompHeader::ReceiptId)};
     auto subscription_iterator{subscriptions_.find(std::string(subscription_id))};
     if (subscription_iterator == subscriptions_.end()) {
@@ -427,6 +431,39 @@ void StompClient<WebSocketClient>::HandleStompReceipt(StompFrame&& frame)
                              subscription_id = std::string(subscription_id)]() mutable {
                 on_subscribe(StompClientError::Ok, std::move(subscription_id));
             });
+    }
+}
+
+template <typename WebSocketClient>
+void StompClient<WebSocketClient>::HandleStompMessage(StompFrame&& frame)
+{
+    // Find the subscription
+    auto destination = frame.GetHeaderValue(StompHeader::Destination);
+    auto message_id = frame.GetHeaderValue(StompHeader::MessageId);
+    auto subscription_id = std::string(frame.GetHeaderValue(StompHeader::Subscription));
+
+    if (destination.empty() || message_id.empty() || subscription_id.empty()) {
+        // TODO: add error log
+        return;
+    }
+
+    if (!subscriptions_.count(subscription_id)) {
+        // TODO: add error log
+        return;
+    }
+    auto& subscription = subscriptions_.at(subscription_id);
+
+    if (subscription.destination != destination) {
+        // TODO: add error log
+        return;
+    }
+
+    if (subscription.on_message_callback) {
+        boost::asio::post(async_context_,
+                          [on_message = subscription.on_message_callback,
+                           message_body = std::string(frame.GetBody())]() {
+                              on_message(StompClientError::Ok, std::string(message_body));
+                          });
     }
 }
 

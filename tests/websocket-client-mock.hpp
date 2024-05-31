@@ -78,8 +78,8 @@ class WebSocketClientMockForStomp : public WebSocketClientMock {
     void HandleConnectMessage(const NetworkMonitor::StompFrame& frame);
     void HandleSubscribeMessage(const NetworkMonitor::StompFrame& frame);
 
-    bool ConnectFrameIsValid(const NetworkMonitor::StompFrame& frame);
-    bool SubscribeFrameIsValid(const NetworkMonitor::StompFrame& frame);
+    bool FrameIsValidConnect(const NetworkMonitor::StompFrame& frame);
+    bool FrameIsValidSubscribe(const NetworkMonitor::StompFrame& frame);
 };
 
 }  // namespace NetworkMonitor
