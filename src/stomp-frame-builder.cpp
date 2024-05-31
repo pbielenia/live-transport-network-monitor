@@ -27,7 +27,7 @@ std::string ParseHeaders(const StompFrame::Headers& headers)
     for (const auto [header, value] : headers) {
         parsed.append(ToString(header));
         parsed.append(":");
-        parsed.append(value);
+        value.empty() ? parsed.append("\"\"") : parsed.append(value);
         parsed.append("\n");
     }
     parsed.push_back('\n');

@@ -76,6 +76,22 @@ BOOST_AUTO_TEST_CASE(BuildsFullFrame)
     BOOST_CHECK_EQUAL(frame.GetBody(), "Frame body");
 }
 
+BOOST_AUTO_TEST_CASE(InsertsQuotesAtEmptySpecifiedHeaders)
+{
+    stomp_frame::BuildParameters parameters(StompCommand::Connect);
+    parameters.headers.emplace(StompHeader::AcceptVersion, "1.2");
+    parameters.headers.emplace(StompHeader::Host, "host.com");
+    parameters.headers.emplace(StompHeader::Login, "");
+    parameters.headers.emplace(StompHeader::Passcode, "");
+
+    StompError error_code;
+    auto frame = stomp_frame::Build(error_code, parameters);
+
+    BOOST_CHECK_EQUAL(error_code, StompError::Ok);
+    BOOST_CHECK(frame.ToString().find("login:\"\"\n"));
+    BOOST_CHECK(frame.ToString().find("passcode:\"\"\n"));
+}
+
 BOOST_AUTO_TEST_SUITE_END();  // stomp_frame_builder
 
 BOOST_AUTO_TEST_SUITE_END();  // network_monitor
