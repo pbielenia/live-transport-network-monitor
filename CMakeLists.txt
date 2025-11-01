@@ -6,13 +6,7 @@ project(network-monitor)
 set(NETWORK_MONITOR_LIBRARY_NAME ${PROJECT_NAME})
 set(NETWORK_MONITOR_TESTS_EXE_NAME ${PROJECT_NAME}-tests)
 
-set(CMAKE_BUILD_TYPE Debug)
-
-# Dependencies
-if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/conaninfo.txt)
-    list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_BINARY_DIR}")
-endif()
-find_package(Boost 1.80 REQUIRED COMPONENTS system unit_test_framework)
+find_package(Boost REQUIRED COMPONENTS system unit_test_framework)
 find_package(CURL REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(nlohmann_json 3.11.2 REQUIRED)
@@ -32,8 +26,8 @@ target_compile_features(${NETWORK_MONITOR_LIBRARY_NAME}
 )
 target_link_libraries(${NETWORK_MONITOR_LIBRARY_NAME}
     PUBLIC
-        Boost::Boost
-        OpenSSL::OpenSSL
+        boost::boost
+        openssl::openssl
         nlohmann_json::nlohmann_json
     PRIVATE
         CURL::libcurl
@@ -67,8 +61,8 @@ target_compile_definitions(${NETWORK_MONITOR_TESTS_EXE_NAME}
 target_link_libraries(${NETWORK_MONITOR_TESTS_EXE_NAME}
     PRIVATE
         ${NETWORK_MONITOR_LIBRARY_NAME}
-        Boost::Boost
-        OpenSSL::OpenSSL
+        boost::boost
+        openssl::openssl
 )
 
 add_test(

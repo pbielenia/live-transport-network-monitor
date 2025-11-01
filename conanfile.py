@@ -1,20 +1,26 @@
-from conans import ConanFile
+from conan import ConanFile
+from conan.tools.cmake import CMakeToolchain, CMakeDeps, cmake_layout
 
 
 class ConanPackage(ConanFile):
     name = 'network-monitor'
     version = "0.1.0"
+    settings = "os", "compiler", "build_type", "arch"
+    requires = ("boost/1.80.0",
+                "libcurl/7.85.0",
+                "nlohmann_json/3.11.2",
+                "openssl/3.6.0",
+                "zlib/1.2.13",
+                )
+    default_options = {"boost/*:shared": False}
 
-    generators = 'cmake_find_package'
+    def generate(self):
+        deps = CMakeDeps(self)
+        deps.generate()
 
-    requires = [
-        ('boost/1.80.0'),
-        ('libcurl/7.85.0'),
-        ('nlohmann_json/3.11.2'),
-        ('openssl/1.1.1h'),
-        ('zlib/1.2.13'),
-    ]
+        toolchain = CMakeToolchain(self)
+        toolchain.generator = "Ninja"
+        toolchain.generate()
 
-    default_options = (
-        'boost:shared=False',
-    )
+    def layout(self):
+        cmake_layout(self)
