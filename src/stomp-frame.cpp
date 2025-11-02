@@ -76,7 +76,7 @@ static const auto stomp_errors_strings{MakeBimap<StompError, std::string_view>({
     {StompError::MissingRequiredHeader,         "MissingRequiredHeader"         },
     {StompError::NoData,                        "NoData"                        },
     {StompError::MissingCommand,                "MissingCommand"                },
-    {StompError::NoHeaderName,                  "NoHeaderName"                  }
+    {StompError::NoHeaderName,                  "NoHeaderName"                  },
     // clang-format on
 })};
 
