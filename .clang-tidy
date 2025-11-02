@@ -1,0 +1,4 @@
+Checks: 'abseil-*,cert-*,clang-analyzer-*,cppcoreguidelines-*,misc-*,-misc-non-private-member-variables-in-classes,modernize-*,-modernize-use-trailing-return-type,-modernize-use-nodiscard,performance-*,readability-*,-readability-identifier-length'
+WarningsAsErrors: true
+HeaderFilterRegex: ''
+FormatStyle: file
