@@ -15,6 +15,5 @@ BraceWrapping:
 BinPackParameters: false
 BreakBeforeBraces: WebKit
 ColumnLimit: 90
-IndentWidth: 4
 ReflowComments:  true
 Standard: c++17

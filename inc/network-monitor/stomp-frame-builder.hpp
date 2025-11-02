@@ -7,12 +7,12 @@ namespace NetworkMonitor {
 namespace stomp_frame {
 
 struct BuildParameters {
-    BuildParameters(StompCommand command) : command{command} {}
+  BuildParameters(StompCommand command) : command{command} {}
 
-    StompCommand command;
-    // TODO: StompFrame::Headers may be used possibly
-    StompFrame::Headers headers;
-    std::string body;
+  StompCommand command;
+  // TODO: StompFrame::Headers may be used possibly
+  StompFrame::Headers headers;
+  std::string body;
 };
 
 // TODO: make a version involving less copying
