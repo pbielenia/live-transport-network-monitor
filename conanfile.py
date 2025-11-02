@@ -20,6 +20,10 @@ class ConanPackage(ConanFile):
 
         toolchain = CMakeToolchain(self)
         toolchain.generator = "Ninja"
+
+        if self.settings.build_type == "Debug":
+            toolchain.cache_variables["CMAKE_EXPORT_COMPILE_COMMANDS"] = "ON"
+
         toolchain.generate()
 
     def layout(self):
