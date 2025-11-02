@@ -86,7 +86,10 @@ struct Line {
 /*! \brief Passenger event
  */
 struct PassengerEvent {
-    enum class Type { In, Out };
+    enum class Type {
+        In,
+        Out
+    };
 
     Id station_id{};
     Type type{Type::In};

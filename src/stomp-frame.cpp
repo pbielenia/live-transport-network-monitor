@@ -1,7 +1,7 @@
 #include <algorithm>
-#include <sstream>
 #include <boost/bimap.hpp>
 #include <network-monitor/stomp-frame.hpp>
+#include <sstream>
 
 using namespace NetworkMonitor;
 
@@ -326,8 +326,8 @@ StompError StompFrame::ParseFrame()
         // header-1:
 
         // Read header.
-        const auto header_plain{plain_content.substr(
-            next_line_start, next_colon_position - next_line_start)};
+        const auto header_plain{
+            plain_content.substr(next_line_start, next_colon_position - next_line_start)};
         const auto header{stomp_headers_strings.right.find(header_plain)};
         if (header == stomp_headers_strings.right.end()) {
             return StompError::InvalidHeader;
@@ -370,7 +370,7 @@ StompError StompFrame::ParseFrame()
     if (HasHeader(StompHeader::ContentLength)) {
         // -2 excludes the closing null character.
         body_ = plain_content.substr(next_line_start,
-                                      plain_content.size() - next_line_start - 1);
+                                     plain_content.size() - next_line_start - 1);
     } else {
         if (null_position + 1 != plain_content.size()) {
             // CONNECT\n
@@ -441,7 +441,8 @@ const std::string_view& StompFrame::GetBody() const
     return body_;
 }
 
-std::string StompFrame::ToString() const {
+std::string StompFrame::ToString() const
+{
     std::ostringstream stream;
     stream << GetCommand() << "\n";
     for (const auto& [header, value] : GetAllHeaders()) {

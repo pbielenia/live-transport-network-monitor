@@ -947,7 +947,6 @@ BOOST_AUTO_TEST_CASE(copy_assignment_operator)
     expected.Check(error, other_frame);
 }
 
-
 BOOST_AUTO_TEST_CASE(parse_required_headers)
 {
     StompError error;

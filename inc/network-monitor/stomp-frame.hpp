@@ -101,7 +101,7 @@ std::string ToString(const StompError& error);
 /* \brief STOMP frame representation, supporting STOMP v1.2.
  */
 class StompFrame {
-  public:
+   public:
     using Headers = std::unordered_map<StompHeader, std::string_view>;
 
     /*! \brief Default constructor. Corresponds to an empty, invalid STOMP frame.
