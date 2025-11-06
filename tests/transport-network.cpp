@@ -19,8 +19,7 @@ BOOST_AUTO_TEST_SUITE(class_TransportNetwork);
 
 BOOST_AUTO_TEST_SUITE(AddStation);
 
-BOOST_AUTO_TEST_CASE(basic)
-{
+BOOST_AUTO_TEST_CASE(basic) {
   TransportNetwork network{};
   bool ok{false};
 
@@ -33,8 +32,7 @@ BOOST_AUTO_TEST_CASE(basic)
   BOOST_CHECK(ok);
 }
 
-BOOST_AUTO_TEST_CASE(duplicate_id)
-{
+BOOST_AUTO_TEST_CASE(duplicate_id) {
   TransportNetwork network{};
   bool ok{false};
 
@@ -49,8 +47,7 @@ BOOST_AUTO_TEST_CASE(duplicate_id)
   BOOST_CHECK(!ok);
 }
 
-BOOST_AUTO_TEST_CASE(duplicate_name)
-{
+BOOST_AUTO_TEST_CASE(duplicate_name) {
   TransportNetwork network{};
   bool ok{false};
 
@@ -73,8 +70,7 @@ BOOST_AUTO_TEST_SUITE_END();  // AddStation
 
 BOOST_AUTO_TEST_SUITE(AddLine);
 
-BOOST_AUTO_TEST_CASE(basic)
-{
+BOOST_AUTO_TEST_CASE(basic) {
   TransportNetwork network{};
   bool ok{false};
 
@@ -109,8 +105,7 @@ BOOST_AUTO_TEST_CASE(basic)
   BOOST_CHECK(ok);
 }
 
-BOOST_AUTO_TEST_CASE(shared_stations)
-{
+BOOST_AUTO_TEST_CASE(shared_stations) {
   TransportNetwork network{};
   bool ok{false};
 
@@ -156,8 +151,7 @@ BOOST_AUTO_TEST_CASE(shared_stations)
   BOOST_CHECK(ok);
 }
 
-BOOST_AUTO_TEST_CASE(duplicate)
-{
+BOOST_AUTO_TEST_CASE(duplicate) {
   TransportNetwork network{};
   bool ok{false};
 
@@ -193,8 +187,7 @@ BOOST_AUTO_TEST_SUITE_END();  // AddLine
 
 BOOST_AUTO_TEST_SUITE(PassengerEvents);
 
-BOOST_AUTO_TEST_CASE(basic)
-{
+BOOST_AUTO_TEST_CASE(basic) {
   TransportNetwork network{};
   bool ok{false};
 
@@ -267,8 +260,7 @@ BOOST_AUTO_TEST_SUITE_END();  // PassengerEvents
 
 BOOST_AUTO_TEST_SUITE(GetRoutesServingStation);
 
-BOOST_AUTO_TEST_CASE(basic)
-{
+BOOST_AUTO_TEST_CASE(basic) {
   TransportNetwork network{};
   bool ok{false};
 
@@ -328,8 +320,7 @@ BOOST_AUTO_TEST_SUITE_END();  // GetRoutesServingStation
 
 BOOST_AUTO_TEST_SUITE(TravelTime);
 
-BOOST_AUTO_TEST_CASE(basic)
-{
+BOOST_AUTO_TEST_CASE(basic) {
   TransportNetwork network{};
   bool ok{false};
 
@@ -386,8 +377,7 @@ BOOST_AUTO_TEST_CASE(basic)
   BOOST_CHECK_EQUAL(network.GetTravelTime(station_1.id, station_0.id), 3);
 }
 
-BOOST_AUTO_TEST_CASE(over_route)
-{
+BOOST_AUTO_TEST_CASE(over_route) {
   TransportNetwork network{};
   bool ok{false};
 
@@ -482,15 +472,13 @@ BOOST_AUTO_TEST_SUITE_END();  // TravelTime
 
 BOOST_AUTO_TEST_SUITE(FromJson);
 
-std::vector<Id> GetSortedIds(std::vector<Id>& routes)
-{
+std::vector<Id> GetSortedIds(std::vector<Id>& routes) {
   std::vector<Id> ids{routes};
   std::sort(ids.begin(), ids.end());
   return ids;
 }
 
-BOOST_AUTO_TEST_CASE(from_json_1line_1route)
-{
+BOOST_AUTO_TEST_CASE(from_json_1line_1route) {
   const auto test_file_path =
       std::filesystem::path(TESTS_RESOURCES_DIR) / "from_json_1line_1route.json";
   auto json_source = network_monitor::ParseJsonFile(test_file_path);
@@ -504,8 +492,7 @@ BOOST_AUTO_TEST_CASE(from_json_1line_1route)
   BOOST_CHECK_EQUAL(routes[0], "route_0");
 }
 
-BOOST_AUTO_TEST_CASE(from_json_1line_2routes)
-{
+BOOST_AUTO_TEST_CASE(from_json_1line_2routes) {
   auto test_file_path{std::filesystem::path(TESTS_RESOURCES_DIR) /
                       "from_json_1line_2routes.json"};
   auto json_source = network_monitor::ParseJsonFile(test_file_path);
@@ -523,8 +510,7 @@ BOOST_AUTO_TEST_CASE(from_json_1line_2routes)
   BOOST_CHECK(GetSortedIds(routes) == std::vector<Id>({"route_0", "route_1"}));
 }
 
-BOOST_AUTO_TEST_CASE(from_json_2lines_2routes)
-{
+BOOST_AUTO_TEST_CASE(from_json_2lines_2routes) {
   auto test_file_path{std::filesystem::path(TESTS_RESOURCES_DIR) /
                       "from_json_2lines_2routes.json"};
   auto json_source = network_monitor::ParseJsonFile(test_file_path);
@@ -543,8 +529,7 @@ BOOST_AUTO_TEST_CASE(from_json_2lines_2routes)
   BOOST_CHECK(GetSortedIds(routes) == std::vector<Id>({"route_0", "route_1"}));
 }
 
-BOOST_AUTO_TEST_CASE(from_json_travel_times)
-{
+BOOST_AUTO_TEST_CASE(from_json_travel_times) {
   auto test_file_path{std::filesystem::path(TESTS_RESOURCES_DIR) /
                       "from_json_travel_times.json"};
   auto json_source = network_monitor::ParseJsonFile(test_file_path);
@@ -560,8 +545,7 @@ BOOST_AUTO_TEST_CASE(from_json_travel_times)
                     1 + 2);
 }
 
-BOOST_AUTO_TEST_CASE(fail_on_good_json_bad_times)
-{
+BOOST_AUTO_TEST_CASE(fail_on_good_json_bad_times) {
   nlohmann::json source{{"stations",
                          {{
                               {"station_id", "station_0"},
@@ -578,8 +562,7 @@ BOOST_AUTO_TEST_CASE(fail_on_good_json_bad_times)
   TransportNetwork network{};
   BOOST_CHECK_THROW(network.FromJson(std::move(source)), std::runtime_error);
 }
-BOOST_AUTO_TEST_CASE(fail_on_bad_travel_times)
-{
+BOOST_AUTO_TEST_CASE(fail_on_bad_travel_times) {
   const auto test_file_path =
       std::filesystem::path(TESTS_RESOURCES_DIR) / "from_json_bad_travel_times.json";
   auto json_source = network_monitor::ParseJsonFile(test_file_path);

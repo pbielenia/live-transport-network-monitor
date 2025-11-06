@@ -10,8 +10,7 @@ using network_monitor::ParseJsonFile;
 
 BOOST_AUTO_TEST_SUITE(network_monitor);
 
-BOOST_AUTO_TEST_CASE(file_downloader)
-{
+BOOST_AUTO_TEST_CASE(file_downloader) {
   const std::string file_url{
       "https://ltnm.learncppthroughprojects.com/network-layout.json"};
   const auto destination{std::filesystem::temp_directory_path() / "network-layout.json"};
@@ -42,8 +41,7 @@ BOOST_AUTO_TEST_CASE(file_downloader)
   std::filesystem::remove(destination);
 }
 
-BOOST_AUTO_TEST_CASE(parse_json_file)
-{
+BOOST_AUTO_TEST_CASE(parse_json_file) {
   const auto parsed_json = ParseJsonFile(TESTS_NETWORK_LAYOUT_JSON);
 
   const std::string lines_keyword{"lines"};

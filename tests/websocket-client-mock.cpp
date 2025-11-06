@@ -21,15 +21,12 @@ WebSocketClientMock::WebSocketClientMock(const std::string& url,
                                          boost::asio::io_context& io_context,
                                          boost::asio::ssl::context& tls_context)
     : async_context_{boost::asio::make_strand(io_context)},
-      server_url_{url}
-{
-}
+      server_url_{url} {}
 
 void WebSocketClientMock::Connect(
     std::function<void(boost::system::error_code)> on_connected_callback,
     std::function<void(boost::system::error_code, std::string&&)> on_message_callback,
-    std::function<void(boost::system::error_code)> on_disconnected_callback)
-{
+    std::function<void(boost::system::error_code)> on_disconnected_callback) {
   if (connect_error_code.failed()) {
     connected_ = false;
   } else {
@@ -51,8 +48,7 @@ void WebSocketClientMock::Connect(
 
 void WebSocketClientMock::Send(
     const std::string& message,
-    std::function<void(boost::system::error_code)> on_sent_callback)
-{
+    std::function<void(boost::system::error_code)> on_sent_callback) {
   if (!connected_) {
     boost::asio::post(async_context_, [on_sent_callback]() {
       if (on_sent_callback) {
@@ -71,8 +67,7 @@ void WebSocketClientMock::Send(
 }
 
 void WebSocketClientMock::Close(
-    std::function<void(boost::system::error_code)> on_close_callback)
-{
+    std::function<void(boost::system::error_code)> on_close_callback) {
   if (connected_) {
     connected_ = false;
     // TODO: closed_ = true;
@@ -91,13 +86,11 @@ void WebSocketClientMock::Close(
   }
 }
 
-const std::string& WebSocketClientMock::GetServerUrl() const
-{
+const std::string& WebSocketClientMock::GetServerUrl() const {
   return server_url_;
 }
 
-void WebSocketClientMock::MockIncomingMessages()
-{
+void WebSocketClientMock::MockIncomingMessages() {
   if (!connected_ || trigger_disconnection) {
     trigger_disconnection = false;
     boost::asio::post(async_context_, [this]() {
@@ -126,13 +119,11 @@ WebSocketClientMockForStomp::WebSocketClientMockForStomp(
     const std::string& port,
     boost::asio::io_context& io_context,
     boost::asio::ssl::context& tls_context)
-    : WebSocketClientMock(url, endpoint, port, io_context, tls_context)
-{
+    : WebSocketClientMock(url, endpoint, port, io_context, tls_context) {
   respond_to_send = [this](auto message) { OnMessage(message); };
 }
 
-void WebSocketClientMockForStomp::OnMessage(const std::string& message)
-{
+void WebSocketClientMockForStomp::OnMessage(const std::string& message) {
   StompError error;
   StompFrame frame{error, message};
   if (error != StompError::Ok) {
@@ -159,8 +150,7 @@ void WebSocketClientMockForStomp::OnMessage(const std::string& message)
 }
 
 void WebSocketClientMockForStomp::HandleConnectMessage(
-    const network_monitor::StompFrame& frame)
-{
+    const network_monitor::StompFrame& frame) {
   if (FrameIsValidConnect(frame)) {
     message_queue.push(
         stomp_frame::MakeConnectedFrame(stomp_version, {}, {}, {}).ToString());
@@ -172,8 +162,7 @@ void WebSocketClientMockForStomp::HandleConnectMessage(
 }
 
 void WebSocketClientMockForStomp::HandleSubscribeMessage(
-    const network_monitor::StompFrame& frame)
-{
+    const network_monitor::StompFrame& frame) {
   if (FrameIsValidSubscribe(frame)) {
     auto receipt_id = frame.GetHeaderValue(StompHeader::Receipt);
     auto subscription_id = frame.GetHeaderValue(StompHeader::Id);
@@ -187,8 +176,7 @@ void WebSocketClientMockForStomp::HandleSubscribeMessage(
 }
 
 bool WebSocketClientMockForStomp::FrameIsValidConnect(
-    const network_monitor::StompFrame& frame)
-{
+    const network_monitor::StompFrame& frame) {
   if (!frame.HasHeader(StompHeader::Login) || !frame.HasHeader(StompHeader::Passcode)) {
     return false;
   }
@@ -197,8 +185,7 @@ bool WebSocketClientMockForStomp::FrameIsValidConnect(
 }
 
 bool WebSocketClientMockForStomp::FrameIsValidSubscribe(
-    const network_monitor::StompFrame& frame)
-{
+    const network_monitor::StompFrame& frame) {
   return (frame.GetHeaderValue(StompHeader::Destination) == endpoint &&
           !frame.GetHeaderValue(StompHeader::Receipt).empty() &&
           !frame.GetHeaderValue(StompHeader::Id).empty());

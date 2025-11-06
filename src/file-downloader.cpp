@@ -6,8 +6,7 @@
 
 bool network_monitor::DownloadFile(const std::string& file_url,
                                    const std::filesystem::path& destination,
-                                   const std::filesystem::path& ca_cert_file)
-{
+                                   const std::filesystem::path& ca_cert_file) {
   curl_global_init(CURL_GLOBAL_DEFAULT);
 
   auto* curl = curl_easy_init();
@@ -38,8 +37,7 @@ bool network_monitor::DownloadFile(const std::string& file_url,
   return true;
 }
 
-nlohmann::json network_monitor::ParseJsonFile(const std::filesystem::path& source)
-{
+nlohmann::json network_monitor::ParseJsonFile(const std::filesystem::path& source) {
   auto parsed = nlohmann::json::object();
   if (!std::filesystem::exists(source)) {
     return parsed;

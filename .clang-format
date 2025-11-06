@@ -13,7 +13,6 @@ BraceWrapping:
   SplitEmptyRecord: true
   SplitEmptyNamespace: true
 BinPackParameters: false
-BreakBeforeBraces: WebKit
 ColumnLimit: 90
 ReflowComments:  true
 Standard: c++17

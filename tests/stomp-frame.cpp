@@ -82,8 +82,7 @@ static const std::vector<StompError> stomp_errors{
 
 BOOST_AUTO_TEST_SUITE(enum_StompCommand);
 
-BOOST_AUTO_TEST_CASE(ostream)
-{
+BOOST_AUTO_TEST_CASE(ostream) {
   // Get the value of invalid
   std::stringstream stream{};
   stream << StompCommand::Invalid;
@@ -98,8 +97,7 @@ BOOST_AUTO_TEST_CASE(ostream)
   }
 }
 
-BOOST_AUTO_TEST_CASE(ToString)
-{
+BOOST_AUTO_TEST_CASE(ToString) {
   const auto invalid{network_monitor::ToString(StompCommand::Invalid)};
 
   for (const auto& command : stomp_commands) {
@@ -111,8 +109,7 @@ BOOST_AUTO_TEST_SUITE_END();  // enum_StompCommand
 
 BOOST_AUTO_TEST_SUITE(enum_StompHeader);
 
-BOOST_AUTO_TEST_CASE(ostream)
-{
+BOOST_AUTO_TEST_CASE(ostream) {
   // Get the value of invalid
   std::stringstream stream{};
   stream << StompHeader::Invalid;
@@ -127,8 +124,7 @@ BOOST_AUTO_TEST_CASE(ostream)
   }
 }
 
-BOOST_AUTO_TEST_CASE(ToString)
-{
+BOOST_AUTO_TEST_CASE(ToString) {
   const auto invalid{network_monitor::ToString(StompHeader::Invalid)};
 
   for (const auto& header : stomp_headers) {
@@ -140,8 +136,7 @@ BOOST_AUTO_TEST_SUITE_END();  // enum_StompHeader
 
 BOOST_AUTO_TEST_SUITE(enum_StompError);
 
-BOOST_AUTO_TEST_CASE(ostream)
-{
+BOOST_AUTO_TEST_CASE(ostream) {
   // Get the value of invalid
   std::stringstream stream{};
   stream << StompError::UndefinedError;
@@ -156,8 +151,7 @@ BOOST_AUTO_TEST_CASE(ostream)
   }
 }
 
-BOOST_AUTO_TEST_CASE(ToString)
-{
+BOOST_AUTO_TEST_CASE(ToString) {
   const auto invalid{network_monitor::ToString(StompError::UndefinedError)};
 
   for (const auto& error : stomp_errors) {
@@ -200,20 +194,17 @@ class ExpectedFrame {
   bool check_body{false};
 };
 
-void ExpectedFrame::SetError(StompError error)
-{
+void ExpectedFrame::SetError(StompError error) {
   check_error = true;
   expected_error = error;
 }
 
-void ExpectedFrame::SetCommand(StompCommand command)
-{
+void ExpectedFrame::SetCommand(StompCommand command) {
   check_command = true;
   expected_command = command;
 }
 
-void ExpectedFrame::AddHeader(StompHeader header, std::string&& value)
-{
+void ExpectedFrame::AddHeader(StompHeader header, std::string&& value) {
   check_headers = true;
   expected_headers.emplace(header, std::move(value));
 }
@@ -221,19 +212,16 @@ void ExpectedFrame::AddHeader(StompHeader header, std::string&& value)
 // The purpose of this method is to trigger headers check when no headers are expected.
 // `check_headers` is not `true` by default because there are cases when we don't want to
 // check headers, for instance when the parsing frame returned with an error.
-void ExpectedFrame::SetHeadersCheck()
-{
+void ExpectedFrame::SetHeadersCheck() {
   check_headers = true;
 }
 
-void ExpectedFrame::SetBody(std::string&& body)
-{
+void ExpectedFrame::SetBody(std::string&& body) {
   check_body = true;
   expected_body = std::move(body);
 }
 
-void ExpectedFrame::Check(StompError parse_error, const StompFrame& parsed_frame) const
-{
+void ExpectedFrame::Check(StompError parse_error, const StompFrame& parsed_frame) const {
   if (check_error) {
     BOOST_REQUIRE_EQUAL(parse_error, expected_error);
     if (expected_error != StompError::Ok) {
@@ -253,15 +241,14 @@ void ExpectedFrame::Check(StompError parse_error, const StompFrame& parsed_frame
   }
 }
 
-void ExpectedFrame::CheckHeaders(const StompFrame& parsed_frame) const
-{
+void ExpectedFrame::CheckHeaders(const StompFrame& parsed_frame) const {
   for (const auto& header : stomp_headers) {
     CheckHeader(header, parsed_frame);
   }
 }
 
-void ExpectedFrame::CheckHeader(StompHeader header, const StompFrame& parsed_frame) const
-{
+void ExpectedFrame::CheckHeader(StompHeader header,
+                                const StompFrame& parsed_frame) const {
   if (expected_headers.count(header)) {
     BOOST_CHECK_EQUAL(parsed_frame.HasHeader(header), true);
     BOOST_CHECK_EQUAL(parsed_frame.GetHeaderValue(header), expected_headers.at(header));
@@ -271,8 +258,7 @@ void ExpectedFrame::CheckHeader(StompHeader header, const StompFrame& parsed_fra
   }
 }
 
-BOOST_AUTO_TEST_CASE(parse_empty_content)
-{
+BOOST_AUTO_TEST_CASE(parse_empty_content) {
   std::string plain{""s};
 
   ExpectedFrame expected;
@@ -284,8 +270,7 @@ BOOST_AUTO_TEST_CASE(parse_empty_content)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_missing_command)
-{
+BOOST_AUTO_TEST_CASE(parse_missing_command) {
   std::string plain{
       "\n"
       "accept-version:42\n"
@@ -303,8 +288,7 @@ BOOST_AUTO_TEST_CASE(parse_missing_command)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_missing_command_newline)
-{
+BOOST_AUTO_TEST_CASE(parse_missing_command_newline) {
   std::string plain{
       "CONNECT"
       "accept-version:42"
@@ -319,8 +303,7 @@ BOOST_AUTO_TEST_CASE(parse_missing_command_newline)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_only_command_invalid)
-{
+BOOST_AUTO_TEST_CASE(parse_only_command_invalid) {
   std::string plain{"CONNECT\n\0"s};
 
   ExpectedFrame expected;
@@ -332,8 +315,7 @@ BOOST_AUTO_TEST_CASE(parse_only_command_invalid)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_well_formed)
-{
+BOOST_AUTO_TEST_CASE(parse_well_formed) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -354,8 +336,7 @@ BOOST_AUTO_TEST_CASE(parse_well_formed)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_well_formed_content_length)
-{
+BOOST_AUTO_TEST_CASE(parse_well_formed_content_length) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -378,8 +359,7 @@ BOOST_AUTO_TEST_CASE(parse_well_formed_content_length)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_empty_body)
-{
+BOOST_AUTO_TEST_CASE(parse_empty_body) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -400,8 +380,7 @@ BOOST_AUTO_TEST_CASE(parse_empty_body)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_empty_body_content_length)
-{
+BOOST_AUTO_TEST_CASE(parse_empty_body_content_length) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -424,8 +403,7 @@ BOOST_AUTO_TEST_CASE(parse_empty_body_content_length)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_empty_headers)
-{
+BOOST_AUTO_TEST_CASE(parse_empty_headers) {
   std::string plain{
       "DISCONNECT\n"
       "\n"
@@ -443,8 +421,7 @@ BOOST_AUTO_TEST_CASE(parse_empty_headers)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_only_command)
-{
+BOOST_AUTO_TEST_CASE(parse_only_command) {
   std::string plain{
       "DISCONNECT\n"
       "\n"
@@ -462,8 +439,7 @@ BOOST_AUTO_TEST_CASE(parse_only_command)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_invalid_command)
-{
+BOOST_AUTO_TEST_CASE(parse_invalid_command) {
   std::string plain{
       "CONNECT_INVALID\n"
       "accept-version:42\n"
@@ -480,8 +456,7 @@ BOOST_AUTO_TEST_CASE(parse_invalid_command)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_invalid_header)
-{
+BOOST_AUTO_TEST_CASE(parse_invalid_header) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -498,8 +473,7 @@ BOOST_AUTO_TEST_CASE(parse_invalid_header)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_header_no_value)
-{
+BOOST_AUTO_TEST_CASE(parse_header_no_value) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -516,8 +490,7 @@ BOOST_AUTO_TEST_CASE(parse_header_no_value)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_missing_body_newline_with_headers)
-{
+BOOST_AUTO_TEST_CASE(parse_missing_body_newline_with_headers) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -533,8 +506,7 @@ BOOST_AUTO_TEST_CASE(parse_missing_body_newline_with_headers)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_missing_body_newline_no_headers)
-{
+BOOST_AUTO_TEST_CASE(parse_missing_body_newline_no_headers) {
   std::string plain{
       "CONNECT\n"
       "\0"s};
@@ -548,8 +520,7 @@ BOOST_AUTO_TEST_CASE(parse_missing_body_newline_no_headers)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_missing_body_newline_with_body)
-{
+BOOST_AUTO_TEST_CASE(parse_missing_body_newline_with_body) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -565,8 +536,7 @@ BOOST_AUTO_TEST_CASE(parse_missing_body_newline_with_body)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_missing_last_header_newline)
-{
+BOOST_AUTO_TEST_CASE(parse_missing_last_header_newline) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -582,8 +552,7 @@ BOOST_AUTO_TEST_CASE(parse_missing_last_header_newline)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_empty_header_value)
-{
+BOOST_AUTO_TEST_CASE(parse_empty_header_value) {
   std::string plain{
       "CONNECT\n"
       "accept-version:\n"
@@ -600,8 +569,7 @@ BOOST_AUTO_TEST_CASE(parse_empty_header_value)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_newline_after_command)
-{
+BOOST_AUTO_TEST_CASE(parse_newline_after_command) {
   std::string plain{
       "DISCONNECT\n"
       "\n"
@@ -622,8 +590,7 @@ BOOST_AUTO_TEST_CASE(parse_newline_after_command)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_double_colon_in_header_line, *boost::unit_test::disabled())
-{
+BOOST_AUTO_TEST_CASE(parse_double_colon_in_header_line, *boost::unit_test::disabled()) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42:43\n"
@@ -633,8 +600,7 @@ BOOST_AUTO_TEST_CASE(parse_double_colon_in_header_line, *boost::unit_test::disab
   // StompError::Ok? seems so
 }
 
-BOOST_AUTO_TEST_CASE(parse_repeated_headers)
-{
+BOOST_AUTO_TEST_CASE(parse_repeated_headers) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -656,8 +622,7 @@ BOOST_AUTO_TEST_CASE(parse_repeated_headers)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_repeated_headers_error_in_second)
-{
+BOOST_AUTO_TEST_CASE(parse_repeated_headers_error_in_second) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -674,8 +639,7 @@ BOOST_AUTO_TEST_CASE(parse_repeated_headers_error_in_second)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_unterminated_body)
-{
+BOOST_AUTO_TEST_CASE(parse_unterminated_body) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -692,8 +656,7 @@ BOOST_AUTO_TEST_CASE(parse_unterminated_body)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_unterminated_body_content_length)
-{
+BOOST_AUTO_TEST_CASE(parse_unterminated_body_content_length) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -711,8 +674,7 @@ BOOST_AUTO_TEST_CASE(parse_unterminated_body_content_length)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_junk_after_body)
-{
+BOOST_AUTO_TEST_CASE(parse_junk_after_body) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -729,8 +691,7 @@ BOOST_AUTO_TEST_CASE(parse_junk_after_body)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_junk_after_body_content_length)
-{
+BOOST_AUTO_TEST_CASE(parse_junk_after_body_content_length) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -748,8 +709,7 @@ BOOST_AUTO_TEST_CASE(parse_junk_after_body_content_length)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_newlines_after_body)
-{
+BOOST_AUTO_TEST_CASE(parse_newlines_after_body) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -766,8 +726,7 @@ BOOST_AUTO_TEST_CASE(parse_newlines_after_body)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_newlines_after_body_content_length)
-{
+BOOST_AUTO_TEST_CASE(parse_newlines_after_body_content_length) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -785,8 +744,7 @@ BOOST_AUTO_TEST_CASE(parse_newlines_after_body_content_length)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_content_length_wrong_number)
-{
+BOOST_AUTO_TEST_CASE(parse_content_length_wrong_number) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -804,8 +762,7 @@ BOOST_AUTO_TEST_CASE(parse_content_length_wrong_number)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_content_length_exceeding)
-{
+BOOST_AUTO_TEST_CASE(parse_content_length_exceeding) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -823,8 +780,7 @@ BOOST_AUTO_TEST_CASE(parse_content_length_exceeding)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_invalid_content_length_value)
-{
+BOOST_AUTO_TEST_CASE(parse_invalid_content_length_value) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -842,8 +798,7 @@ BOOST_AUTO_TEST_CASE(parse_invalid_content_length_value)
   expected.Check(error, frame);
 }
 
-BOOST_AUTO_TEST_CASE(copy_constructor)
-{
+BOOST_AUTO_TEST_CASE(copy_constructor) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -868,8 +823,7 @@ BOOST_AUTO_TEST_CASE(copy_constructor)
   expected.Check(error, other_frame);
 }
 
-BOOST_AUTO_TEST_CASE(move_constructor)
-{
+BOOST_AUTO_TEST_CASE(move_constructor) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -894,8 +848,7 @@ BOOST_AUTO_TEST_CASE(move_constructor)
   expected.Check(error, other_frame);
 }
 
-BOOST_AUTO_TEST_CASE(move_assignment_operator)
-{
+BOOST_AUTO_TEST_CASE(move_assignment_operator) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -920,8 +873,7 @@ BOOST_AUTO_TEST_CASE(move_assignment_operator)
   expected.Check(error, other_frame);
 }
 
-BOOST_AUTO_TEST_CASE(copy_assignment_operator)
-{
+BOOST_AUTO_TEST_CASE(copy_assignment_operator) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42\n"
@@ -946,8 +898,7 @@ BOOST_AUTO_TEST_CASE(copy_assignment_operator)
   expected.Check(error, other_frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_required_headers)
-{
+BOOST_AUTO_TEST_CASE(parse_required_headers) {
   StompError error;
   {
     std::string plain{
@@ -1444,8 +1395,7 @@ BOOST_AUTO_TEST_CASE(parse_required_headers)
   }
 }
 
-BOOST_AUTO_TEST_CASE(to_string_method)
-{
+BOOST_AUTO_TEST_CASE(to_string_method) {
   std::string plain{
       "MESSAGE\n"
       "subscription:0\n"

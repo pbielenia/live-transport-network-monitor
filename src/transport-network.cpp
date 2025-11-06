@@ -4,18 +4,15 @@
 
 using namespace network_monitor;
 
-bool Station::operator==(const Station& other) const
-{
+bool Station::operator==(const Station& other) const {
   return id == other.id;
 }
 
-bool Route::operator==(const Route& other) const
-{
+bool Route::operator==(const Route& other) const {
   return id == other.id;
 }
 
-bool Line::operator==(const Line& other) const
-{
+bool Line::operator==(const Line& other) const {
   return id == other.id;
 }
 
@@ -25,18 +22,13 @@ TransportNetwork::~TransportNetwork() {}
 
 TransportNetwork::TransportNetwork(const TransportNetwork& copied)
     : stations_{copied.stations_},
-      lines_{copied.lines_}
-{
-}
+      lines_{copied.lines_} {}
 
 TransportNetwork::TransportNetwork(TransportNetwork&& moved)
     : stations_{std::move(moved.stations_)},
-      lines_{std::move(moved.lines_)}
-{
-}
+      lines_{std::move(moved.lines_)} {}
 
-bool TransportNetwork::FromJson(nlohmann::json&& source)
-{
+bool TransportNetwork::FromJson(nlohmann::json&& source) {
   for (const auto& station : source.at("stations")) {
     Station new_station{};
     new_station.id = station.at("station_id").get<Id>();
@@ -82,8 +74,7 @@ bool TransportNetwork::FromJson(nlohmann::json&& source)
   return true;
 }
 
-bool TransportNetwork::AddStation(const Station& station)
-{
+bool TransportNetwork::AddStation(const Station& station) {
   if (StationExists(station.id)) {
     return false;
   }
@@ -92,8 +83,7 @@ bool TransportNetwork::AddStation(const Station& station)
   return true;
 }
 
-bool TransportNetwork::AddLine(const Line& line)
-{
+bool TransportNetwork::AddLine(const Line& line) {
   if (LineExists(line)) {
     return false;
   }
@@ -146,8 +136,7 @@ bool TransportNetwork::AddLine(const Line& line)
   return true;
 }
 
-bool TransportNetwork::RecordPassengerEvent(const PassengerEvent& event)
-{
+bool TransportNetwork::RecordPassengerEvent(const PassengerEvent& event) {
   if (!StationExists(event.station_id)) {
     return false;
   }
@@ -170,16 +159,14 @@ bool TransportNetwork::RecordPassengerEvent(const PassengerEvent& event)
   return true;
 }
 
-long long int TransportNetwork::GetPassengerCount(const Id& station) const
-{
+long long int TransportNetwork::GetPassengerCount(const Id& station) const {
   if (!StationExists(station)) {
     throw std::runtime_error("Station id '" + station + "' unknown");
   }
   return stations_.at(station)->passenger_count;
 }
 
-std::vector<Id> TransportNetwork::GetRoutesServingStation(const Id& station) const
-{
+std::vector<Id> TransportNetwork::GetRoutesServingStation(const Id& station) const {
   std::vector<Id> routes;
   if (!StationExists(station)) {
     return routes;
@@ -205,8 +192,7 @@ std::vector<Id> TransportNetwork::GetRoutesServingStation(const Id& station) con
 
 bool TransportNetwork::SetTravelTime(const Id& station_a,
                                      const Id& station_b,
-                                     const unsigned int travel_time)
-{
+                                     const unsigned int travel_time) {
   if (!StationExists(station_a) || !StationExists(station_b) || station_a == station_b) {
     return false;
   }
@@ -225,8 +211,7 @@ bool TransportNetwork::SetTravelTime(const Id& station_a,
 }
 
 unsigned int TransportNetwork::GetTravelTime(const Id& station_a,
-                                             const Id& station_b) const
-{
+                                             const Id& station_b) const {
   if (!StationExists(station_a) || !StationExists(station_b) || station_a == station_b) {
     return 0;
   }
@@ -249,8 +234,7 @@ unsigned int TransportNetwork::GetTravelTime(const Id& station_a,
 unsigned int TransportNetwork::GetTravelTime(const Id& line,
                                              const Id& route,
                                              const Id& station_a,
-                                             const Id& station_b) const
-{
+                                             const Id& station_b) const {
   unsigned int total_travel_time{0};
 
   if (station_a == station_b) {
@@ -298,13 +282,10 @@ unsigned int TransportNetwork::GetTravelTime(const Id& line,
 
 TransportNetwork::GraphNode::GraphNode(const Station& station)
     : id{station.id},
-      name{station.name}
-{
-}
+      name{station.name} {}
 
 std::vector<std::shared_ptr<TransportNetwork::GraphEdge>>
-TransportNetwork::GraphNode::FindEdgesToNextStation(const Id& next_station) const
-{
+TransportNetwork::GraphNode::FindEdgesToNextStation(const Id& next_station) const {
   std::vector<std::shared_ptr<TransportNetwork::GraphEdge>> edges_to_next_station;
   for (const auto& edge : edges) {
     if (edge->next_station->id == next_station) {
@@ -316,8 +297,7 @@ TransportNetwork::GraphNode::FindEdgesToNextStation(const Id& next_station) cons
 
 std::vector<std::shared_ptr<TransportNetwork::GraphEdge>>
 TransportNetwork::GraphNode::FindEdgesForRoute(
-    const std::shared_ptr<RouteInternal>& route) const
-{
+    const std::shared_ptr<RouteInternal>& route) const {
   std::vector<std::shared_ptr<TransportNetwork::GraphEdge>> edges_for_route;
   std::copy_if(edges.cbegin(), edges.cend(), std::back_inserter(edges_for_route),
                [&route](auto& edge) { return edge->route->id == route->id; });
@@ -327,29 +307,23 @@ TransportNetwork::GraphNode::FindEdgesForRoute(
 TransportNetwork::GraphEdge::GraphEdge(const std::shared_ptr<RouteInternal>& route,
                                        const std::shared_ptr<GraphNode>& next_station)
     : route{route},
-      next_station{next_station}
-{
-}
+      next_station{next_station} {}
 
-void TransportNetwork::AddStationInternal(const Station& station)
-{
+void TransportNetwork::AddStationInternal(const Station& station) {
   auto node = std::make_shared<GraphNode>(station);
   stations_.emplace(station.id, std::move(node));
 }
 
 std::shared_ptr<TransportNetwork::LineInternal> TransportNetwork::CreateLineInternal(
-    const Id& id, const std::string& name)
-{
+    const Id& id, const std::string& name) {
   return lines_.emplace(id, std::make_shared<LineInternal>(id, name)).first->second;
 }
 
-bool TransportNetwork::StationExists(const Id& station_id) const
-{
+bool TransportNetwork::StationExists(const Id& station_id) const {
   return stations_.count(station_id);
 }
 
-bool TransportNetwork::StationsExist(const std::vector<Route>& routes) const
-{
+bool TransportNetwork::StationsExist(const std::vector<Route>& routes) const {
   for (const auto& route : routes) {
     if (!StationsExist(route.stops)) {
       return false;
@@ -358,8 +332,7 @@ bool TransportNetwork::StationsExist(const std::vector<Route>& routes) const
   return true;
 }
 
-bool TransportNetwork::StationsExist(const std::vector<Id>& stations) const
-{
+bool TransportNetwork::StationsExist(const std::vector<Id>& stations) const {
   for (const auto& station_id : stations) {
     if (!StationExists(station_id)) {
       return false;
@@ -368,20 +341,18 @@ bool TransportNetwork::StationsExist(const std::vector<Id>& stations) const
   return true;
 }
 
-bool TransportNetwork::LineExists(const Line& line) const
-{
+bool TransportNetwork::LineExists(const Line& line) const {
   return lines_.count(line.id);
 }
 
-bool TransportNetwork::StationsAreAdjacend(const Id& station_a, const Id& station_b) const
-{
+bool TransportNetwork::StationsAreAdjacend(const Id& station_a,
+                                           const Id& station_b) const {
   return StationConnectsAnother(station_a, station_b) ||
          StationConnectsAnother(station_b, station_a);
 }
 
 bool TransportNetwork::StationConnectsAnother(const Id& station_a,
-                                              const Id& station_b) const
-{
+                                              const Id& station_b) const {
   const auto& station_a_internal = stations_.at(station_a);
   if (stations_.at(station_a)->FindEdgesToNextStation(station_b).empty()) {
     return false;
@@ -392,11 +363,7 @@ bool TransportNetwork::StationConnectsAnother(const Id& station_a,
 TransportNetwork::RouteInternal::RouteInternal(const Id& id,
                                                const std::shared_ptr<LineInternal>& line)
     : id{id},
-      line{line}
-{
-}
+      line{line} {}
 TransportNetwork::LineInternal::LineInternal(const Id& id, const std::string& name)
     : id{id},
-      name{name}
-{
-}
+      name{name} {}

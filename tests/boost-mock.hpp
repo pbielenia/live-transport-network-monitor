@@ -92,15 +92,12 @@ class MockWebSocketStream : public boost::beast::websocket::stream<TlsStream> {
 };
 
 template <typename ExecutionContext>
-MockResolver::MockResolver(ExecutionContext&& context) : context_{context}
-{
-}
+MockResolver::MockResolver(ExecutionContext&& context) : context_{context} {}
 
 template <typename ResolveToken>
 void MockResolver::async_resolve(std::string_view host,
                                  std::string_view service,
-                                 ResolveToken&& token)
-{
+                                 ResolveToken&& token) {
   using resolver = boost::asio::ip::tcp::resolver;
   return boost::asio::async_initiate<ResolveToken, void(const boost::system::error_code&,
                                                         resolver::results_type)>(
@@ -126,8 +123,7 @@ void MockResolver::async_resolve(std::string_view host,
 }
 
 template <typename ConnectToken>
-void MockTcpStream::async_connect(endpoint_type type, ConnectToken&& token)
-{
+void MockTcpStream::async_connect(endpoint_type type, ConnectToken&& token) {
   return boost::asio::async_initiate<ConnectToken, void(boost::system::error_code)>(
       [](auto&& handler, auto stream) {
         boost::asio::post(stream->get_executor(),
@@ -140,8 +136,7 @@ void MockTcpStream::async_connect(endpoint_type type, ConnectToken&& token)
 template <typename TcpStream>
 template <typename HandshakeToken>
 void MockSslStream<TcpStream>::async_handshake(
-    boost::asio::ssl::stream_base::handshake_type type, HandshakeToken token)
-{
+    boost::asio::ssl::stream_base::handshake_type type, HandshakeToken token) {
   return boost::asio::async_initiate<HandshakeToken, void(boost::system::error_code)>(
       [](auto&& handler, auto ssl_stream) {
         boost::asio::post(
@@ -156,8 +151,7 @@ template <typename TlsStream>
 template <typename HandshakeToken>
 void MockWebSocketStream<TlsStream>::async_handshake(std::string_view host,
                                                      std::string_view target,
-                                                     HandshakeToken token)
-{
+                                                     HandshakeToken token) {
   return boost::asio::async_initiate<HandshakeToken, void(boost::system::error_code)>(
       [](auto&& handler, auto websocket_stream) {
         if (!MockWebSocketStream<TlsStream>::handshake_error_code.failed()) {
@@ -174,8 +168,7 @@ void MockWebSocketStream<TlsStream>::async_handshake(std::string_view host,
 template <typename TlsStream>
 template <typename ConstBufferSequence, typename WriteHandler>
 void MockWebSocketStream<TlsStream>::async_write(const ConstBufferSequence& buffers,
-                                                 WriteHandler&& handler)
-{
+                                                 WriteHandler&& handler) {
   return boost::asio::async_initiate<WriteHandler,
                                      void(boost::system::error_code, std::size_t)>(
       [this](auto&& handler, auto websocket_stream, const auto& buffers) {
@@ -202,8 +195,7 @@ void MockWebSocketStream<TlsStream>::async_write(const ConstBufferSequence& buff
 template <typename TlsStream>
 template <typename DynamicBuffer, typename ReadHandler>
 void MockWebSocketStream<TlsStream>::async_read(DynamicBuffer& buffer,
-                                                ReadHandler&& handler)
-{
+                                                ReadHandler&& handler) {
   return boost::asio::async_initiate<ReadHandler,
                                      void(boost::system::error_code, std::size_t)>(
       [this](auto&& handler, auto& buffer) { recursive_read_internal(handler, buffer); },
@@ -213,8 +205,7 @@ void MockWebSocketStream<TlsStream>::async_read(DynamicBuffer& buffer,
 template <typename TlsStream>
 template <typename DynamicBuffer, typename ReadHandler>
 void MockWebSocketStream<TlsStream>::recursive_read_internal(ReadHandler&& handler,
-                                                             DynamicBuffer& buffer)
-{
+                                                             DynamicBuffer& buffer) {
   boost::system::error_code error_code;
   std::size_t bytes_read{0};
   auto& source_buffer = MockWebSocketStream<TlsStream>::read_buffer;
@@ -245,8 +236,7 @@ void MockWebSocketStream<TlsStream>::recursive_read_internal(ReadHandler&& handl
 template <typename TlsStream>
 template <typename CloseHandler>
 void MockWebSocketStream<TlsStream>::async_close(
-    const boost::beast::websocket::close_reason& close_reason, CloseHandler&& handler)
-{
+    const boost::beast::websocket::close_reason& close_reason, CloseHandler&& handler) {
   return boost::asio::async_initiate<CloseHandler, void(boost::system::error_code)>(
       [this](auto&& handler, auto websocket_stream) {
         boost::system::error_code error_code{};
@@ -291,24 +281,21 @@ inline std::string MockWebSocketStream<TlsStream>::read_buffer{};
 template <typename TeardownHandler>
 void async_teardown(boost::beast::role_type role,
                     MockTcpStream& socket,
-                    TeardownHandler&& handler)
-{
+                    TeardownHandler&& handler) {
   return;
 }
 
 template <typename TeardownHandler, typename TcpStream>
 void async_teardown(boost::beast::role_type role,
                     MockSslStream<TcpStream>& socket,
-                    TeardownHandler&& handler)
-{
+                    TeardownHandler&& handler) {
   return;
 }
 
 template <typename TeardownHandler, typename TlsStream>
 void async_teardown(boost::beast::role_type role,
                     MockWebSocketStream<TlsStream>& socket,
-                    TeardownHandler&& handler)
-{
+                    TeardownHandler&& handler) {
   return;
 }
 

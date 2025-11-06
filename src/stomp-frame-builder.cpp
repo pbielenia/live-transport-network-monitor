@@ -7,21 +7,18 @@ namespace {
 // TODO: throw at empty param or so
 void EmplaceIfValueNotEmpty(StompFrame::Headers& headers,
                             StompHeader header,
-                            const std::string& value)
-{
+                            const std::string& value) {
   if (!value.empty()) {
     headers.emplace(header, value);
   }
 }
 }  // namespace
 
-std::string ParseCommand(StompCommand command)
-{
+std::string ParseCommand(StompCommand command) {
   return ToString(command) + '\n';
 }
 
-std::string ParseHeaders(const StompFrame::Headers& headers)
-{
+std::string ParseHeaders(const StompFrame::Headers& headers) {
   std::string parsed{};
 
   for (const auto [header, value] : headers) {
@@ -39,8 +36,7 @@ std::string ParseHeaders(const StompFrame::Headers& headers)
 //     // TODO
 // }
 
-StompFrame stomp_frame::Build(StompError& error_code, const BuildParameters& parameters)
-{
+StompFrame stomp_frame::Build(StompError& error_code, const BuildParameters& parameters) {
   std::string plain_content{};
   plain_content.append(ParseCommand(parameters.command));
   plain_content.append(ParseHeaders(parameters.headers));
@@ -53,8 +49,7 @@ StompFrame stomp_frame::Build(StompError& error_code, const BuildParameters& par
 StompFrame stomp_frame::MakeConnectedFrame(const std::string& version,
                                            const std::string& session,
                                            const std::string& server,
-                                           const std::string& heart_beat)
-{
+                                           const std::string& heart_beat) {
   BuildParameters parameters(StompCommand::Connected);
   parameters.headers.emplace(StompHeader::Version, version);
   EmplaceIfValueNotEmpty(parameters.headers, StompHeader::Session, session);
@@ -66,8 +61,7 @@ StompFrame stomp_frame::MakeConnectedFrame(const std::string& version,
 }
 
 StompFrame stomp_frame::MakeErrorFrame(const std::string& message,
-                                       const std::string& body)
-{
+                                       const std::string& body) {
   BuildParameters parameters(StompCommand::Error);
   EmplaceIfValueNotEmpty(parameters.headers, StompHeader::Message, message);
   if (!body.empty()) {
@@ -78,8 +72,7 @@ StompFrame stomp_frame::MakeErrorFrame(const std::string& message,
   return Build(error, parameters);
 }
 
-StompFrame stomp_frame::MakeReceiptFrame(const std::string& receipt_id)
-{
+StompFrame stomp_frame::MakeReceiptFrame(const std::string& receipt_id) {
   BuildParameters parameters{StompCommand::Receipt};
   EmplaceIfValueNotEmpty(parameters.headers, StompHeader::ReceiptId, receipt_id);
 
@@ -93,8 +86,7 @@ StompFrame MakeMessageFrame(const std::string& destination,
                             const std::string& ack,
                             const std::string& body,
                             const std::string& content_length,
-                            const std::string& content_type)
-{
+                            const std::string& content_type) {
   // TODO
   return {};
 }
@@ -102,8 +94,7 @@ StompFrame MakeMessageFrame(const std::string& destination,
 StompFrame stomp_frame::MakeSubscribeFrame(const std::string& destination,
                                            const std::string& id,
                                            const std::string& ack,
-                                           const std::string& receipt)
-{
+                                           const std::string& receipt) {
   BuildParameters parameters{StompCommand::Subscribe};
   EmplaceIfValueNotEmpty(parameters.headers, StompHeader::Destination, destination);
   EmplaceIfValueNotEmpty(parameters.headers, StompHeader::Id, id);

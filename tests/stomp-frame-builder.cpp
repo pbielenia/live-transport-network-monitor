@@ -15,8 +15,7 @@ BOOST_AUTO_TEST_SUITE(network_monitor);
 
 BOOST_AUTO_TEST_SUITE(stomp_frame_builder);
 
-BOOST_AUTO_TEST_CASE(BuildsOnlyCommand)
-{
+BOOST_AUTO_TEST_CASE(BuildsOnlyCommand) {
   stomp_frame::BuildParameters parameters(StompCommand::Disconnect);
 
   StompError error_code;
@@ -26,8 +25,7 @@ BOOST_AUTO_TEST_CASE(BuildsOnlyCommand)
   BOOST_CHECK_EQUAL(frame.GetCommand(), StompCommand::Disconnect);
 }
 
-BOOST_AUTO_TEST_CASE(BuildsCommandAndHeader)
-{
+BOOST_AUTO_TEST_CASE(BuildsCommandAndHeader) {
   stomp_frame::BuildParameters parameters(StompCommand::Receipt);
   parameters.headers.emplace(StompHeader::ReceiptId, "25");
 
@@ -40,8 +38,7 @@ BOOST_AUTO_TEST_CASE(BuildsCommandAndHeader)
   BOOST_CHECK_EQUAL(frame.GetHeaderValue(StompHeader::ReceiptId), "25");
 }
 
-BOOST_AUTO_TEST_CASE(BuildsCommandAndMultipleHeaders)
-{
+BOOST_AUTO_TEST_CASE(BuildsCommandAndMultipleHeaders) {
   stomp_frame::BuildParameters parameters(StompCommand::Message);
   parameters.headers.emplace(StompHeader::Destination, "/queue_a/");
   parameters.headers.emplace(StompHeader::MessageId, "10");
@@ -60,8 +57,7 @@ BOOST_AUTO_TEST_CASE(BuildsCommandAndMultipleHeaders)
   BOOST_CHECK_EQUAL(frame.GetHeaderValue(StompHeader::Subscription), "20");
 }
 
-BOOST_AUTO_TEST_CASE(BuildsFullFrame)
-{
+BOOST_AUTO_TEST_CASE(BuildsFullFrame) {
   stomp_frame::BuildParameters parameters(StompCommand::Ack);
   parameters.headers.emplace(StompHeader::Id, "30");
   parameters.body = "Frame body";
@@ -76,8 +72,7 @@ BOOST_AUTO_TEST_CASE(BuildsFullFrame)
   BOOST_CHECK_EQUAL(frame.GetBody(), "Frame body");
 }
 
-BOOST_AUTO_TEST_CASE(InsertsQuotesAtEmptySpecifiedHeaders)
-{
+BOOST_AUTO_TEST_CASE(InsertsQuotesAtEmptySpecifiedHeaders) {
   stomp_frame::BuildParameters parameters(StompCommand::Connect);
   parameters.headers.emplace(StompHeader::AcceptVersion, "1.2");
   parameters.headers.emplace(StompHeader::Host, "host.com");

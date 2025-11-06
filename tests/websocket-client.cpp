@@ -18,8 +18,7 @@ using network_monitor::WebSocketClient;
 
 // This fixture is used to re-initialize all mock properties before a test.
 struct WebSocketClientTestFixture {
-  WebSocketClientTestFixture()
-  {
+  WebSocketClientTestFixture() {
     MockResolver::resolve_error_code = {};
     MockTcpStream::connect_error_code = {};
     MockSslStream<MockTcpStream>::handshake_error_code = {};
@@ -38,15 +37,13 @@ BOOST_AUTO_TEST_SUITE(network_monitor);
 
 BOOST_AUTO_TEST_SUITE(class_WebSocketClient);
 
-BOOST_AUTO_TEST_CASE(cacert_pem)
-{
+BOOST_AUTO_TEST_CASE(cacert_pem) {
   BOOST_CHECK(std::filesystem::exists(TESTS_CACERT_PEM));
 }
 
 BOOST_FIXTURE_TEST_SUITE(Connect, WebSocketClientTestFixture);
 
-BOOST_AUTO_TEST_CASE(fail_resolve, *timeout{1})
-{
+BOOST_AUTO_TEST_CASE(fail_resolve, *timeout{1}) {
   const std::string url{"some.echo-server.com"};
   const std::string endpoint{"/"};
   const std::string port{"443"};
@@ -71,8 +68,7 @@ BOOST_AUTO_TEST_CASE(fail_resolve, *timeout{1})
   BOOST_CHECK(called_on_connect);
 }
 
-BOOST_AUTO_TEST_CASE(fail_socket_connection, *timeout{1})
-{
+BOOST_AUTO_TEST_CASE(fail_socket_connection, *timeout{1}) {
   const std::string url{"some.echo-server.com"};
   const std::string endpoint{"/"};
   const std::string port{"443"};
@@ -97,8 +93,7 @@ BOOST_AUTO_TEST_CASE(fail_socket_connection, *timeout{1})
   BOOST_CHECK(called_on_connect);
 }
 
-BOOST_AUTO_TEST_CASE(fail_socket_handshake, *timeout{1})
-{
+BOOST_AUTO_TEST_CASE(fail_socket_handshake, *timeout{1}) {
   const std::string url{"some.echo-server.com"};
   const std::string endpoint{"/"};
   const std::string port{"443"};
@@ -124,8 +119,7 @@ BOOST_AUTO_TEST_CASE(fail_socket_handshake, *timeout{1})
   BOOST_CHECK(called_on_connect);
 }
 
-BOOST_AUTO_TEST_CASE(fail_websocket_handshake, *timeout{1})
-{
+BOOST_AUTO_TEST_CASE(fail_websocket_handshake, *timeout{1}) {
   using MockTlsStream = MockSslStream<MockTcpStream>;
 
   const std::string url{"some.echo-server.com"};
@@ -154,8 +148,7 @@ BOOST_AUTO_TEST_CASE(fail_websocket_handshake, *timeout{1})
   BOOST_CHECK(called_on_connect);
 }
 
-BOOST_AUTO_TEST_CASE(successful_nothing_to_read, *timeout{1})
-{
+BOOST_AUTO_TEST_CASE(successful_nothing_to_read, *timeout{1}) {
   const std::string url{"some.echo-server.com"};
   const std::string endpoint{"/"};
   const std::string port{"443"};
@@ -179,8 +172,7 @@ BOOST_AUTO_TEST_CASE(successful_nothing_to_read, *timeout{1})
   BOOST_CHECK(called_on_connect);
 }
 
-BOOST_AUTO_TEST_CASE(successful_no_connecthandler, *timeout{1})
-{
+BOOST_AUTO_TEST_CASE(successful_no_connecthandler, *timeout{1}) {
   const std::string url{"some.echo-server.com"};
   const std::string endpoint{"/"};
   const std::string port{"443"};
@@ -211,8 +203,7 @@ BOOST_AUTO_TEST_SUITE_END();  // Connect
 
 BOOST_FIXTURE_TEST_SUITE(onMessage, WebSocketClientTestFixture);
 
-BOOST_AUTO_TEST_CASE(one_message, *timeout{1})
-{
+BOOST_AUTO_TEST_CASE(one_message, *timeout{1}) {
   using WebsocketSocketStream = MockWebSocketStream<MockSslStream<MockTcpStream>>;
 
   const std::string url{"some.echo-server.com"};
@@ -245,8 +236,7 @@ BOOST_AUTO_TEST_CASE(one_message, *timeout{1})
   BOOST_CHECK(called_on_message);
 }
 
-BOOST_AUTO_TEST_CASE(two_messages, *timeout{1})
-{
+BOOST_AUTO_TEST_CASE(two_messages, *timeout{1}) {
   using WebsocketSocketStream = MockWebSocketStream<MockSslStream<MockTcpStream>>;
 
   const std::string url{"some.echo-server.com"};
@@ -285,8 +275,7 @@ BOOST_AUTO_TEST_CASE(two_messages, *timeout{1})
   BOOST_CHECK_EQUAL(called_on_message_count, 2);
 }
 
-BOOST_AUTO_TEST_CASE(fail, *timeout{1})
-{
+BOOST_AUTO_TEST_CASE(fail, *timeout{1}) {
   using WebsocketSocketStream = MockWebSocketStream<MockSslStream<MockTcpStream>>;
 
   const std::string url{"some.echo-server.com"};
@@ -332,8 +321,7 @@ BOOST_AUTO_TEST_CASE(fail, *timeout{1})
   BOOST_CHECK(timeout_occured);
 }
 
-BOOST_AUTO_TEST_CASE(no_handler, *timeout{1})
-{
+BOOST_AUTO_TEST_CASE(no_handler, *timeout{1}) {
   using WebsocketSocketStream = MockWebSocketStream<MockSslStream<MockTcpStream>>;
 
   const std::string url{"some.echo-server.com"};
@@ -373,8 +361,7 @@ BOOST_AUTO_TEST_SUITE_END();  // onMessage
 
 BOOST_FIXTURE_TEST_SUITE(Send, WebSocketClientTestFixture);
 
-BOOST_AUTO_TEST_CASE(one_message, *timeout{1})
-{
+BOOST_AUTO_TEST_CASE(one_message, *timeout{1}) {
   const std::string url{"some.echo-server.com"};
   const std::string endpoint{"/"};
   const std::string port{"443"};
@@ -409,8 +396,7 @@ BOOST_AUTO_TEST_CASE(one_message, *timeout{1})
   BOOST_CHECK(called_on_send);
 }
 
-BOOST_AUTO_TEST_CASE(send_before_connect, *timeout{1})
-{
+BOOST_AUTO_TEST_CASE(send_before_connect, *timeout{1}) {
   const std::string url{"some.echo-server.com"};
   const std::string endpoint{"/"};
   const std::string port{"443"};
@@ -435,8 +421,7 @@ BOOST_AUTO_TEST_CASE(send_before_connect, *timeout{1})
   BOOST_CHECK(called_on_send);
 }
 
-BOOST_AUTO_TEST_CASE(fail, *timeout{1})
-{
+BOOST_AUTO_TEST_CASE(fail, *timeout{1}) {
   using WebsocketSocketStream = MockWebSocketStream<MockSslStream<MockTcpStream>>;
 
   const std::string url{"some.echo-server.com"};
@@ -479,8 +464,7 @@ BOOST_AUTO_TEST_SUITE_END();  // Send
 
 BOOST_FIXTURE_TEST_SUITE(Close, WebSocketClientTestFixture);
 
-BOOST_AUTO_TEST_CASE(close, *timeout{1})
-{
+BOOST_AUTO_TEST_CASE(close, *timeout{1}) {
   const std::string url{"some.echo-server.com"};
   const std::string endpoint{"/"};
   const std::string port{"443"};
@@ -507,8 +491,7 @@ BOOST_AUTO_TEST_CASE(close, *timeout{1})
   BOOST_CHECK(on_close_called);
 }
 
-BOOST_AUTO_TEST_CASE(close_before_connect, *timeout{1})
-{
+BOOST_AUTO_TEST_CASE(close_before_connect, *timeout{1}) {
   const std::string url{"some.echo-server.com"};
   const std::string endpoint{"/"};
   const std::string port{"443"};
@@ -532,8 +515,7 @@ BOOST_AUTO_TEST_CASE(close_before_connect, *timeout{1})
   BOOST_CHECK(on_close_called);
 }
 
-BOOST_AUTO_TEST_CASE(close_no_disconnect, *timeout{1})
-{
+BOOST_AUTO_TEST_CASE(close_no_disconnect, *timeout{1}) {
   const std::string url{"some.echo-server.com"};
   const std::string endpoint{"/"};
   const std::string port{"443"};
@@ -569,8 +551,7 @@ BOOST_AUTO_TEST_SUITE_END();  // Close
 
 BOOST_AUTO_TEST_SUITE(live);
 
-BOOST_AUTO_TEST_CASE(echo, *timeout{20})
-{
+BOOST_AUTO_TEST_CASE(echo, *timeout{20}) {
   const std::string url{"ltnm.learncppthroughprojects.com"};
   const std::string endpoint{"/echo"};
   const std::string port{"443"};
@@ -615,16 +596,14 @@ BOOST_AUTO_TEST_CASE(echo, *timeout{20})
   BOOST_CHECK_EQUAL(message, echo);
 }
 
-bool CheckResponse(const std::string& response)
-{
+bool CheckResponse(const std::string& response) {
   bool ok{true};
   ok &= response.find("ERROR") != std::string::npos;
   ok &= response.find("ValidationInvalidAuth") != std::string::npos;
   return ok;
 }
 
-BOOST_AUTO_TEST_CASE(send_stomp_frame)
-{
+BOOST_AUTO_TEST_CASE(send_stomp_frame) {
   const std::string url{"ltnm.learncppthroughprojects.com"};
   const std::string endpoint{"/network-events"};
   const std::string port{"443"};

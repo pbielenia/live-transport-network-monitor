@@ -7,8 +7,7 @@ using namespace network_monitor;
 
 template <typename L, typename R>
 boost::bimap<L, R> MakeBimap(
-    std::initializer_list<typename boost::bimap<L, R>::value_type> list)
-{
+    std::initializer_list<typename boost::bimap<L, R>::value_type> list) {
   return boost::bimap<L, R>(list.begin(), list.end());
 }
 
@@ -99,8 +98,7 @@ static const std::map<StompCommand, std::set<StompHeader>> headers_required_by_c
     // clang-format on
 };
 
-std::string_view ToStringView(const StompCommand& command)
-{
+std::string_view ToStringView(const StompCommand& command) {
   const auto string_representation{stomp_commands_strings.left.find(command)};
   if (string_representation == stomp_commands_strings.left.end()) {
     return stomp_commands_strings.left.find(StompCommand::Invalid)->second;
@@ -109,8 +107,7 @@ std::string_view ToStringView(const StompCommand& command)
   }
 }
 
-std::string_view ToStringView(const StompHeader& header)
-{
+std::string_view ToStringView(const StompHeader& header) {
   const auto string_representation{stomp_headers_strings.left.find(header)};
   if (string_representation == stomp_headers_strings.left.end()) {
     return stomp_headers_strings.left.find(StompHeader::Invalid)->second;
@@ -119,8 +116,7 @@ std::string_view ToStringView(const StompHeader& header)
   }
 }
 
-std::string_view ToStringView(const StompError& error)
-{
+std::string_view ToStringView(const StompError& error) {
   const auto string_representation{stomp_errors_strings.left.find(error)};
   if (string_representation == stomp_errors_strings.left.end()) {
     return stomp_errors_strings.left.find(StompError::UndefinedError)->second;
@@ -129,43 +125,36 @@ std::string_view ToStringView(const StompError& error)
   }
 }
 
-std::ostream& network_monitor::operator<<(std::ostream& os, const StompCommand& command)
-{
+std::ostream& network_monitor::operator<<(std::ostream& os, const StompCommand& command) {
   os << ToStringView(command);
   return os;
 }
 
-std::ostream& network_monitor::operator<<(std::ostream& os, const StompHeader& header)
-{
+std::ostream& network_monitor::operator<<(std::ostream& os, const StompHeader& header) {
   os << ToStringView(header);
   return os;
 }
 
-std::ostream& network_monitor::operator<<(std::ostream& os, const StompError& error)
-{
+std::ostream& network_monitor::operator<<(std::ostream& os, const StompError& error) {
   os << ToStringView(error);
   return os;
 }
 
-std::string network_monitor::ToString(const StompCommand& command)
-{
+std::string network_monitor::ToString(const StompCommand& command) {
   return std::string(ToStringView(command));
 }
 
-std::string network_monitor::ToString(const StompHeader& header)
-{
+std::string network_monitor::ToString(const StompHeader& header) {
   return std::string(ToStringView(header));
 }
 
-std::string network_monitor::ToString(const StompError& error)
-{
+std::string network_monitor::ToString(const StompError& error) {
   return std::string(ToStringView(error));
 }
 
 StompFrame::StompFrame() = default;
 
-StompFrame::StompFrame(StompError& error_code, const std::string& content)
-{
+StompFrame::StompFrame(StompError& error_code, const std::string& content) {
   plain_content_ = content;
   error_code = ParseFrame();
   if (error_code != StompError::Ok) {
@@ -174,8 +163,7 @@ StompFrame::StompFrame(StompError& error_code, const std::string& content)
   error_code = ValidateFrame();
 }
 
-StompFrame::StompFrame(StompError& error_code, std::string&& content)
-{
+StompFrame::StompFrame(StompError& error_code, std::string&& content) {
   plain_content_ = std::move(content);
   error_code = ParseFrame();
   if (error_code != StompError::Ok) {
@@ -188,20 +176,15 @@ StompFrame::StompFrame(const StompFrame& other)
     : plain_content_{other.plain_content_},
       command_{other.command_},
       headers_{other.headers_},
-      body_{other.body_}
-{
-}
+      body_{other.body_} {}
 
 StompFrame::StompFrame(StompFrame&& other)
     : plain_content_{std::move(other.plain_content_)},
       command_{std::move(other.command_)},
       headers_{std::move(other.headers_)},
-      body_{std::move(other.body_)}
-{
-}
+      body_{std::move(other.body_)} {}
 
-StompFrame& StompFrame::operator=(const StompFrame& other)
-{
+StompFrame& StompFrame::operator=(const StompFrame& other) {
   plain_content_ = other.plain_content_;
   command_ = other.command_;
   headers_ = other.headers_;
@@ -209,8 +192,7 @@ StompFrame& StompFrame::operator=(const StompFrame& other)
   return *this;
 }
 
-StompFrame& StompFrame::operator=(StompFrame&& other)
-{
+StompFrame& StompFrame::operator=(StompFrame&& other) {
   plain_content_ = std::move(other.plain_content_);
   command_ = std::move(other.command_);
   headers_ = std::move(other.headers_);
@@ -218,8 +200,7 @@ StompFrame& StompFrame::operator=(StompFrame&& other)
   return *this;
 }
 
-StompError StompFrame::ParseFrame()
-{
+StompError StompFrame::ParseFrame() {
   static const char newline_character{'\n'};
   static const char colon_character{':'};
   static const char null_character{'\0'};
@@ -384,8 +365,7 @@ StompError StompFrame::ParseFrame()
   return StompError::Ok;
 }
 
-StompError StompFrame::ValidateFrame()
-{
+StompError StompFrame::ValidateFrame() {
   // Check if content-length match body_'s length.
   if (HasHeader(StompHeader::ContentLength)) {
     int expected_content_length{};
@@ -411,18 +391,15 @@ StompError StompFrame::ValidateFrame()
   return StompError::Ok;
 }
 
-StompCommand StompFrame::GetCommand() const
-{
+StompCommand StompFrame::GetCommand() const {
   return command_;
 }
 
-const bool StompFrame::HasHeader(const StompHeader& header) const
-{
+const bool StompFrame::HasHeader(const StompHeader& header) const {
   return static_cast<bool>(headers_.count(header));
 }
 
-const std::string_view& StompFrame::GetHeaderValue(const StompHeader& header) const
-{
+const std::string_view& StompFrame::GetHeaderValue(const StompHeader& header) const {
   static const std::string_view empty_header_value{};
   if (HasHeader(header)) {
     return headers_.at(header);
@@ -430,18 +407,15 @@ const std::string_view& StompFrame::GetHeaderValue(const StompHeader& header) co
   return empty_header_value;
 }
 
-const StompFrame::Headers& StompFrame::GetAllHeaders() const
-{
+const StompFrame::Headers& StompFrame::GetAllHeaders() const {
   return headers_;
 }
 
-const std::string_view& StompFrame::GetBody() const
-{
+const std::string_view& StompFrame::GetBody() const {
   return body_;
 }
 
-std::string StompFrame::ToString() const
-{
+std::string StompFrame::ToString() const {
   std::ostringstream stream;
   stream << GetCommand() << "\n";
   for (const auto& [header, value] : GetAllHeaders()) {
