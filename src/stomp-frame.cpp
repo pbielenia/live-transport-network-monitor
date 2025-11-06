@@ -423,7 +423,7 @@ const bool StompFrame::HasHeader(const StompHeader& header) const
 
 const std::string_view& StompFrame::GetHeaderValue(const StompHeader& header) const
 {
-  static const std::string_view empty_header_value{""};
+  static const std::string_view empty_header_value{};
   if (HasHeader(header)) {
     return headers_.at(header);
   }
