@@ -13,6 +13,7 @@ class ConanPackage(ConanFile):
         "openssl/3.6.0",
         "zlib/1.2.13",
     )
+    tool_requires = "cmake/4.1.2"
     default_options = {"boost/*:shared": False}
 
     def generate(self):
