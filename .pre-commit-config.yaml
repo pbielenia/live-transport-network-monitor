@@ -16,3 +16,4 @@ repos:
         entry: git clang-format
         args: [--staged --]
         files: hpp|cpp
+        require_serial: true
