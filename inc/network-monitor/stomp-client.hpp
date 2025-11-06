@@ -281,9 +281,8 @@ void StompClient<WebSocketClient>::OnWebSocketConnected(
   parameters.headers.emplace(StompHeader::Login, user_name_);
   parameters.headers.emplace(StompHeader::Passcode, user_password_);
 
-  StompError error;
-  StompFrame frame = stomp_frame::Build(error, parameters);
-  if (error != StompError::Ok) {
+  const auto frame = stomp_frame::Build(parameters);
+  if (frame.GetStompError() != StompError::Ok) {
     // add log StompClient: Could not create a valid frame: {error}
     CallOnConnectedCallbackWithErrorIfValid(
         StompClientError::UnexpectedCouldNotCreateValidFrame);
@@ -311,9 +310,8 @@ void StompClient<WebSocketClient>::OnWebSocketMessageReceived(
     return;
   }
 
-  StompError stomp_error{};
-  StompFrame frame{stomp_error, std::move(message)};
-  if (stomp_error != StompError::Ok) {
+  StompFrame frame{std::move(message)};
+  if (frame.GetStompError() != StompError::Ok) {
     // TODO: log StompClient: Could not parse message as STOMP frame: {stomp_error}
     CallOnConnectedCallbackWithErrorIfValid(
         StompClientError::CouldNotParseMessageAsStompFrame);

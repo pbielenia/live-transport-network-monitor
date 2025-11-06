@@ -110,19 +110,17 @@ class StompFrame {
 
   /*! \brief Construct the STOMP frame from a string. The string is copied.
    *
-   *  The result of the operation is stored in the error code.
-   *
-   *  If any `error_code` other than `StompError:Ok` is set, none of the frame lookup
-   *  methods should be used as they may store invalid values.
+   *  The result of the operation is stored internally and can be read using
+   *  `GetStompError()` method.
    */
-  StompFrame(StompError& error_code, const std::string& content);
+  StompFrame(const std::string& content);
 
   /*! \brief Construct the STOMP frame from a string. The string is moved into
    *         the object.
    *
    *  The result of the operation is stored in the error code.
    */
-  StompFrame(StompError& error_code, std::string&& content);
+  StompFrame(std::string&& content);
 
   /*! \brief Copy constructor.
    */
@@ -139,6 +137,13 @@ class StompFrame {
   /*! \brief Move assignment operator.
    */
   StompFrame& operator=(StompFrame&& other);
+
+  /*! \brief Returns result of the parsing.
+   *
+   *  If any error code other than `StompError:Ok` is set, none of the frame lookup
+   *  methods should be used as they may store invalid values.
+   */
+  StompError GetStompError() const;
 
   /*! \brief Get the STOMP command.
    */
@@ -170,6 +175,7 @@ class StompFrame {
   StompError ParseFrame();
   StompError ValidateFrame();
 
+  StompError stomp_error_;
   std::string plain_content_{};
   StompCommand command_{StompCommand::Invalid};
   Headers headers_{};

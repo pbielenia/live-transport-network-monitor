@@ -152,34 +152,36 @@ std::string network_monitor::ToString(const StompError& error) {
   return std::string(ToStringView(error));
 }
 
-StompFrame::StompFrame() = default;
+StompFrame::StompFrame() : stomp_error_{StompError::Ok} {}
 
-StompFrame::StompFrame(StompError& error_code, const std::string& content) {
+StompFrame::StompFrame(const std::string& content) : stomp_error_{StompError::Ok} {
   plain_content_ = content;
-  error_code = ParseFrame();
-  if (error_code != StompError::Ok) {
+  stomp_error_ = ParseFrame();
+  if (stomp_error_ != StompError::Ok) {
     return;
   }
-  error_code = ValidateFrame();
+  stomp_error_ = ValidateFrame();
 }
 
-StompFrame::StompFrame(StompError& error_code, std::string&& content) {
+StompFrame::StompFrame(std::string&& content) : stomp_error_{StompError::Ok} {
   plain_content_ = std::move(content);
-  error_code = ParseFrame();
-  if (error_code != StompError::Ok) {
+  stomp_error_ = ParseFrame();
+  if (stomp_error_ != StompError::Ok) {
     return;
   }
-  error_code = ValidateFrame();
+  stomp_error_ = ValidateFrame();
 }
 
 StompFrame::StompFrame(const StompFrame& other)
-    : plain_content_{other.plain_content_},
+    : stomp_error_{other.stomp_error_},
+      plain_content_{other.plain_content_},
       command_{other.command_},
       headers_{other.headers_},
       body_{other.body_} {}
 
 StompFrame::StompFrame(StompFrame&& other)
-    : plain_content_{std::move(other.plain_content_)},
+    : stomp_error_{other.stomp_error_},
+      plain_content_{std::move(other.plain_content_)},
       command_{std::move(other.command_)},
       headers_{std::move(other.headers_)},
       body_{std::move(other.body_)} {}
@@ -389,6 +391,10 @@ StompError StompFrame::ValidateFrame() {
   }
 
   return StompError::Ok;
+}
+
+StompError StompFrame::GetStompError() const {
+  return stomp_error_;
 }
 
 StompCommand StompFrame::GetCommand() const {

@@ -19,7 +19,8 @@ struct BuildParameters {
 // StompFrame Build(BuildParameters&& parameters);
 
 // TODO: rename to `BuildFrame` or `MakeFrame`
-StompFrame Build(StompError& error_code, const BuildParameters& parameters);
+// Remark: Remember to verify the result with StompFrame::GetStompResult().
+StompFrame Build(const BuildParameters& parameters);
 
 // Server frames.
 StompFrame MakeConnectedFrame(const std::string& version,

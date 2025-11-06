@@ -264,10 +264,9 @@ BOOST_AUTO_TEST_CASE(parse_empty_content) {
   ExpectedFrame expected;
   expected.SetError(StompError::NoData);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_missing_command) {
@@ -282,10 +281,9 @@ BOOST_AUTO_TEST_CASE(parse_missing_command) {
   ExpectedFrame expected;
   expected.SetError(StompError::MissingCommand);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_missing_command_newline) {
@@ -297,10 +295,9 @@ BOOST_AUTO_TEST_CASE(parse_missing_command_newline) {
   ExpectedFrame expected;
   expected.SetError(StompError::NoNewlineCharacters);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_only_command_invalid) {
@@ -309,10 +306,9 @@ BOOST_AUTO_TEST_CASE(parse_only_command_invalid) {
   ExpectedFrame expected;
   expected.SetError(StompError::MissingBodyNewline);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_well_formed) {
@@ -330,10 +326,9 @@ BOOST_AUTO_TEST_CASE(parse_well_formed) {
   expected.AddHeader(StompHeader::Host, "host.com");
   expected.SetBody("Frame body");
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_well_formed_content_length) {
@@ -353,10 +348,9 @@ BOOST_AUTO_TEST_CASE(parse_well_formed_content_length) {
   expected.AddHeader(StompHeader::ContentLength, "10");
   expected.SetBody("Frame body");
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_empty_body) {
@@ -374,10 +368,9 @@ BOOST_AUTO_TEST_CASE(parse_empty_body) {
   expected.AddHeader(StompHeader::Host, "host.com");
   expected.SetBody("");
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_empty_body_content_length) {
@@ -397,10 +390,9 @@ BOOST_AUTO_TEST_CASE(parse_empty_body_content_length) {
   expected.AddHeader(StompHeader::ContentLength, "0");
   expected.SetBody("");
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_empty_headers) {
@@ -415,10 +407,9 @@ BOOST_AUTO_TEST_CASE(parse_empty_headers) {
   expected.SetHeadersCheck();
   expected.SetBody("Frame body");
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_only_command) {
@@ -433,10 +424,9 @@ BOOST_AUTO_TEST_CASE(parse_only_command) {
   expected.SetHeadersCheck();
   expected.SetBody("");
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_invalid_command) {
@@ -450,10 +440,9 @@ BOOST_AUTO_TEST_CASE(parse_invalid_command) {
   ExpectedFrame expected;
   expected.SetError(StompError::InvalidCommand);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_invalid_header) {
@@ -467,10 +456,9 @@ BOOST_AUTO_TEST_CASE(parse_invalid_header) {
   ExpectedFrame expected;
   expected.SetError(StompError::InvalidHeader);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_header_no_value) {
@@ -484,10 +472,9 @@ BOOST_AUTO_TEST_CASE(parse_header_no_value) {
   ExpectedFrame expected;
   expected.SetError(StompError::NoHeaderValue);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_missing_body_newline_with_headers) {
@@ -500,10 +487,9 @@ BOOST_AUTO_TEST_CASE(parse_missing_body_newline_with_headers) {
   ExpectedFrame expected;
   expected.SetError(StompError::MissingBodyNewline);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_missing_body_newline_no_headers) {
@@ -514,10 +500,9 @@ BOOST_AUTO_TEST_CASE(parse_missing_body_newline_no_headers) {
   ExpectedFrame expected;
   expected.SetError(StompError::MissingBodyNewline);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_missing_body_newline_with_body) {
@@ -530,10 +515,9 @@ BOOST_AUTO_TEST_CASE(parse_missing_body_newline_with_body) {
   ExpectedFrame expected;
   expected.SetError(StompError::MissingBodyNewline);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_missing_last_header_newline) {
@@ -546,10 +530,9 @@ BOOST_AUTO_TEST_CASE(parse_missing_last_header_newline) {
   ExpectedFrame expected;
   expected.SetError(StompError::MissingBodyNewline);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_empty_header_value) {
@@ -563,10 +546,9 @@ BOOST_AUTO_TEST_CASE(parse_empty_header_value) {
   ExpectedFrame expected;
   expected.SetError(StompError::EmptyHeaderValue);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_newline_after_command) {
@@ -584,10 +566,9 @@ BOOST_AUTO_TEST_CASE(parse_newline_after_command) {
   expected.SetHeadersCheck();
   expected.SetBody("version:42\nhost:host.com\n\nFrame body\0");
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_double_colon_in_header_line, *boost::unit_test::disabled()) {
@@ -616,10 +597,9 @@ BOOST_AUTO_TEST_CASE(parse_repeated_headers) {
   expected.AddHeader(StompHeader::Host, "host.com");
   expected.SetBody("Frame body\0");
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_repeated_headers_error_in_second) {
@@ -633,10 +613,9 @@ BOOST_AUTO_TEST_CASE(parse_repeated_headers_error_in_second) {
   ExpectedFrame expected;
   expected.SetError(StompError::EmptyHeaderValue);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_unterminated_body) {
@@ -650,10 +629,9 @@ BOOST_AUTO_TEST_CASE(parse_unterminated_body) {
   ExpectedFrame expected;
   expected.SetError(StompError::MissingClosingNullCharacter);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_unterminated_body_content_length) {
@@ -668,10 +646,9 @@ BOOST_AUTO_TEST_CASE(parse_unterminated_body_content_length) {
   ExpectedFrame expected;
   expected.SetError(StompError::MissingClosingNullCharacter);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_junk_after_body) {
@@ -685,10 +662,9 @@ BOOST_AUTO_TEST_CASE(parse_junk_after_body) {
   ExpectedFrame expected;
   expected.SetError(StompError::JunkAfterBody);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_junk_after_body_content_length) {
@@ -703,10 +679,9 @@ BOOST_AUTO_TEST_CASE(parse_junk_after_body_content_length) {
   ExpectedFrame expected;
   expected.SetError(StompError::ContentLengthsDontMatch);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_newlines_after_body) {
@@ -720,10 +695,9 @@ BOOST_AUTO_TEST_CASE(parse_newlines_after_body) {
   ExpectedFrame expected;
   expected.SetError(StompError::JunkAfterBody);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_newlines_after_body_content_length) {
@@ -738,10 +712,9 @@ BOOST_AUTO_TEST_CASE(parse_newlines_after_body_content_length) {
   ExpectedFrame expected;
   expected.SetError(StompError::MissingClosingNullCharacter);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_content_length_wrong_number) {
@@ -756,10 +729,9 @@ BOOST_AUTO_TEST_CASE(parse_content_length_wrong_number) {
   ExpectedFrame expected;
   expected.SetError(StompError::ContentLengthsDontMatch);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_content_length_exceeding) {
@@ -774,10 +746,9 @@ BOOST_AUTO_TEST_CASE(parse_content_length_exceeding) {
   ExpectedFrame expected;
   expected.SetError(StompError::ContentLengthsDontMatch);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_invalid_content_length_value) {
@@ -792,10 +763,9 @@ BOOST_AUTO_TEST_CASE(parse_invalid_content_length_value) {
   ExpectedFrame expected;
   expected.SetError(StompError::InvalidHeaderValue);
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  expected.Check(error, frame);
+  expected.Check(frame.GetStompError(), frame);
 }
 
 BOOST_AUTO_TEST_CASE(copy_constructor) {
@@ -814,13 +784,12 @@ BOOST_AUTO_TEST_CASE(copy_constructor) {
   expected.AddHeader(StompHeader::ContentLength, "10");
   expected.SetBody("Frame body");
 
-  StompError error;
-  StompFrame parsed_frame{error, std::move(plain)};
+  StompFrame parsed_frame{std::move(plain)};
 
-  expected.Check(error, parsed_frame);
+  expected.Check(parsed_frame.GetStompError(), parsed_frame);
 
   const auto other_frame{parsed_frame};
-  expected.Check(error, other_frame);
+  expected.Check(parsed_frame.GetStompError(), other_frame);
 }
 
 BOOST_AUTO_TEST_CASE(move_constructor) {
@@ -839,13 +808,12 @@ BOOST_AUTO_TEST_CASE(move_constructor) {
   expected.AddHeader(StompHeader::ContentLength, "10");
   expected.SetBody("Frame body");
 
-  StompError error;
-  StompFrame parsed_frame{error, std::move(plain)};
+  StompFrame parsed_frame{std::move(plain)};
 
-  expected.Check(error, parsed_frame);
+  expected.Check(parsed_frame.GetStompError(), parsed_frame);
 
   const auto other_frame{std::move(parsed_frame)};
-  expected.Check(error, other_frame);
+  expected.Check(parsed_frame.GetStompError(), other_frame);
 }
 
 BOOST_AUTO_TEST_CASE(move_assignment_operator) {
@@ -864,13 +832,12 @@ BOOST_AUTO_TEST_CASE(move_assignment_operator) {
   expected.AddHeader(StompHeader::ContentLength, "10");
   expected.SetBody("Frame body");
 
-  StompError error;
-  StompFrame parsed_frame{error, std::move(plain)};
+  StompFrame parsed_frame{std::move(plain)};
 
-  expected.Check(error, parsed_frame);
+  expected.Check(parsed_frame.GetStompError(), parsed_frame);
 
   const auto other_frame = std::move(parsed_frame);
-  expected.Check(error, other_frame);
+  expected.Check(parsed_frame.GetStompError(), other_frame);
 }
 
 BOOST_AUTO_TEST_CASE(copy_assignment_operator) {
@@ -889,17 +856,15 @@ BOOST_AUTO_TEST_CASE(copy_assignment_operator) {
   expected.AddHeader(StompHeader::ContentLength, "10");
   expected.SetBody("Frame body");
 
-  StompError error;
-  StompFrame parsed_frame{error, std::move(plain)};
+  StompFrame parsed_frame{std::move(plain)};
 
-  expected.Check(error, parsed_frame);
+  expected.Check(parsed_frame.GetStompError(), parsed_frame);
 
   const auto other_frame = parsed_frame;
-  expected.Check(error, other_frame);
+  expected.Check(parsed_frame.GetStompError(), other_frame);
 }
 
 BOOST_AUTO_TEST_CASE(parse_required_headers) {
-  StompError error;
   {
     std::string plain{
         "CONNECT\n"
@@ -908,9 +873,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -921,9 +886,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -934,9 +899,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -951,9 +916,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     expected.AddHeader(StompHeader::AcceptVersion, "42");
     expected.AddHeader(StompHeader::Host, "host.com");
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -963,9 +928,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -978,9 +943,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     expected.SetCommand(StompCommand::Connected);
     expected.AddHeader(StompHeader::Version, "42");
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -990,9 +955,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1006,9 +971,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     expected.AddHeader(StompHeader::Destination, "/queue/a");
     expected.SetBody("Frame body");
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1018,9 +983,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1031,9 +996,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1044,9 +1009,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1061,9 +1026,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     expected.AddHeader(StompHeader::Id, "0");
     expected.AddHeader(StompHeader::Destination, "/queue/foo");
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1073,9 +1038,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1087,9 +1052,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     expected.SetError(StompError::Ok);
     expected.SetCommand(StompCommand::Unsubscribe);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1099,9 +1064,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1114,9 +1079,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     expected.SetCommand(StompCommand::Ack);
     expected.AddHeader(StompHeader::Id, "12345");
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1126,9 +1091,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1141,9 +1106,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     expected.SetCommand(StompCommand::NAck);
     expected.AddHeader(StompHeader::Id, "12345");
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1153,9 +1118,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1168,9 +1133,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     expected.SetCommand(StompCommand::Begin);
     expected.AddHeader(StompHeader::Transaction, "tx1");
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1180,9 +1145,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1195,9 +1160,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     expected.SetCommand(StompCommand::Commit);
     expected.AddHeader(StompHeader::Transaction, "tx1");
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1207,9 +1172,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1222,9 +1187,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     expected.SetCommand(StompCommand::Abort);
     expected.AddHeader(StompHeader::Transaction, "tx1");
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1235,9 +1200,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     expected.SetError(StompError::Ok);
     expected.SetCommand(StompCommand::Disconnect);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1247,9 +1212,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1260,9 +1225,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1273,9 +1238,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1286,9 +1251,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1300,9 +1265,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1314,9 +1279,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
 
   {
@@ -1329,9 +1294,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1349,9 +1314,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     expected.AddHeader(StompHeader::Destination, "/queue/a");
     expected.SetBody("hello queue a");
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1361,9 +1326,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     ExpectedFrame expected;
     expected.SetError(StompError::MissingRequiredHeader);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1376,9 +1341,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     expected.SetCommand(StompCommand::Receipt);
     expected.AddHeader(StompHeader::ReceiptId, "77");
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
   {
     std::string plain{
@@ -1389,9 +1354,9 @@ BOOST_AUTO_TEST_CASE(parse_required_headers) {
     expected.SetError(StompError::Ok);
     expected.SetCommand(StompCommand::Error);
 
-    StompFrame frame{error, std::move(plain)};
+    StompFrame frame{std::move(plain)};
 
-    expected.Check(error, frame);
+    expected.Check(frame.GetStompError(), frame);
   }
 }
 
@@ -1405,10 +1370,9 @@ BOOST_AUTO_TEST_CASE(to_string_method) {
       "hello queue a\0"s};
   const auto& plain_size{plain.size()};
 
-  StompError error;
-  StompFrame frame{error, std::move(plain)};
+  StompFrame frame{std::move(plain)};
 
-  BOOST_REQUIRE(error == StompError::Ok);
+  BOOST_REQUIRE(frame.GetStompError() == StompError::Ok);
 
   const auto& frame_text{frame.ToString()};
 

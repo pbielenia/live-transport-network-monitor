@@ -124,9 +124,8 @@ WebSocketClientMockForStomp::WebSocketClientMockForStomp(
 }
 
 void WebSocketClientMockForStomp::OnMessage(const std::string& message) {
-  StompError error;
-  StompFrame frame{error, message};
-  if (error != StompError::Ok) {
+  StompFrame frame{message};
+  if (frame.GetStompError() != StompError::Ok) {
     // TODO: log
     trigger_disconnection = true;
     return;
