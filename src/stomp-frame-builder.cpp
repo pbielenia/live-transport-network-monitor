@@ -1,6 +1,6 @@
 #include <network-monitor/stomp-frame-builder.hpp>
 
-using namespace NetworkMonitor;
+using namespace network_monitor;
 
 namespace {
 // TODO: turn it into a class Builder.AddHeader()

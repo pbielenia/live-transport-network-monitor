@@ -2,7 +2,7 @@
 
 #include "network-monitor/stomp-frame-builder.hpp"
 
-using namespace NetworkMonitor;
+using namespace network_monitor;
 
 inline boost::system::error_code WebSocketClientMock::connect_error_code{};
 inline boost::system::error_code WebSocketClientMock::send_error_code{};
@@ -159,7 +159,7 @@ void WebSocketClientMockForStomp::OnMessage(const std::string& message)
 }
 
 void WebSocketClientMockForStomp::HandleConnectMessage(
-    const NetworkMonitor::StompFrame& frame)
+    const network_monitor::StompFrame& frame)
 {
   if (FrameIsValidConnect(frame)) {
     message_queue.push(
@@ -172,7 +172,7 @@ void WebSocketClientMockForStomp::HandleConnectMessage(
 }
 
 void WebSocketClientMockForStomp::HandleSubscribeMessage(
-    const NetworkMonitor::StompFrame& frame)
+    const network_monitor::StompFrame& frame)
 {
   if (FrameIsValidSubscribe(frame)) {
     auto receipt_id = frame.GetHeaderValue(StompHeader::Receipt);
@@ -187,7 +187,7 @@ void WebSocketClientMockForStomp::HandleSubscribeMessage(
 }
 
 bool WebSocketClientMockForStomp::FrameIsValidConnect(
-    const NetworkMonitor::StompFrame& frame)
+    const network_monitor::StompFrame& frame)
 {
   if (!frame.HasHeader(StompHeader::Login) || !frame.HasHeader(StompHeader::Passcode)) {
     return false;
@@ -197,7 +197,7 @@ bool WebSocketClientMockForStomp::FrameIsValidConnect(
 }
 
 bool WebSocketClientMockForStomp::FrameIsValidSubscribe(
-    const NetworkMonitor::StompFrame& frame)
+    const network_monitor::StompFrame& frame)
 {
   return (frame.GetHeaderValue(StompHeader::Destination) == endpoint &&
           !frame.GetHeaderValue(StompHeader::Receipt).empty() &&

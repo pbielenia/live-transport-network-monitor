@@ -3,7 +3,7 @@
 #include <network-monitor/stomp-frame.hpp>
 #include <sstream>
 
-using namespace NetworkMonitor;
+using namespace network_monitor;
 
 template <typename L, typename R>
 boost::bimap<L, R> MakeBimap(
@@ -129,35 +129,35 @@ std::string_view ToStringView(const StompError& error)
   }
 }
 
-std::ostream& NetworkMonitor::operator<<(std::ostream& os, const StompCommand& command)
+std::ostream& network_monitor::operator<<(std::ostream& os, const StompCommand& command)
 {
   os << ToStringView(command);
   return os;
 }
 
-std::ostream& NetworkMonitor::operator<<(std::ostream& os, const StompHeader& header)
+std::ostream& network_monitor::operator<<(std::ostream& os, const StompHeader& header)
 {
   os << ToStringView(header);
   return os;
 }
 
-std::ostream& NetworkMonitor::operator<<(std::ostream& os, const StompError& error)
+std::ostream& network_monitor::operator<<(std::ostream& os, const StompError& error)
 {
   os << ToStringView(error);
   return os;
 }
 
-std::string NetworkMonitor::ToString(const StompCommand& command)
+std::string network_monitor::ToString(const StompCommand& command)
 {
   return std::string(ToStringView(command));
 }
 
-std::string NetworkMonitor::ToString(const StompHeader& header)
+std::string network_monitor::ToString(const StompHeader& header)
 {
   return std::string(ToStringView(header));
 }
 
-std::string NetworkMonitor::ToString(const StompError& error)
+std::string network_monitor::ToString(const StompError& error)
 {
   return std::string(ToStringView(error));
 }

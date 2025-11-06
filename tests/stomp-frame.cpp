@@ -3,10 +3,10 @@
 #include <sstream>
 #include <vector>
 
-using NetworkMonitor::StompCommand;
-using NetworkMonitor::StompError;
-using NetworkMonitor::StompFrame;
-using NetworkMonitor::StompHeader;
+using network_monitor::StompCommand;
+using network_monitor::StompError;
+using network_monitor::StompFrame;
+using network_monitor::StompHeader;
 
 using namespace std::string_literals;
 
@@ -100,10 +100,10 @@ BOOST_AUTO_TEST_CASE(ostream)
 
 BOOST_AUTO_TEST_CASE(ToString)
 {
-  const auto invalid{NetworkMonitor::ToString(StompCommand::Invalid)};
+  const auto invalid{network_monitor::ToString(StompCommand::Invalid)};
 
   for (const auto& command : stomp_commands) {
-    BOOST_CHECK(NetworkMonitor::ToString(command) != invalid);
+    BOOST_CHECK(network_monitor::ToString(command) != invalid);
   }
 }
 
@@ -129,10 +129,10 @@ BOOST_AUTO_TEST_CASE(ostream)
 
 BOOST_AUTO_TEST_CASE(ToString)
 {
-  const auto invalid{NetworkMonitor::ToString(StompHeader::Invalid)};
+  const auto invalid{network_monitor::ToString(StompHeader::Invalid)};
 
   for (const auto& header : stomp_headers) {
-    BOOST_CHECK(NetworkMonitor::ToString(header) != invalid);
+    BOOST_CHECK(network_monitor::ToString(header) != invalid);
   }
 }
 
@@ -158,10 +158,10 @@ BOOST_AUTO_TEST_CASE(ostream)
 
 BOOST_AUTO_TEST_CASE(ToString)
 {
-  const auto invalid{NetworkMonitor::ToString(StompError::UndefinedError)};
+  const auto invalid{network_monitor::ToString(StompError::UndefinedError)};
 
   for (const auto& error : stomp_errors) {
-    BOOST_CHECK(NetworkMonitor::ToString(error) != invalid);
+    BOOST_CHECK(network_monitor::ToString(error) != invalid);
   }
 }
 

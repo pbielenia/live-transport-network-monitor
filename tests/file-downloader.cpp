@@ -5,8 +5,8 @@
 #include <network-monitor/file-downloader.hpp>
 #include <string>
 
-using NetworkMonitor::DownloadFile;
-using NetworkMonitor::ParseJsonFile;
+using network_monitor::DownloadFile;
+using network_monitor::ParseJsonFile;
 
 BOOST_AUTO_TEST_SUITE(network_monitor);
 

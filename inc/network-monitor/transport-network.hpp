@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-namespace NetworkMonitor {
+namespace network_monitor {
 
 /*! \brief A station, line, or route ID.
  */
@@ -295,4 +295,4 @@ class TransportNetwork {
   std::map<Id, std::shared_ptr<LineInternal>> lines_{};
 };
 
-}  // namespace NetworkMonitor
+}  // namespace network_monitor

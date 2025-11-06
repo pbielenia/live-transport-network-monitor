@@ -4,7 +4,7 @@
 #include <string_view>
 #include <unordered_map>
 
-namespace NetworkMonitor {
+namespace network_monitor {
 
 /*! \brief Available STOMP commands, from the STOMP protocol v1.2.
  */
@@ -176,4 +176,4 @@ class StompFrame {
   std::string_view body_{};
 };
 
-}  // namespace NetworkMonitor
+}  // namespace network_monitor

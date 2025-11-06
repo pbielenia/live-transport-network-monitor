@@ -8,9 +8,9 @@
 
 #include "network-monitor/stomp-frame.hpp"
 
-namespace NetworkMonitor {
+namespace network_monitor {
 
-/*! \brief Mock the NetworkMonitor::WebSocketClient.
+/*! \brief Mock the network_monitor::WebSocketClient.
  *
  */
 class WebSocketClientMock {
@@ -48,7 +48,7 @@ class WebSocketClientMock {
   std::function<void(boost::system::error_code)> on_disconnected_callback_;
 };
 
-/*! \brief Mocks the NetworkMonitor::WebSocketClient talking to a STOMP server. Mocks
+/*! \brief Mocks the network_monitor::WebSocketClient talking to a STOMP server. Mocks
  *         STOMP communication specifically.
  */
 class WebSocketClientMockForStomp : public WebSocketClientMock {
@@ -74,11 +74,11 @@ class WebSocketClientMockForStomp : public WebSocketClientMock {
 
  private:
   void OnMessage(const std::string& message);
-  void HandleConnectMessage(const NetworkMonitor::StompFrame& frame);
-  void HandleSubscribeMessage(const NetworkMonitor::StompFrame& frame);
+  void HandleConnectMessage(const network_monitor::StompFrame& frame);
+  void HandleSubscribeMessage(const network_monitor::StompFrame& frame);
 
-  bool FrameIsValidConnect(const NetworkMonitor::StompFrame& frame);
-  bool FrameIsValidSubscribe(const NetworkMonitor::StompFrame& frame);
+  bool FrameIsValidConnect(const network_monitor::StompFrame& frame);
+  bool FrameIsValidSubscribe(const network_monitor::StompFrame& frame);
 };
 
-}  // namespace NetworkMonitor
+}  // namespace network_monitor

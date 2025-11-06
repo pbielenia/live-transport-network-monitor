@@ -3,11 +3,11 @@
 #include <sstream>
 #include <vector>
 
-using NetworkMonitor::StompCommand;
-using NetworkMonitor::StompError;
-using NetworkMonitor::StompFrame;
-using NetworkMonitor::StompHeader;
-using namespace NetworkMonitor;
+using network_monitor::StompCommand;
+using network_monitor::StompError;
+using network_monitor::StompFrame;
+using network_monitor::StompHeader;
+using namespace network_monitor;
 
 using namespace std::string_literals;
 

@@ -9,12 +9,12 @@
 
 #include "boost-mock.hpp"
 
-using NetworkMonitor::MockResolver;
-using NetworkMonitor::MockSslStream;
-using NetworkMonitor::MockTcpStream;
-using NetworkMonitor::MockWebSocketStream;
-using NetworkMonitor::TestWebSocketClient;
-using NetworkMonitor::WebSocketClient;
+using network_monitor::MockResolver;
+using network_monitor::MockSslStream;
+using network_monitor::MockTcpStream;
+using network_monitor::MockWebSocketStream;
+using network_monitor::TestWebSocketClient;
+using network_monitor::WebSocketClient;
 
 // This fixture is used to re-initialize all mock properties before a test.
 struct WebSocketClientTestFixture {
@@ -580,8 +580,8 @@ BOOST_AUTO_TEST_CASE(echo, *timeout{20})
   tls_context.load_verify_file(TESTS_CACERT_PEM);
 
   boost::asio::io_context io_context{};
-  NetworkMonitor::BoostWebSocketClient client{url, endpoint, port, io_context,
-                                              tls_context};
+  network_monitor::BoostWebSocketClient client{url, endpoint, port, io_context,
+                                               tls_context};
 
   bool connected{false};
   bool message_sent{false};
@@ -646,8 +646,8 @@ BOOST_AUTO_TEST_CASE(send_stomp_frame)
   tls_context.load_verify_file(TESTS_CACERT_PEM);
 
   boost::asio::io_context io_context{};
-  NetworkMonitor::BoostWebSocketClient client{url, endpoint, port, io_context,
-                                              tls_context};
+  network_monitor::BoostWebSocketClient client{url, endpoint, port, io_context,
+                                               tls_context};
 
   bool connected{false};
   bool message_sent{false};

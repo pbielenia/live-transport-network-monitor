@@ -2,7 +2,7 @@
 
 #include <network-monitor/stomp-frame.hpp>
 
-namespace NetworkMonitor {
+namespace network_monitor {
 
 namespace stomp_frame {
 
@@ -41,4 +41,4 @@ StompFrame MakeSubscribeFrame(const std::string& destination,
                               const std::string& receipt);
 
 }  // namespace stomp_frame
-}  // namespace NetworkMonitor
+}  // namespace network_monitor

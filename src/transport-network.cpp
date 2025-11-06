@@ -2,7 +2,7 @@
 #include <network-monitor/transport-network.hpp>
 #include <stdexcept>
 
-using namespace NetworkMonitor;
+using namespace network_monitor;
 
 bool Station::operator==(const Station& other) const
 {

@@ -13,7 +13,7 @@
 #include <string_view>
 #include <unordered_map>
 
-namespace NetworkMonitor {
+namespace network_monitor {
 
 /*! \brief Error codes for the STOMP client.
  */
@@ -481,4 +481,4 @@ std::string StompClient<WebSocketClient>::GenerateSubscriptionId()
   return output.str();
 }
 
-}  // namespace NetworkMonitor
+}  // namespace network_monitor

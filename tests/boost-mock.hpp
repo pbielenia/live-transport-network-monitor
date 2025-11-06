@@ -3,7 +3,7 @@
 #include <boost/asio.hpp>
 #include <string>
 
-namespace NetworkMonitor {
+namespace network_monitor {
 
 /*! \brief Mock the DNS resolver from Boost.Asio.
  *
@@ -319,4 +319,4 @@ void async_teardown(boost::beast::role_type role,
 using TestWebSocketClient =
     WebSocketClient<MockResolver, MockWebSocketStream<MockSslStream<MockTcpStream>>>;
 
-}  // namespace NetworkMonitor
+}  // namespace network_monitor

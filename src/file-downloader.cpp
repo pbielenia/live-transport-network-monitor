@@ -4,9 +4,9 @@
 #include <fstream>
 #include <network-monitor/file-downloader.hpp>
 
-bool NetworkMonitor::DownloadFile(const std::string& file_url,
-                                  const std::filesystem::path& destination,
-                                  const std::filesystem::path& ca_cert_file)
+bool network_monitor::DownloadFile(const std::string& file_url,
+                                   const std::filesystem::path& destination,
+                                   const std::filesystem::path& ca_cert_file)
 {
   curl_global_init(CURL_GLOBAL_DEFAULT);
 
@@ -38,7 +38,7 @@ bool NetworkMonitor::DownloadFile(const std::string& file_url,
   return true;
 }
 
-nlohmann::json NetworkMonitor::ParseJsonFile(const std::filesystem::path& source)
+nlohmann::json network_monitor::ParseJsonFile(const std::filesystem::path& source)
 {
   auto parsed = nlohmann::json::object();
   if (!std::filesystem::exists(source)) {

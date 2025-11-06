@@ -4,7 +4,7 @@
 #include <nlohmann/json.hpp>
 #include <string>
 
-namespace NetworkMonitor {
+namespace network_monitor {
 
 /*! \brief Download a file from a remote HTTPS URL.
  *
@@ -23,4 +23,4 @@ bool DownloadFile(const std::string& file_url,
  */
 nlohmann::json ParseJsonFile(const std::filesystem::path& source);
 
-}  // namespace NetworkMonitor
+}  // namespace network_monitor

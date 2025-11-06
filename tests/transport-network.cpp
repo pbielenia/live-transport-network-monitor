@@ -6,12 +6,12 @@
 #include <stdexcept>
 #include <string>
 
-using NetworkMonitor::Id;
-using NetworkMonitor::Line;
-using NetworkMonitor::PassengerEvent;
-using NetworkMonitor::Route;
-using NetworkMonitor::Station;
-using NetworkMonitor::TransportNetwork;
+using network_monitor::Id;
+using network_monitor::Line;
+using network_monitor::PassengerEvent;
+using network_monitor::Route;
+using network_monitor::Station;
+using network_monitor::TransportNetwork;
 
 BOOST_AUTO_TEST_SUITE(network_monitor);
 
@@ -493,7 +493,7 @@ BOOST_AUTO_TEST_CASE(from_json_1line_1route)
 {
   const auto test_file_path =
       std::filesystem::path(TESTS_RESOURCES_DIR) / "from_json_1line_1route.json";
-  auto json_source = NetworkMonitor::ParseJsonFile(test_file_path);
+  auto json_source = network_monitor::ParseJsonFile(test_file_path);
 
   TransportNetwork network{};
   auto ok{network.FromJson(std::move(json_source))};
@@ -508,7 +508,7 @@ BOOST_AUTO_TEST_CASE(from_json_1line_2routes)
 {
   auto test_file_path{std::filesystem::path(TESTS_RESOURCES_DIR) /
                       "from_json_1line_2routes.json"};
-  auto json_source = NetworkMonitor::ParseJsonFile(test_file_path);
+  auto json_source = network_monitor::ParseJsonFile(test_file_path);
 
   TransportNetwork network{};
   auto ok{network.FromJson(std::move(json_source))};
@@ -527,7 +527,7 @@ BOOST_AUTO_TEST_CASE(from_json_2lines_2routes)
 {
   auto test_file_path{std::filesystem::path(TESTS_RESOURCES_DIR) /
                       "from_json_2lines_2routes.json"};
-  auto json_source = NetworkMonitor::ParseJsonFile(test_file_path);
+  auto json_source = network_monitor::ParseJsonFile(test_file_path);
 
   TransportNetwork network{};
   auto ok{network.FromJson(std::move(json_source))};
@@ -547,7 +547,7 @@ BOOST_AUTO_TEST_CASE(from_json_travel_times)
 {
   auto test_file_path{std::filesystem::path(TESTS_RESOURCES_DIR) /
                       "from_json_travel_times.json"};
-  auto json_source = NetworkMonitor::ParseJsonFile(test_file_path);
+  auto json_source = network_monitor::ParseJsonFile(test_file_path);
 
   TransportNetwork network{};
   auto ok{network.FromJson(std::move(json_source))};
@@ -582,7 +582,7 @@ BOOST_AUTO_TEST_CASE(fail_on_bad_travel_times)
 {
   const auto test_file_path =
       std::filesystem::path(TESTS_RESOURCES_DIR) / "from_json_bad_travel_times.json";
-  auto json_source = NetworkMonitor::ParseJsonFile(test_file_path);
+  auto json_source = network_monitor::ParseJsonFile(test_file_path);
 
   TransportNetwork network{};
   auto ok{network.FromJson(std::move(json_source))};
