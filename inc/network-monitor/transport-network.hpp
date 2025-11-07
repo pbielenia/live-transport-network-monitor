@@ -113,7 +113,7 @@ class TransportNetwork {
 
   /*! \brief Move constructor
    */
-  TransportNetwork(TransportNetwork&& moved);
+  TransportNetwork(TransportNetwork&& moved) noexcept;
 
   /*! \brief Copy assignment operator
    */

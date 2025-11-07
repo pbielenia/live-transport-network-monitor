@@ -24,7 +24,7 @@ TransportNetwork::TransportNetwork(const TransportNetwork& copied)
     : stations_{copied.stations_},
       lines_{copied.lines_} {}
 
-TransportNetwork::TransportNetwork(TransportNetwork&& moved)
+TransportNetwork::TransportNetwork(TransportNetwork&& moved) noexcept
     : stations_{std::move(moved.stations_)},
       lines_{std::move(moved.lines_)} {}
 

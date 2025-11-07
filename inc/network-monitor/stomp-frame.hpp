@@ -128,7 +128,7 @@ class StompFrame {
 
   /*! \brief Move constructor.
    */
-  StompFrame(StompFrame&& other);
+  StompFrame(StompFrame&& other) noexcept;
 
   /*! \brief Copy assignment operator.
    */
@@ -136,7 +136,7 @@ class StompFrame {
 
   /*! \brief Move assignment operator.
    */
-  StompFrame& operator=(StompFrame&& other);
+  StompFrame& operator=(StompFrame&& other) noexcept;
 
   /*! \brief Returns result of the parsing.
    *

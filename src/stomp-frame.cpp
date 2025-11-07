@@ -185,7 +185,7 @@ StompFrame::StompFrame(const StompFrame& other)
       headers_{other.headers_},
       body_{other.body_} {}
 
-StompFrame::StompFrame(StompFrame&& other)
+StompFrame::StompFrame(StompFrame&& other) noexcept
     : stomp_error_{other.stomp_error_},
       plain_content_{std::move(other.plain_content_)},
       command_{std::move(other.command_)},
@@ -200,7 +200,7 @@ StompFrame& StompFrame::operator=(const StompFrame& other) {
   return *this;
 }
 
-StompFrame& StompFrame::operator=(StompFrame&& other) {
+StompFrame& StompFrame::operator=(StompFrame&& other) noexcept {
   plain_content_ = std::move(other.plain_content_);
   command_ = std::move(other.command_);
   headers_ = std::move(other.headers_);
