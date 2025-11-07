@@ -33,8 +33,8 @@ bool TransportNetwork::FromJson(nlohmann::json&& source) {
     Station new_station{};
     new_station.id = station.at("station_id").get<Id>();
     new_station.name = station.at("name").get<std::string>();
-    auto result = AddStation(new_station);
-    if (result == false) {
+    auto success = AddStation(new_station);
+    if (!success) {
       throw std::runtime_error("Adding station failed [id: " + new_station.id +
                                ", name: " + new_station.name + "]");
     }
@@ -55,18 +55,18 @@ bool TransportNetwork::FromJson(nlohmann::json&& source) {
       }
       new_line.routes.push_back(std::move(new_route));
     }
-    auto result = AddLine(new_line);
-    if (result == false) {
+    auto success = AddLine(new_line);
+    if (!success) {
       throw std::runtime_error("Adding line failed [id: " + new_line.id +
                                ", name: " + new_line.name + "]");
     }
   }
 
   for (const auto& travel_time : source.at("travel_times")) {
-    auto result = SetTravelTime(travel_time.at("start_station_id").get<Id>(),
-                                travel_time.at("end_station_id").get<Id>(),
-                                travel_time.at("travel_time").get<unsigned>());
-    if (result == false) {
+    auto success = SetTravelTime(travel_time.at("start_station_id").get<Id>(),
+                                 travel_time.at("end_station_id").get<Id>(),
+                                 travel_time.at("travel_time").get<unsigned>());
+    if (!success) {
       return false;
     }
   }
@@ -354,10 +354,7 @@ bool TransportNetwork::StationsAreAdjacend(const Id& station_a,
 bool TransportNetwork::StationConnectsAnother(const Id& station_a,
                                               const Id& station_b) const {
   const auto& station_a_internal = stations_.at(station_a);
-  if (stations_.at(station_a)->FindEdgesToNextStation(station_b).empty()) {
-    return false;
-  }
-  return true;
+  return !stations_.at(station_a)->FindEdgesToNextStation(station_b).empty();
 }
 
 TransportNetwork::RouteInternal::RouteInternal(const Id& id,

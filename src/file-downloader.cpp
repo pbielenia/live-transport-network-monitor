@@ -31,10 +31,7 @@ bool network_monitor::DownloadFile(const std::string& file_url,
   curl_easy_cleanup(curl);
   std::fclose(file_handler);
 
-  if (result != CURLE_OK) {
-    return false;
-  }
-  return true;
+  return result == CURLE_OK;
 }
 
 nlohmann::json network_monitor::ParseJsonFile(const std::filesystem::path& source) {
