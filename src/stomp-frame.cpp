@@ -393,7 +393,7 @@ StompError StompFrame::ValidateFrame() {
   }
 
   // Check for required headers.
-  const auto required_headers = headers_required_by_commands.at(command_);
+  const auto& required_headers = headers_required_by_commands.at(command_);
   for (const auto required_header : required_headers) {
     if (!HasHeader(required_header)) {
       return StompError::MissingRequiredHeader;
