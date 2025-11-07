@@ -175,10 +175,10 @@ class StompFrame {
   StompError ParseFrame();
   StompError ValidateFrame();
 
-  std::string plain_content_{};
+  std::string plain_content_;
   StompCommand command_{StompCommand::Invalid};
-  Headers headers_{};
-  std::string_view body_{};
+  Headers headers_;
+  std::string_view body_;
   StompError stomp_error_;
 };
 

@@ -26,12 +26,12 @@ struct StompClientTestFixture {
   std::string url{"some.echo-server.com"};
   std::string endpoint{"/"};
   std::string port{"443"};
-  std::string stomp_username{};
-  std::string stomp_password{};
-  std::string stomp_endpoint{};
+  std::string stomp_username;
+  std::string stomp_password;
+  std::string stomp_endpoint;
 
   boost::asio::ssl::context tls_context;
-  boost::asio::io_context io_context{};
+  boost::asio::io_context io_context;
 };
 
 StompClientTestFixture::StompClientTestFixture()

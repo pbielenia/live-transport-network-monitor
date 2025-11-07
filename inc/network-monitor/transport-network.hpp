@@ -19,8 +19,8 @@ using Id = std::string;
  *  - `id` is unique across all stations in the network.
  */
 struct Station {
-  Id id{};
-  std::string name{};
+  Id id;
+  std::string name;
 
   /*! \brief Station comparison
    *
@@ -47,12 +47,12 @@ struct Station {
  *  - Every stop in `stops` appears only once.
  */
 struct Route {
-  Id id{};
-  std::string direction{};
-  Id line_id{};
-  Id start_station_id{};
-  Id end_station_id{};
-  std::vector<Id> stops{};
+  Id id;
+  std::string direction;
+  Id line_id;
+  Id start_station_id;
+  Id end_station_id;
+  std::vector<Id> stops;
 
   /*! \brief Route comparison
    *
@@ -72,9 +72,9 @@ struct Route {
  *  - Every route in `routes` has a `line_id` that is equal to this line `id`.
  */
 struct Line {
-  Id id{};
-  std::string name{};
-  std::vector<Route> routes{};
+  Id id;
+  std::string name;
+  std::vector<Route> routes;
 
   /*! \brief Line comparison
    *
@@ -91,7 +91,7 @@ struct PassengerEvent {
     Out
   };
 
-  Id station_id{};
+  Id station_id;
   Type type{Type::In};
 };
 
@@ -245,7 +245,7 @@ class TransportNetwork {
     Id id;
     std::string name;
     long long int passenger_count{0};
-    std::vector<std::shared_ptr<GraphEdge>> edges{};
+    std::vector<std::shared_ptr<GraphEdge>> edges;
 
     // FIXME: Possibly could be successfully turned into
     // FindAnyEdgeToNextStation to
@@ -272,7 +272,7 @@ class TransportNetwork {
 
     Id id;
     std::shared_ptr<LineInternal> line;
-    std::vector<std::shared_ptr<GraphNode>> stations{};
+    std::vector<std::shared_ptr<GraphNode>> stations;
   };
 
   struct LineInternal {
@@ -280,7 +280,7 @@ class TransportNetwork {
 
     Id id;
     std::string name;
-    std::vector<std::shared_ptr<RouteInternal>> routes{};
+    std::vector<std::shared_ptr<RouteInternal>> routes;
   };
 
   void AddStationInternal(const Station& station);
@@ -293,8 +293,8 @@ class TransportNetwork {
   bool StationsAreAdjacend(const Id& station_a, const Id& station_b) const;
   bool StationConnectsAnother(const Id& station_a, const Id& station_b) const;
 
-  std::map<Id, std::shared_ptr<GraphNode>> stations_{};
-  std::map<Id, std::shared_ptr<LineInternal>> lines_{};
+  std::map<Id, std::shared_ptr<GraphNode>> stations_;
+  std::map<Id, std::shared_ptr<LineInternal>> lines_;
 };
 
 }  // namespace network_monitor

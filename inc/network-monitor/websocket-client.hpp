@@ -105,14 +105,14 @@ class WebSocketClient {
   void OnMessageReceived(const boost::system::error_code& error,
                          const size_t received_bytes_count);
 
-  const std::string server_url_{};
-  const std::string server_endpoint_{};
-  const std::string server_port_{};
+  const std::string server_url_;
+  const std::string server_endpoint_;
+  const std::string server_port_;
 
   Resolver resolver_;
   WebSocketStream websocket_stream_;
 
-  boost::beast::flat_buffer response_buffer_{};
+  boost::beast::flat_buffer response_buffer_;
   bool closed_{true};
 
   std::function<void(boost::system::error_code)> on_connect_callback_;

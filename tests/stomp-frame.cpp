@@ -186,8 +186,8 @@ class ExpectedFrame {
 
   StompError expected_error{StompError::UndefinedError};
   StompCommand expected_command{StompCommand::Invalid};
-  Headers expected_headers{};
-  std::string expected_body{};
+  Headers expected_headers;
+  std::string expected_body;
 
   bool check_error{false};
   bool check_command{false};

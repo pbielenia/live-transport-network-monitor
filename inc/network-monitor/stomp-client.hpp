@@ -163,7 +163,7 @@ class StompClient {
       std::function<void(StompClientError, std::string&&)>;
 
   struct Subscription {
-    std::string destination{};
+    std::string destination;
     OnSubscribeCallback on_subscribe_callback{nullptr};
     OnMessageCallback on_message_callback{nullptr};
   };
