@@ -62,16 +62,12 @@ bool TransportNetwork::FromJson(nlohmann::json&& source) {
     }
   }
 
-  for (const auto& travel_time : source.at("travel_times")) {
-    auto success = SetTravelTime(travel_time.at("start_station_id").get<Id>(),
-                                 travel_time.at("end_station_id").get<Id>(),
-                                 travel_time.at("travel_time").get<unsigned>());
-    if (!success) {
-      return false;
-    }
-  }
-
-  return true;
+  const auto& travel_times = source.at("travel_times");
+  return std::ranges::all_of(travel_times, [this](const auto& travel_time) {
+    return SetTravelTime(travel_time.at("start_station_id").template get<Id>(),
+                         travel_time.at("end_station_id").template get<Id>(),
+                         travel_time.at("travel_time").template get<unsigned>());
+  });
 }
 
 bool TransportNetwork::AddStation(const Station& station) {
@@ -324,21 +320,13 @@ bool TransportNetwork::StationExists(const Id& station_id) const {
 }
 
 bool TransportNetwork::StationsExist(const std::vector<Route>& routes) const {
-  for (const auto& route : routes) {
-    if (!StationsExist(route.stops)) {
-      return false;
-    }
-  }
-  return true;
+  return std::ranges::all_of(
+      routes, [this](const auto& route) { return StationsExist(route.stops); });
 }
 
 bool TransportNetwork::StationsExist(const std::vector<Id>& stations) const {
-  for (const auto& station_id : stations) {
-    if (!StationExists(station_id)) {
-      return false;
-    }
-  }
-  return true;
+  return std::ranges::all_of(
+      stations, [this](const auto& station_id) { return StationExists(station_id); });
 }
 
 bool TransportNetwork::LineExists(const Line& line) const {
