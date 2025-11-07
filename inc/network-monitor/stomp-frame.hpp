@@ -175,11 +175,11 @@ class StompFrame {
   StompError ParseFrame();
   StompError ValidateFrame();
 
-  StompError stomp_error_;
   std::string plain_content_{};
   StompCommand command_{StompCommand::Invalid};
   Headers headers_{};
   std::string_view body_{};
+  StompError stomp_error_;
 };
 
 }  // namespace network_monitor

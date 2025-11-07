@@ -161,18 +161,17 @@ std::string network_monitor::ToString(const StompError& error) {
 StompFrame::StompFrame() : stomp_error_{StompError::Ok} {}
 
 StompFrame::StompFrame(const std::string& content)
-    : stomp_error_{StompError::Ok} {
-  plain_content_ = content;
-  stomp_error_ = ParseFrame();
+    : plain_content_{content},
+      stomp_error_{ParseFrame()} {
   if (stomp_error_ != StompError::Ok) {
     return;
   }
   stomp_error_ = ValidateFrame();
 }
 
-StompFrame::StompFrame(std::string&& content) : stomp_error_{StompError::Ok} {
-  plain_content_ = std::move(content);
-  stomp_error_ = ParseFrame();
+StompFrame::StompFrame(std::string&& content)
+    : plain_content_{std::move(content)},
+      stomp_error_{ParseFrame()} {
   if (stomp_error_ != StompError::Ok) {
     return;
   }

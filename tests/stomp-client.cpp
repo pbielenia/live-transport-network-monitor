@@ -35,17 +35,16 @@ struct StompClientTestFixture {
 };
 
 StompClientTestFixture::StompClientTestFixture()
-    : tls_context{boost::asio::ssl::context::tlsv12_client} {
+    : stomp_username{"correct_username"},
+      stomp_password{"correct_password"},
+      stomp_endpoint{"correct_endpoint"},
+      tls_context{boost::asio::ssl::context::tlsv12_client} {
   WebSocketClientMock::connect_error_code = {};
   WebSocketClientMock::send_error_code = {};
   WebSocketClientMock::close_error_code = {};
-  WebSocketClientMockForStomp::username = "correct_username";
-  WebSocketClientMockForStomp::password = "correct_password";
-  WebSocketClientMockForStomp::endpoint = "correct_endpoint";
-
-  stomp_username = WebSocketClientMockForStomp::username;
-  stomp_password = WebSocketClientMockForStomp::password;
-  stomp_endpoint = WebSocketClientMockForStomp::endpoint;
+  WebSocketClientMockForStomp::username = stomp_username;
+  WebSocketClientMockForStomp::password = stomp_password;
+  WebSocketClientMockForStomp::endpoint = stomp_endpoint;
 
   tls_context.load_verify_file(TESTS_CACERT_PEM);
 }
