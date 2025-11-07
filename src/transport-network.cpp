@@ -28,7 +28,7 @@ TransportNetwork::TransportNetwork(TransportNetwork&& moved)
     : stations_{std::move(moved.stations_)},
       lines_{std::move(moved.lines_)} {}
 
-bool TransportNetwork::FromJson(nlohmann::json&& source) {
+bool TransportNetwork::FromJson(const nlohmann::json& source) {
   for (const auto& station : source.at("stations")) {
     Station new_station{};
     new_station.id = station.at("station_id").get<Id>();

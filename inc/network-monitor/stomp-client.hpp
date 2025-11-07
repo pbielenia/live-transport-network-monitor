@@ -181,9 +181,9 @@ class StompClient {
                                 std::string& subscription_id,
                                 Subscription&& subscription);
 
-  void HandleStompConnected(StompFrame&& frame);
-  void HandleStompReceipt(StompFrame&& frame);
-  void HandleStompMessage(StompFrame&& frame);
+  void HandleStompConnected(const StompFrame& frame);
+  void HandleStompReceipt(const StompFrame& frame);
+  void HandleStompMessage(const StompFrame& frame);
 
   void CallOnConnectedCallbackWithErrorIfValid(StompClientError error);
 
@@ -336,13 +336,13 @@ void StompClient<WebSocketClient>::OnWebSocketMessageReceived(
   // TODO: log StompClient: Received {frame.GetCommand()}
   switch (frame.GetCommand()) {
     case StompCommand::Connected:
-      HandleStompConnected(std::move(frame));
+      HandleStompConnected(frame);
       break;
     case StompCommand::Receipt:
-      HandleStompReceipt(std::move(frame));
+      HandleStompReceipt(frame);
       break;
     case StompCommand::Message:
-      HandleStompMessage(std::move(frame));
+      HandleStompMessage(frame);
     // TODO
     default: {
       // TODO: log StompClient: Unexpected STOMP command: {frame.GetCommand()}
@@ -407,13 +407,14 @@ void StompClient<WebSocketClient>::OnWebSocketSentSubscribe(
 }
 
 template <typename WebSocketClient>
-void StompClient<WebSocketClient>::HandleStompConnected(StompFrame&& frame) {
+void StompClient<WebSocketClient>::HandleStompConnected(
+    const StompFrame& frame) {
   // TODO: log StompClient: Successfully connected to STOMP server
   CallOnConnectedCallbackWithErrorIfValid(StompClientError::Ok);
 }
 
 template <typename WebSocketClient>
-void StompClient<WebSocketClient>::HandleStompReceipt(StompFrame&& frame) {
+void StompClient<WebSocketClient>::HandleStompReceipt(const StompFrame& frame) {
   // Supports only SUBSCRIBE frame.
   auto subscription_id{frame.GetHeaderValue(StompHeader::ReceiptId)};
   auto subscription_iterator{subscriptions_.find(std::string(subscription_id))};
@@ -435,7 +436,7 @@ void StompClient<WebSocketClient>::HandleStompReceipt(StompFrame&& frame) {
 }
 
 template <typename WebSocketClient>
-void StompClient<WebSocketClient>::HandleStompMessage(StompFrame&& frame) {
+void StompClient<WebSocketClient>::HandleStompMessage(const StompFrame& frame) {
   // Find the subscription
   auto destination = frame.GetHeaderValue(StompHeader::Destination);
   auto message_id = frame.GetHeaderValue(StompHeader::MessageId);

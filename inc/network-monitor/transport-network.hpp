@@ -125,7 +125,7 @@ class TransportNetwork {
 
   /*! \brief Populate the network from a JSON object.
    *
-   *  \param source Ownership of the source JSON object is moved to this method.
+   *  \param source Source JSON object.
    *
    *  \returns false if stations and lines where parsed successfully, but not
    *           the travel times.
@@ -136,7 +136,7 @@ class TransportNetwork {
    *  \throws nlohmann::json::exception If there was a problem parsing the
    *                                    JSON object.
    */
-  bool FromJson(nlohmann::json&& source);
+  bool FromJson(const nlohmann::json& source);
 
   /*! \brief Add a station to the network.
    *

@@ -506,7 +506,7 @@ BOOST_AUTO_TEST_CASE(from_json_1line_1route) {
   auto json_source = network_monitor::ParseJsonFile(test_file_path);
 
   TransportNetwork network{};
-  auto ok{network.FromJson(std::move(json_source))};
+  auto ok{network.FromJson(json_source)};
   BOOST_REQUIRE(ok);
 
   auto routes{network.GetRoutesServingStation("station_0")};
@@ -520,7 +520,7 @@ BOOST_AUTO_TEST_CASE(from_json_1line_2routes) {
   auto json_source = network_monitor::ParseJsonFile(test_file_path);
 
   TransportNetwork network{};
-  auto ok{network.FromJson(std::move(json_source))};
+  auto ok{network.FromJson(json_source)};
   BOOST_REQUIRE(ok);
 
   std::vector<Id> routes{};
@@ -538,7 +538,7 @@ BOOST_AUTO_TEST_CASE(from_json_2lines_2routes) {
   auto json_source = network_monitor::ParseJsonFile(test_file_path);
 
   TransportNetwork network{};
-  auto ok{network.FromJson(std::move(json_source))};
+  auto ok{network.FromJson(json_source)};
   BOOST_REQUIRE(ok);
 
   std::vector<Id> routes{};
@@ -557,7 +557,7 @@ BOOST_AUTO_TEST_CASE(from_json_travel_times) {
   auto json_source = network_monitor::ParseJsonFile(test_file_path);
 
   TransportNetwork network{};
-  auto ok{network.FromJson(std::move(json_source))};
+  auto ok{network.FromJson(json_source)};
   BOOST_REQUIRE(ok);
 
   BOOST_CHECK_EQUAL(network.GetTravelTime("station_0", "station_1"), 1);
@@ -591,7 +591,7 @@ BOOST_AUTO_TEST_CASE(fail_on_bad_travel_times) {
   auto json_source = network_monitor::ParseJsonFile(test_file_path);
 
   TransportNetwork network{};
-  auto ok{network.FromJson(std::move(json_source))};
+  auto ok{network.FromJson(json_source)};
   BOOST_REQUIRE(!ok);
 }
 
