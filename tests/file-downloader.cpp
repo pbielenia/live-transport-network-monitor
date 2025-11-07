@@ -13,7 +13,8 @@ BOOST_AUTO_TEST_SUITE(network_monitor);
 BOOST_AUTO_TEST_CASE(file_downloader) {
   const std::string file_url{
       "https://ltnm.learncppthroughprojects.com/network-layout.json"};
-  const auto destination{std::filesystem::temp_directory_path() / "network-layout.json"};
+  const auto destination{std::filesystem::temp_directory_path() /
+                         "network-layout.json"};
 
   // Download the file.
   bool downloaded{DownloadFile(file_url, destination, TESTS_CACERT_PEM)};

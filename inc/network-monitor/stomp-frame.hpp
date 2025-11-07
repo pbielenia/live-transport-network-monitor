@@ -140,8 +140,8 @@ class StompFrame {
 
   /*! \brief Returns result of the parsing.
    *
-   *  If any error code other than `StompError:Ok` is set, none of the frame lookup
-   *  methods should be used as they may store invalid values.
+   *  If any error code other than `StompError:Ok` is set, none of the frame
+   * lookup methods should be used as they may store invalid values.
    */
   StompError GetStompError() const;
 

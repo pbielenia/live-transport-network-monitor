@@ -27,7 +27,8 @@ StompFrame MakeConnectedFrame(const std::string& version,
                               const std::string& session,
                               const std::string& server,
                               const std::string& heart_beat);
-StompFrame MakeErrorFrame(const std::string& message, const std::string& body = {});
+StompFrame MakeErrorFrame(const std::string& message,
+                          const std::string& body = {});
 StompFrame MakeReceiptFrame(const std::string& receipt_id);
 StompFrame MakeMessageFrame(const std::string& destination,
                             const std::string& message_id,

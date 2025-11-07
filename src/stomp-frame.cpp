@@ -11,8 +11,9 @@ boost::bimap<L, R> MakeBimap(
   return boost::bimap<L, R>(list.begin(), list.end());
 }
 
-static const auto stomp_commands_strings{MakeBimap<StompCommand, std::string_view>({
-    // clang-format off
+static const auto stomp_commands_strings{
+    MakeBimap<StompCommand, std::string_view>({
+        // clang-format off
     {StompCommand::Abort,           "ABORT"             },
     {StompCommand::Ack,             "ACK"               },
     {StompCommand::Begin,           "BEGIN"             },
@@ -29,11 +30,12 @@ static const auto stomp_commands_strings{MakeBimap<StompCommand, std::string_vie
     {StompCommand::Stomp,           "STOMP"             },
     {StompCommand::Subscribe,       "SUBSCRIBE"         },
     {StompCommand::Unsubscribe,     "UNSUBSCRIBE"       },
-    // clang-format on
-})};
+        // clang-format on
+    })};
 
-static const auto stomp_headers_strings{MakeBimap<StompHeader, std::string_view>({
-    // clang-format off
+static const auto stomp_headers_strings{
+    MakeBimap<StompHeader, std::string_view>({
+        // clang-format off
     {StompHeader::AcceptVersion,    "accept-version"    },
     {StompHeader::Ack,              "ack"               },
     {StompHeader::ContentLength,    "content-length"    },
@@ -54,8 +56,8 @@ static const auto stomp_headers_strings{MakeBimap<StompHeader, std::string_view>
     {StompHeader::Subscription,     "subscription"      },
     {StompHeader::Transaction,      "transaction"       },
     {StompHeader::Version,          "version"           },
-    // clang-format on
-})};
+        // clang-format on
+    })};
 
 static const auto stomp_errors_strings{MakeBimap<StompError, std::string_view>({
     // clang-format off
@@ -79,8 +81,9 @@ static const auto stomp_errors_strings{MakeBimap<StompError, std::string_view>({
     // clang-format on
 })};
 
-static const std::map<StompCommand, std::set<StompHeader>> headers_required_by_commands{
-    // clang-format off
+static const std::map<StompCommand, std::set<StompHeader>>
+    headers_required_by_commands{
+        // clang-format off
     {StompCommand::Connect,     {StompHeader::AcceptVersion, StompHeader::Host}},
     {StompCommand::Connected,   {StompHeader::Version}},
     {StompCommand::Send,        {StompHeader::Destination}},
@@ -95,8 +98,8 @@ static const std::map<StompCommand, std::set<StompHeader>> headers_required_by_c
     {StompCommand::Message,     {StompHeader::Destination, StompHeader::MessageId, StompHeader::Subscription}},
     {StompCommand::Receipt,     {StompHeader::ReceiptId}},
     {StompCommand::Error,       {}}
-    // clang-format on
-};
+        // clang-format on
+    };
 
 std::string_view ToStringView(const StompCommand& command) {
   const auto string_representation{stomp_commands_strings.left.find(command)};
@@ -125,17 +128,20 @@ std::string_view ToStringView(const StompError& error) {
   }
 }
 
-std::ostream& network_monitor::operator<<(std::ostream& os, const StompCommand& command) {
+std::ostream& network_monitor::operator<<(std::ostream& os,
+                                          const StompCommand& command) {
   os << ToStringView(command);
   return os;
 }
 
-std::ostream& network_monitor::operator<<(std::ostream& os, const StompHeader& header) {
+std::ostream& network_monitor::operator<<(std::ostream& os,
+                                          const StompHeader& header) {
   os << ToStringView(header);
   return os;
 }
 
-std::ostream& network_monitor::operator<<(std::ostream& os, const StompError& error) {
+std::ostream& network_monitor::operator<<(std::ostream& os,
+                                          const StompError& error) {
   os << ToStringView(error);
   return os;
 }
@@ -154,7 +160,8 @@ std::string network_monitor::ToString(const StompError& error) {
 
 StompFrame::StompFrame() : stomp_error_{StompError::Ok} {}
 
-StompFrame::StompFrame(const std::string& content) : stomp_error_{StompError::Ok} {
+StompFrame::StompFrame(const std::string& content)
+    : stomp_error_{StompError::Ok} {
   plain_content_ = content;
   stomp_error_ = ParseFrame();
   if (stomp_error_ != StompError::Ok) {
@@ -270,7 +277,8 @@ StompError StompFrame::ParseFrame() {
       return StompError::MissingBodyNewline;
     }
 
-    const auto next_colon_position{plain_content.find(colon_character, next_line_start)};
+    const auto next_colon_position{
+        plain_content.find(colon_character, next_line_start)};
     const auto next_newline_position{
         plain_content.find(newline_character, next_line_start)};
 
@@ -308,8 +316,8 @@ StompError StompFrame::ParseFrame() {
     // header-1:
 
     // Read header.
-    const auto header_plain{
-        plain_content.substr(next_line_start, next_colon_position - next_line_start)};
+    const auto header_plain{plain_content.substr(
+        next_line_start, next_colon_position - next_line_start)};
     const auto header{stomp_headers_strings.right.find(header_plain)};
     if (header == stomp_headers_strings.right.end()) {
       return StompError::InvalidHeader;
@@ -317,8 +325,9 @@ StompError StompFrame::ParseFrame() {
 
     // Find the value. It's known '\n' is in a further part, so no frame end
     // concerns. Also the value will be no empty.
-    std::string_view value{plain_content.substr(
-        next_colon_position + 1, next_newline_position - next_colon_position - 1)};
+    std::string_view value{
+        plain_content.substr(next_colon_position + 1,
+                             next_newline_position - next_colon_position - 1)};
 
     headers_.emplace(header->second, std::move(value));
     next_line_start = next_newline_position + 1;
@@ -351,8 +360,8 @@ StompError StompFrame::ParseFrame() {
 
   if (HasHeader(StompHeader::ContentLength)) {
     // -2 excludes the closing null character.
-    body_ =
-        plain_content.substr(next_line_start, plain_content.size() - next_line_start - 1);
+    body_ = plain_content.substr(next_line_start,
+                                 plain_content.size() - next_line_start - 1);
   } else {
     if (null_position + 1 != plain_content.size()) {
       // CONNECT\n
@@ -361,7 +370,8 @@ StompError StompFrame::ParseFrame() {
       //             ^ unexpected characters
       return StompError::JunkAfterBody;
     }
-    body_ = plain_content.substr(next_line_start, null_position - next_line_start);
+    body_ =
+        plain_content.substr(next_line_start, null_position - next_line_start);
   }
 
   return StompError::Ok;
@@ -405,7 +415,8 @@ const bool StompFrame::HasHeader(const StompHeader& header) const {
   return static_cast<bool>(headers_.count(header));
 }
 
-const std::string_view& StompFrame::GetHeaderValue(const StompHeader& header) const {
+const std::string_view& StompFrame::GetHeaderValue(
+    const StompHeader& header) const {
   static const std::string_view empty_header_value{};
   if (HasHeader(header)) {
     return headers_.at(header);

@@ -30,11 +30,14 @@ class WebSocketClientMock {
 
   void Connect(
       std::function<void(boost::system::error_code)> on_connected_callback,
-      std::function<void(boost::system::error_code, std::string&&)> on_message_callback,
+      std::function<void(boost::system::error_code, std::string&&)>
+          on_message_callback,
       std::function<void(boost::system::error_code)> on_disconnected_callback);
   void Send(const std::string& message,
-            std::function<void(boost::system::error_code)> on_sent_callback = nullptr);
-  void Close(std::function<void(boost::system::error_code)> on_close_callback = nullptr);
+            std::function<void(boost::system::error_code)> on_sent_callback =
+                nullptr);
+  void Close(std::function<void(boost::system::error_code)> on_close_callback =
+                 nullptr);
   const std::string& GetServerUrl() const;
 
  private:
@@ -44,23 +47,25 @@ class WebSocketClientMock {
   const std::string server_url_;
 
   bool connected_{false};
-  std::function<void(boost::system::error_code, std::string&&)> on_message_callback_;
+  std::function<void(boost::system::error_code, std::string&&)>
+      on_message_callback_;
   std::function<void(boost::system::error_code)> on_disconnected_callback_;
 };
 
-/*! \brief Mocks the network_monitor::WebSocketClient talking to a STOMP server. Mocks
- *         STOMP communication specifically.
+/*! \brief Mocks the network_monitor::WebSocketClient talking to a STOMP server.
+ * Mocks STOMP communication specifically.
  */
 class WebSocketClientMockForStomp : public WebSocketClientMock {
  public:
-  /*! \brief Use `username` and `password` static members in a test to set STOMP user
-   *         credentials. Needed to test if StompClient passes credentials correctly.
+  /*! \brief Use `username` and `password` static members in a test to set STOMP
+   * user credentials. Needed to test if StompClient passes credentials
+   * correctly.
    */
   static std::string username;
   static std::string password;
 
-  /*! \brief `endpoint` static member is used to test if StompClient passes endpoint
-   *         correctly.
+  /*! \brief `endpoint` static member is used to test if StompClient passes
+   * endpoint correctly.
    */
   static std::string endpoint;
 

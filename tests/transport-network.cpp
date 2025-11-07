@@ -129,12 +129,14 @@ BOOST_AUTO_TEST_CASE(shared_stations) {
       "Station Name 3",
   };
   Route route_0{
-      "route_000",   "inbound",     "line_000",
-      "station_000", "station_002", {"station_000", "station_001", "station_002"},
+      "route_000",   "inbound",
+      "line_000",    "station_000",
+      "station_002", {"station_000", "station_001", "station_002"},
   };
   Route route_1{
-      "route_001",   "inbound",     "line_000",
-      "station_003", "station_002", {"station_003", "station_001", "station_002"},
+      "route_001",   "inbound",
+      "line_000",    "station_003",
+      "station_002", {"station_003", "station_001", "station_002"},
   };
   Line line{
       "line_000",
@@ -206,8 +208,9 @@ BOOST_AUTO_TEST_CASE(basic) {
       "Station Name 2",
   };
   Route route_0{
-      "route_000",   "inbound",     "line_000",
-      "station_000", "station_002", {"station_000", "station_001", "station_002"},
+      "route_000",   "inbound",
+      "line_000",    "station_000",
+      "station_002", {"station_000", "station_001", "station_002"},
   };
   Line line{
       "line_000",
@@ -251,7 +254,8 @@ BOOST_AUTO_TEST_CASE(basic) {
   ok = network.RecordPassengerEvent({station_0.id, EventType::Out});
   BOOST_REQUIRE(ok);
   BOOST_CHECK_EQUAL(network.GetPassengerCount(station_0.id), 1);
-  ok = network.RecordPassengerEvent({station_2.id, EventType::Out});  // Negative
+  ok =
+      network.RecordPassengerEvent({station_2.id, EventType::Out});  // Negative
   BOOST_REQUIRE(ok);
   BOOST_CHECK_EQUAL(network.GetPassengerCount(station_2.id), -1);
 }
@@ -284,8 +288,9 @@ BOOST_AUTO_TEST_CASE(basic) {
       "Station Name 3",
   };
   Route route_0{
-      "route_000",   "inbound",     "line_000",
-      "station_000", "station_002", {"station_000", "station_001", "station_002"},
+      "route_000",   "inbound",
+      "line_000",    "station_000",
+      "station_002", {"station_000", "station_001", "station_002"},
   };
   Line line{
       "line_000",
@@ -339,8 +344,9 @@ BOOST_AUTO_TEST_CASE(basic) {
       "Station Name 2",
   };
   Route route_0{
-      "route_000",   "inbound",     "line_000",
-      "station_000", "station_002", {"station_000", "station_001", "station_002"},
+      "route_000",   "inbound",
+      "line_000",    "station_000",
+      "station_002", {"station_000", "station_001", "station_002"},
   };
   Line line{
       "line_000",
@@ -402,17 +408,22 @@ BOOST_AUTO_TEST_CASE(over_route) {
       "Station Name 3",
   };
   Route route_0{
-      "route_000",   "inbound",
-      "line_000",    "station_000",
-      "station_003", {"station_000", "station_001", "station_002", "station_003"},
+      "route_000",
+      "inbound",
+      "line_000",
+      "station_000",
+      "station_003",
+      {"station_000", "station_001", "station_002", "station_003"},
   };
   Route route_1{
-      "route_001",   "inbound",     "line_000",
-      "station_003", "station_002", {"station_003", "station_001", "station_002"},
+      "route_001",   "inbound",
+      "line_000",    "station_003",
+      "station_002", {"station_003", "station_001", "station_002"},
   };
   Route route_2{
-      "route_002",   "inbound",     "line_000",
-      "station_003", "station_000", {"station_003", "station_001", "station_000"},
+      "route_002",   "inbound",
+      "line_000",    "station_003",
+      "station_000", {"station_003", "station_001", "station_000"},
   };
   Line line{
       "line_000",
@@ -440,32 +451,43 @@ BOOST_AUTO_TEST_CASE(over_route) {
   unsigned int travel_time{0};
   // route_0
   BOOST_CHECK_EQUAL(
-      network.GetTravelTime(line.id, route_0.id, station_0.id, station_1.id), 1);
+      network.GetTravelTime(line.id, route_0.id, station_0.id, station_1.id),
+      1);
   BOOST_CHECK_EQUAL(
-      network.GetTravelTime(line.id, route_0.id, station_0.id, station_2.id), 1 + 2);
+      network.GetTravelTime(line.id, route_0.id, station_0.id, station_2.id),
+      1 + 2);
   BOOST_CHECK_EQUAL(
-      network.GetTravelTime(line.id, route_0.id, station_0.id, station_3.id), 1 + 2 + 3);
+      network.GetTravelTime(line.id, route_0.id, station_0.id, station_3.id),
+      1 + 2 + 3);
   BOOST_CHECK_EQUAL(
-      network.GetTravelTime(line.id, route_0.id, station_1.id, station_3.id), 2 + 3);
+      network.GetTravelTime(line.id, route_0.id, station_1.id, station_3.id),
+      2 + 3);
   // route_1
   BOOST_CHECK_EQUAL(
-      network.GetTravelTime(line.id, route_1.id, station_3.id, station_1.id), 4);
+      network.GetTravelTime(line.id, route_1.id, station_3.id, station_1.id),
+      4);
   BOOST_CHECK_EQUAL(
-      network.GetTravelTime(line.id, route_1.id, station_3.id, station_2.id), 4 + 2);
+      network.GetTravelTime(line.id, route_1.id, station_3.id, station_2.id),
+      4 + 2);
   // route_2
   BOOST_CHECK_EQUAL(
-      network.GetTravelTime(line.id, route_2.id, station_3.id, station_1.id), 4);
+      network.GetTravelTime(line.id, route_2.id, station_3.id, station_1.id),
+      4);
   BOOST_CHECK_EQUAL(
-      network.GetTravelTime(line.id, route_2.id, station_3.id, station_0.id), 4 + 1);
+      network.GetTravelTime(line.id, route_2.id, station_3.id, station_0.id),
+      4 + 1);
   // Invalid routes
   // -- 3 -> 1 is possible, but only over route_1 and route_2.
   BOOST_CHECK_EQUAL(
-      network.GetTravelTime(line.id, route_0.id, station_3.id, station_1.id), 0);
+      network.GetTravelTime(line.id, route_0.id, station_3.id, station_1.id),
+      0);
   // -- 1 -> 0 is possible, but only over route3.
   BOOST_CHECK_EQUAL(
-      network.GetTravelTime(line.id, route_0.id, station_1.id, station_0.id), 0);
+      network.GetTravelTime(line.id, route_0.id, station_1.id, station_0.id),
+      0);
   BOOST_CHECK_EQUAL(
-      network.GetTravelTime(line.id, route_0.id, station_1.id, station_1.id), 0);
+      network.GetTravelTime(line.id, route_0.id, station_1.id, station_1.id),
+      0);
 }
 
 BOOST_AUTO_TEST_SUITE_END();  // TravelTime
@@ -479,8 +501,8 @@ std::vector<Id> GetSortedIds(std::vector<Id>& routes) {
 }
 
 BOOST_AUTO_TEST_CASE(from_json_1line_1route) {
-  const auto test_file_path =
-      std::filesystem::path(TESTS_RESOURCES_DIR) / "from_json_1line_1route.json";
+  const auto test_file_path = std::filesystem::path(TESTS_RESOURCES_DIR) /
+                              "from_json_1line_1route.json";
   auto json_source = network_monitor::ParseJsonFile(test_file_path);
 
   TransportNetwork network{};
@@ -541,8 +563,9 @@ BOOST_AUTO_TEST_CASE(from_json_travel_times) {
   BOOST_CHECK_EQUAL(network.GetTravelTime("station_0", "station_1"), 1);
   BOOST_CHECK_EQUAL(network.GetTravelTime("station_1", "station_0"), 1);
   BOOST_CHECK_EQUAL(network.GetTravelTime("station_1", "station_2"), 2);
-  BOOST_CHECK_EQUAL(network.GetTravelTime("line_0", "route_0", "station_0", "station_2"),
-                    1 + 2);
+  BOOST_CHECK_EQUAL(
+      network.GetTravelTime("line_0", "route_0", "station_0", "station_2"),
+      1 + 2);
 }
 
 BOOST_AUTO_TEST_CASE(fail_on_good_json_bad_times) {
@@ -563,8 +586,8 @@ BOOST_AUTO_TEST_CASE(fail_on_good_json_bad_times) {
   BOOST_CHECK_THROW(network.FromJson(std::move(source)), std::runtime_error);
 }
 BOOST_AUTO_TEST_CASE(fail_on_bad_travel_times) {
-  const auto test_file_path =
-      std::filesystem::path(TESTS_RESOURCES_DIR) / "from_json_bad_travel_times.json";
+  const auto test_file_path = std::filesystem::path(TESTS_RESOURCES_DIR) /
+                              "from_json_bad_travel_times.json";
   auto json_source = network_monitor::ParseJsonFile(test_file_path);
 
   TransportNetwork network{};

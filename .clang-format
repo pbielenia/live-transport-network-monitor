@@ -13,6 +13,6 @@ BraceWrapping:
   SplitEmptyRecord: true
   SplitEmptyNamespace: true
 BinPackParameters: false
-ColumnLimit: 90
+ColumnLimit: 80
 ReflowComments:  true
 Standard: c++17

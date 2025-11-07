@@ -9,8 +9,8 @@ inline boost::system::error_code WebSocketClientMock::send_error_code{};
 inline boost::system::error_code WebSocketClientMock::close_error_code{};
 inline std::queue<std::string> WebSocketClientMock::message_queue{};
 inline bool WebSocketClientMock::trigger_disconnection{false};
-inline std::function<void(const std::string&)> WebSocketClientMock::respond_to_send{
-    [](auto message) { return; }};
+inline std::function<void(const std::string&)>
+    WebSocketClientMock::respond_to_send{[](auto message) { return; }};
 inline std::string WebSocketClientMockForStomp::username{};
 inline std::string WebSocketClientMockForStomp::password{};
 inline std::string WebSocketClientMockForStomp::endpoint{};
@@ -25,7 +25,8 @@ WebSocketClientMock::WebSocketClientMock(const std::string& url,
 
 void WebSocketClientMock::Connect(
     std::function<void(boost::system::error_code)> on_connected_callback,
-    std::function<void(boost::system::error_code, std::string&&)> on_message_callback,
+    std::function<void(boost::system::error_code, std::string&&)>
+        on_message_callback,
     std::function<void(boost::system::error_code)> on_disconnected_callback) {
   if (connect_error_code.failed()) {
     connected_ = false;
@@ -166,7 +167,8 @@ void WebSocketClientMockForStomp::HandleSubscribeMessage(
     auto receipt_id = frame.GetHeaderValue(StompHeader::Receipt);
     auto subscription_id = frame.GetHeaderValue(StompHeader::Id);
     // TODO: add log MockStompServer: __func__: Sending receipt
-    message_queue.push(stomp_frame::MakeReceiptFrame(std::string{receipt_id}).ToString());
+    message_queue.push(
+        stomp_frame::MakeReceiptFrame(std::string{receipt_id}).ToString());
   } else {
     // TODO: add log MockStompServer: __func__: Subscribe
     message_queue.push(stomp_frame::MakeErrorFrame("Subscribe").ToString());
@@ -176,7 +178,8 @@ void WebSocketClientMockForStomp::HandleSubscribeMessage(
 
 bool WebSocketClientMockForStomp::FrameIsValidConnect(
     const network_monitor::StompFrame& frame) {
-  if (!frame.HasHeader(StompHeader::Login) || !frame.HasHeader(StompHeader::Passcode)) {
+  if (!frame.HasHeader(StompHeader::Login) ||
+      !frame.HasHeader(StompHeader::Passcode)) {
     return false;
   }
   return frame.GetHeaderValue(StompHeader::Login) == username &&

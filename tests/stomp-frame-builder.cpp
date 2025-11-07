@@ -47,7 +47,8 @@ BOOST_AUTO_TEST_CASE(BuildsCommandAndMultipleHeaders) {
   BOOST_CHECK_EQUAL(frame.GetStompError(), StompError::Ok);
   BOOST_CHECK_EQUAL(frame.GetCommand(), StompCommand::Message);
   BOOST_REQUIRE(frame.HasHeader(StompHeader::Destination));
-  BOOST_CHECK_EQUAL(frame.GetHeaderValue(StompHeader::Destination), "/queue_a/");
+  BOOST_CHECK_EQUAL(frame.GetHeaderValue(StompHeader::Destination),
+                    "/queue_a/");
   BOOST_REQUIRE(frame.HasHeader(StompHeader::MessageId));
   BOOST_CHECK_EQUAL(frame.GetHeaderValue(StompHeader::MessageId), "10");
   BOOST_REQUIRE(frame.HasHeader(StompHeader::Subscription));

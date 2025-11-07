@@ -10,10 +10,10 @@ namespace network_monitor {
 
 /*! \brief Client to connect to a WebSocket server over plain TCP.
  *
- *  \tparam Resolver        The class to resolve the URL to an IP address. It must support
- *                          the same interface of boost::asio::ip::tcp::resolver.
- *  \tparam WebSocketStream The WebSocket stream class. It must support the same interface
- *                          of boost::beast::websocket::stream.
+ *  \tparam Resolver        The class to resolve the URL to an IP address. It
+ * must support the same interface of boost::asio::ip::tcp::resolver. \tparam
+ * WebSocketStream The WebSocket stream class. It must support the same
+ * interface of boost::beast::websocket::stream.
  */
 template <typename Resolver, typename WebSocketStream>
 class WebSocketClient {
@@ -51,7 +51,8 @@ class WebSocketClient {
    */
   void Connect(
       std::function<void(boost::system::error_code)> on_connect = nullptr,
-      std::function<void(boost::system::error_code, std::string&&)> on_message = nullptr,
+      std::function<void(boost::system::error_code, std::string&&)> on_message =
+          nullptr,
       std::function<void(boost::system::error_code)> on_disconnect = nullptr);
 
   /*! \brief Send a text message to the WebSocket server.
@@ -62,7 +63,8 @@ class WebSocketClient {
    *                  failed to send.
    */
   void Send(const std::string& message,
-            std::function<void(boost::system::error_code)> on_send_callback = nullptr);
+            std::function<void(boost::system::error_code)> on_send_callback =
+                nullptr);
 
   /*! \brief Close the WebSocket connection.
    *
@@ -78,7 +80,8 @@ class WebSocketClient {
  private:
   void SaveProvidedCallbacks(
       std::function<void(boost::system::error_code)> on_connect = nullptr,
-      std::function<void(boost::system::error_code, std::string&&)> on_message = nullptr,
+      std::function<void(boost::system::error_code, std::string&&)> on_message =
+          nullptr,
       std::function<void(boost::system::error_code)> on_disconnect = nullptr);
   void ResolveServerUrl();
   void ConnectToServer(boost::asio::ip::tcp::resolver::results_type endpoint);
@@ -92,7 +95,8 @@ class WebSocketClient {
   void CallOnMessageCallbackIfExists(const boost::system::error_code& error,
                                      std::string&& message);
 
-  void OnServerUrlResolved(boost::asio::ip::tcp::resolver::results_type results);
+  void OnServerUrlResolved(
+      boost::asio::ip::tcp::resolver::results_type results);
   void OnConnectedToServer(const boost::system::error_code& error);
   void OnTlsHandshakeCompleted(const boost::system::error_code& error);
   void OnWebSocketHandshakeCompleted(const boost::system::error_code& error);
@@ -110,7 +114,8 @@ class WebSocketClient {
   bool closed_{true};
 
   std::function<void(boost::system::error_code)> on_connect_callback_;
-  std::function<void(boost::system::error_code, std::string&&)> on_message_callback_;
+  std::function<void(boost::system::error_code, std::string&&)>
+      on_message_callback_;
   std::function<void(boost::system::error_code)> on_disconnect_callback_;
 };
 
@@ -158,16 +163,18 @@ void WebSocketClient<Resolver, WebSocketStream>::SaveProvidedCallbacks(
 
 template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::ResolveServerUrl() {
-  // FIXME: The async_resolve method is deprecated. Use overload with separate host
+  // FIXME: The async_resolve method is deprecated. Use overload with separate
+  // host
   //        and service parameters.
   //        https://www.boost.org/doc/libs/1_81_0/doc/html/boost_asio/reference/ip__basic_resolver/async_resolve.html
-  resolver_.async_resolve(server_url_, server_port_, [this](auto error, auto results) {
-    if (error.failed()) {
-      CallOnConnectCallbackIfExists(error);
-      return;
-    }
-    OnServerUrlResolved(results);
-  });
+  resolver_.async_resolve(server_url_, server_port_,
+                          [this](auto error, auto results) {
+                            if (error.failed()) {
+                              CallOnConnectCallbackIfExists(error);
+                              return;
+                            }
+                            OnServerUrlResolved(results);
+                          });
 }
 
 template <typename Resolver, typename WebSocketStream>
@@ -181,7 +188,8 @@ void WebSocketClient<Resolver, WebSocketStream>::ConnectToServer(
     boost::asio::ip::tcp::resolver::results_type endpoint) {
   auto& tcp_stream = boost::beast::get_lowest_layer(websocket_stream_);
   tcp_stream.expires_after(std::chrono::seconds(5));
-  tcp_stream.async_connect(*endpoint, [this](auto error) { OnConnectedToServer(error); });
+  tcp_stream.async_connect(*endpoint,
+                           [this](auto error) { OnConnectedToServer(error); });
 }
 
 template <typename Resolver, typename WebSocketStream>
@@ -202,11 +210,13 @@ void WebSocketClient<Resolver, WebSocketStream>::OnConnectedToServer(
 }
 
 template <typename Resolver, typename WebSocketStream>
-void WebSocketClient<Resolver, WebSocketStream>::SetTcpStreamTimeoutToSuggested() {
+void WebSocketClient<Resolver,
+                     WebSocketStream>::SetTcpStreamTimeoutToSuggested() {
   auto& tcp_stream = boost::beast::get_lowest_layer(websocket_stream_);
   tcp_stream.expires_never();
-  websocket_stream_.set_option(boost::beast::websocket::stream_base::timeout::suggested(
-      boost::beast::role_type::client));
+  websocket_stream_.set_option(
+      boost::beast::websocket::stream_base::timeout::suggested(
+          boost::beast::role_type::client));
 }
 
 template <typename Resolver, typename WebSocketStream>
@@ -229,10 +239,11 @@ void WebSocketClient<Resolver, WebSocketStream>::OnTlsHandshakeCompleted(
 template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::HandshakeWebSocket() {
   const std::string connection_host{server_url_ + ':' + server_port_};
-  websocket_stream_.async_handshake(connection_host, server_endpoint_,
-                                    [this](const boost::system::error_code& error) {
-                                      OnWebSocketHandshakeCompleted(error);
-                                    });
+  websocket_stream_.async_handshake(
+      connection_host, server_endpoint_,
+      [this](const boost::system::error_code& error) {
+        OnWebSocketHandshakeCompleted(error);
+      });
 }
 
 template <typename Resolver, typename WebSocketStream>
@@ -324,17 +335,20 @@ void WebSocketClient<Resolver, WebSocketStream>::Close(
 }
 
 template <typename Resolver, typename WebSocketStream>
-const std::string& WebSocketClient<Resolver, WebSocketStream>::GetServerUrl() const {
+const std::string& WebSocketClient<Resolver, WebSocketStream>::GetServerUrl()
+    const {
   return server_url_;
 }
 
 template <typename Resolver, typename WebSocketStream>
-const std::string& WebSocketClient<Resolver, WebSocketStream>::GetServerPort() const {
+const std::string& WebSocketClient<Resolver, WebSocketStream>::GetServerPort()
+    const {
   return server_port_;
 }
 
-using BoostWebSocketClient = WebSocketClient<
-    boost::asio::ip::tcp::resolver,
-    boost::beast::websocket::stream<boost::beast::ssl_stream<boost::beast::tcp_stream>>>;
+using BoostWebSocketClient =
+    WebSocketClient<boost::asio::ip::tcp::resolver,
+                    boost::beast::websocket::stream<
+                        boost::beast::ssl_stream<boost::beast::tcp_stream>>>;
 
 }  // namespace network_monitor

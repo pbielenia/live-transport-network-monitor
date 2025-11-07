@@ -55,7 +55,8 @@ StompFrame stomp_frame::MakeConnectedFrame(const std::string& version,
   parameters.headers.emplace(StompHeader::Version, version);
   EmplaceIfValueNotEmpty(parameters.headers, StompHeader::Session, session);
   EmplaceIfValueNotEmpty(parameters.headers, StompHeader::Server, server);
-  EmplaceIfValueNotEmpty(parameters.headers, StompHeader::HeartBeat, heart_beat);
+  EmplaceIfValueNotEmpty(parameters.headers, StompHeader::HeartBeat,
+                         heart_beat);
 
   return Build(parameters);
 }
@@ -76,7 +77,8 @@ StompFrame stomp_frame::MakeErrorFrame(const std::string& message,
 StompFrame stomp_frame::MakeReceiptFrame(const std::string& receipt_id) {
   BuildParameters parameters{StompCommand::Receipt};
 
-  EmplaceIfValueNotEmpty(parameters.headers, StompHeader::ReceiptId, receipt_id);
+  EmplaceIfValueNotEmpty(parameters.headers, StompHeader::ReceiptId,
+                         receipt_id);
 
   return Build(parameters);
 }
@@ -98,7 +100,8 @@ StompFrame stomp_frame::MakeSubscribeFrame(const std::string& destination,
                                            const std::string& receipt) {
   BuildParameters parameters{StompCommand::Subscribe};
 
-  EmplaceIfValueNotEmpty(parameters.headers, StompHeader::Destination, destination);
+  EmplaceIfValueNotEmpty(parameters.headers, StompHeader::Destination,
+                         destination);
   EmplaceIfValueNotEmpty(parameters.headers, StompHeader::Id, id);
   EmplaceIfValueNotEmpty(parameters.headers, StompHeader::Ack, ack);
   EmplaceIfValueNotEmpty(parameters.headers, StompHeader::Receipt, receipt);

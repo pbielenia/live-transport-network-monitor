@@ -247,7 +247,8 @@ class TransportNetwork {
     long long int passenger_count{0};
     std::vector<std::shared_ptr<GraphEdge>> edges{};
 
-    // FIXME: Possibly could be successfully turned into FindAnyEdgeToNextStation to
+    // FIXME: Possibly could be successfully turned into
+    // FindAnyEdgeToNextStation to
     //        return only the first found match.
     std::vector<std::shared_ptr<GraphEdge>> FindEdgesToNextStation(
         const Id& next_station) const;
@@ -283,7 +284,8 @@ class TransportNetwork {
   };
 
   void AddStationInternal(const Station& station);
-  std::shared_ptr<LineInternal> CreateLineInternal(const Id& id, const std::string& name);
+  std::shared_ptr<LineInternal> CreateLineInternal(const Id& id,
+                                                   const std::string& name);
   bool StationExists(const Id& station_id) const;
   bool StationsExist(const std::vector<Route>& routes) const;
   bool StationsExist(const std::vector<Id>& stations) const;

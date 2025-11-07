@@ -34,7 +34,8 @@ bool network_monitor::DownloadFile(const std::string& file_url,
   return result == CURLE_OK;
 }
 
-nlohmann::json network_monitor::ParseJsonFile(const std::filesystem::path& source) {
+nlohmann::json network_monitor::ParseJsonFile(
+    const std::filesystem::path& source) {
   auto parsed = nlohmann::json::object();
   if (!std::filesystem::exists(source)) {
     return parsed;

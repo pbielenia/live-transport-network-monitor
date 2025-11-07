@@ -178,7 +178,8 @@ class ExpectedFrame {
  private:
   using Headers = std::map<StompHeader, std::string>;
 
-  // TODO: Store `parsed_frame` as a private member to simplify invocations of below
+  // TODO: Store `parsed_frame` as a private member to simplify invocations of
+  // below
   //       methods.
   void CheckHeaders(const StompFrame& parsed_frame) const;
   void CheckHeader(StompHeader header, const StompFrame& parsed_frame) const;
@@ -209,9 +210,10 @@ void ExpectedFrame::AddHeader(StompHeader header, std::string&& value) {
   expected_headers.emplace(header, std::move(value));
 }
 
-// The purpose of this method is to trigger headers check when no headers are expected.
-// `check_headers` is not `true` by default because there are cases when we don't want to
-// check headers, for instance when the parsing frame returned with an error.
+// The purpose of this method is to trigger headers check when no headers are
+// expected. `check_headers` is not `true` by default because there are cases
+// when we don't want to check headers, for instance when the parsing frame
+// returned with an error.
 void ExpectedFrame::SetHeadersCheck() {
   check_headers = true;
 }
@@ -221,7 +223,8 @@ void ExpectedFrame::SetBody(std::string&& body) {
   expected_body = std::move(body);
 }
 
-void ExpectedFrame::Check(StompError parse_error, const StompFrame& parsed_frame) const {
+void ExpectedFrame::Check(StompError parse_error,
+                          const StompFrame& parsed_frame) const {
   if (check_error) {
     BOOST_REQUIRE_EQUAL(parse_error, expected_error);
     if (expected_error != StompError::Ok) {
@@ -251,7 +254,8 @@ void ExpectedFrame::CheckHeader(StompHeader header,
                                 const StompFrame& parsed_frame) const {
   if (expected_headers.count(header)) {
     BOOST_CHECK_EQUAL(parsed_frame.HasHeader(header), true);
-    BOOST_CHECK_EQUAL(parsed_frame.GetHeaderValue(header), expected_headers.at(header));
+    BOOST_CHECK_EQUAL(parsed_frame.GetHeaderValue(header),
+                      expected_headers.at(header));
   } else {
     BOOST_CHECK_EQUAL(parsed_frame.HasHeader(header), false);
     BOOST_CHECK_EQUAL(parsed_frame.GetHeaderValue(header), "");
@@ -571,7 +575,8 @@ BOOST_AUTO_TEST_CASE(parse_newline_after_command) {
   expected.Check(frame.GetStompError(), frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_double_colon_in_header_line, *boost::unit_test::disabled()) {
+BOOST_AUTO_TEST_CASE(parse_double_colon_in_header_line,
+                     *boost::unit_test::disabled()) {
   std::string plain{
       "CONNECT\n"
       "accept-version:42:43\n"
