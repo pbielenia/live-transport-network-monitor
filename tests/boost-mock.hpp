@@ -99,6 +99,9 @@ void MockResolver::async_resolve(std::string_view host,
                                  std::string_view service,
                                  ResolveToken&& token) {
   using resolver = boost::asio::ip::tcp::resolver;
+
+  constexpr auto kSuccessfulTargetPort = 443;
+
   return boost::asio::async_initiate<ResolveToken,
                                      void(const boost::system::error_code&,
                                           resolver::results_type)>(
@@ -118,7 +121,8 @@ void MockResolver::async_resolve(std::string_view host,
                   std::move(handler), MockResolver::resolve_error_code,
                   resolver::results_type::create(
                       boost::asio::ip::tcp::endpoint{
-                          boost::asio::ip::make_address("127.0.0.1"), 443},
+                          boost::asio::ip::make_address("127.0.0.1"),
+                          kSuccessfulTargetPort},
                       host, service)));
         }
       },

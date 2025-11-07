@@ -35,6 +35,8 @@ struct WebSocketClientTestFixture {
 // connection.
 using timeout = boost::unit_test::timeout;
 
+constexpr auto kExpectedTimeout = boost::asio::chrono::milliseconds(250);
+
 BOOST_AUTO_TEST_SUITE(network_monitor);
 
 BOOST_AUTO_TEST_SUITE(class_WebSocketClient);
@@ -194,8 +196,7 @@ BOOST_AUTO_TEST_CASE(successful_no_connecthandler, *timeout{1}) {
 
   bool timeout_occured{false};
 
-  boost::asio::high_resolution_timer timer(
-      io_context, boost::asio::chrono::milliseconds(250));
+  boost::asio::high_resolution_timer timer(io_context, kExpectedTimeout);
   timer.async_wait([&timeout_occured, &client](auto error_code) {
     timeout_occured = true;
     BOOST_CHECK(!error_code);
@@ -313,8 +314,7 @@ BOOST_AUTO_TEST_CASE(fail, *timeout{1}) {
   bool called_on_message{false};
   bool timeout_occured{false};
 
-  boost::asio::high_resolution_timer timer(
-      io_context, boost::asio::chrono::milliseconds(250));
+  boost::asio::high_resolution_timer timer(io_context, kExpectedTimeout);
   timer.async_wait([&timeout_occured, &client](auto error_code) {
     timeout_occured = true;
     BOOST_CHECK(!error_code);
@@ -356,8 +356,7 @@ BOOST_AUTO_TEST_CASE(no_handler, *timeout{1}) {
   bool called_on_connect{false};
   bool timeout_occured{false};
 
-  boost::asio::high_resolution_timer timer(
-      io_context, boost::asio::chrono::milliseconds(250));
+  boost::asio::high_resolution_timer timer(io_context, kExpectedTimeout);
   timer.async_wait([&timeout_occured, &client](auto error_code) {
     timeout_occured = true;
     BOOST_CHECK(!error_code);

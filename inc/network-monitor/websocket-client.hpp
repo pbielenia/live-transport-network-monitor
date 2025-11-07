@@ -78,6 +78,8 @@ class WebSocketClient {
   const std::string& GetServerPort() const;
 
  private:
+  static constexpr auto kConnectToServerTimeout = std::chrono::seconds(5);
+
   void SaveProvidedCallbacks(
       std::function<void(boost::system::error_code)> on_connect = nullptr,
       std::function<void(boost::system::error_code, std::string&&)> on_message =
@@ -187,7 +189,7 @@ template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::ConnectToServer(
     boost::asio::ip::tcp::resolver::results_type endpoint) {
   auto& tcp_stream = boost::beast::get_lowest_layer(websocket_stream_);
-  tcp_stream.expires_after(std::chrono::seconds(5));
+  tcp_stream.expires_after(kConnectToServerTimeout);
   tcp_stream.async_connect(*endpoint,
                            [this](auto error) { OnConnectedToServer(error); });
 }
