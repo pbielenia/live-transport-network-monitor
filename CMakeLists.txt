@@ -22,7 +22,7 @@ add_library(${NETWORK_MONITOR_LIBRARY_NAME} STATIC
 )
 target_compile_features(${NETWORK_MONITOR_LIBRARY_NAME}
     PRIVATE
-        cxx_std_17
+        cxx_std_20
 )
 target_link_libraries(${NETWORK_MONITOR_LIBRARY_NAME}
     PUBLIC
