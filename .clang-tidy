@@ -5,6 +5,7 @@ Checks:
   - cppcoreguidelines-*
   - misc-*
   - -misc-non-private-member-variables-in-classes
+  - -misc-include-cleaner
   - modernize-*
   - -modernize-use-trailing-return-type
   - -modernize-use-nodiscard
