@@ -6,6 +6,8 @@ project(network-monitor)
 set(NETWORK_MONITOR_LIBRARY_NAME ${PROJECT_NAME})
 set(NETWORK_MONITOR_TESTS_EXE_NAME ${PROJECT_NAME}-tests)
 
+set(CMAKE_COLOR_DIAGNOSTICS ON CACHE BOOL "" FORCE)
+
 find_package(Boost REQUIRED COMPONENTS system unit_test_framework)
 find_package(CURL REQUIRED)
 find_package(OpenSSL REQUIRED)
