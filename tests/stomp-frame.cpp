@@ -1,8 +1,9 @@
 #include "network-monitor/stomp-frame.hpp"
 
-#include <boost/test/unit_test.hpp>
 #include <sstream>
 #include <vector>
+
+#include <boost/test/unit_test.hpp>
 
 using network_monitor::StompCommand;
 using network_monitor::StompError;

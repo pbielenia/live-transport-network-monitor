@@ -1,7 +1,8 @@
 #pragma once
 
-#include <boost/asio.hpp>
 #include <string>
+
+#include <boost/asio.hpp>
 
 namespace network_monitor {
 

@@ -1,10 +1,11 @@
 #pragma once
 
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
 #include <functional>
 #include <queue>
 #include <string>
+
+#include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 
 #include "network-monitor/stomp-frame.hpp"
 

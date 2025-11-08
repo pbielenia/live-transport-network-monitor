@@ -1,10 +1,11 @@
 #include "network-monitor/file-downloader.hpp"
 
-#include <boost/asio.hpp>
-#include <boost/test/unit_test.hpp>
 #include <filesystem>
 #include <fstream>
 #include <string>
+
+#include <boost/asio.hpp>
+#include <boost/test/unit_test.hpp>
 
 using network_monitor::DownloadFile;
 using network_monitor::ParseJsonFile;

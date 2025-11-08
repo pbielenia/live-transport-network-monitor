@@ -2,10 +2,11 @@
 
 #include <map>
 #include <memory>
-#include <nlohmann/json.hpp>
 #include <set>
 #include <string>
 #include <vector>
+
+#include <nlohmann/json.hpp>
 
 namespace network_monitor {
 

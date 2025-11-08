@@ -16,3 +16,12 @@ BinPackParameters: false
 ColumnLimit: 80
 ReflowComments:  true
 Standard: c++17
+
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<boost|nlohmann|curl/.*>'
+    Priority: 2
+  - Regex: '^<.*>'
+    Priority: 1
+  - Regex: '^".*"'
+    Priority: 3

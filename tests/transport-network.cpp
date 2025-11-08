@@ -1,10 +1,11 @@
 #include "network-monitor/transport-network.hpp"
 
-#include <boost/test/unit_test.hpp>
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
 #include <string>
+
+#include <boost/test/unit_test.hpp>
 
 #include "network-monitor/file-downloader.hpp"
 

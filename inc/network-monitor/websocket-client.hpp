@@ -1,10 +1,11 @@
 #pragma once
 
+#include <memory>
+#include <string>
+
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
 #include <boost/beast/ssl.hpp>
-#include <memory>
-#include <string>
 
 namespace network_monitor {
 

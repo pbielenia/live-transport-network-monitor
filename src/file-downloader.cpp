@@ -1,9 +1,9 @@
 #include "network-monitor/file-downloader.hpp"
 
-#include <curl/curl.h>
-
 #include <cstdio>
 #include <fstream>
+
+#include <curl/curl.h>
 
 bool network_monitor::DownloadFile(const std::string& file_url,
                                    const std::filesystem::path& destination,

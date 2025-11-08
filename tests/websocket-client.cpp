@@ -1,11 +1,12 @@
 #include "network-monitor/websocket-client.hpp"
 
-#include <boost/asio.hpp>
-#include <boost/beast/ssl.hpp>
-#include <boost/test/unit_test.hpp>
 #include <filesystem>
 #include <sstream>
 #include <string>
+
+#include <boost/asio.hpp>
+#include <boost/beast/ssl.hpp>
+#include <boost/test/unit_test.hpp>
 
 #include "boost-mock.hpp"
 
