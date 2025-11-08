@@ -23,7 +23,7 @@ class WebSocketClientMock {
   static bool trigger_disconnection;
   static std::function<void(const std::string&)> respond_to_send;
 
-  WebSocketClientMock(const std::string& url,
+  WebSocketClientMock(std::string url,
                       const std::string& endpoint,
                       const std::string& port,
                       boost::asio::io_context& io_context,

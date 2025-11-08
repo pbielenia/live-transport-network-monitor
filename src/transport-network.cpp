@@ -366,10 +366,10 @@ bool TransportNetwork::StationConnectsAnother(const Id& station_a,
 }
 
 TransportNetwork::RouteInternal::RouteInternal(
-    const Id& id, const std::shared_ptr<LineInternal>& line)
-    : id{id},
+    Id id, const std::shared_ptr<LineInternal>& line)
+    : id{std::move(id)},
       line{line} {}
-TransportNetwork::LineInternal::LineInternal(const Id& id,
-                                             const std::string& name)
-    : id{id},
-      name{name} {}
+
+TransportNetwork::LineInternal::LineInternal(Id id, std::string name)
+    : id{std::move(id)},
+      name{std::move(name)} {}

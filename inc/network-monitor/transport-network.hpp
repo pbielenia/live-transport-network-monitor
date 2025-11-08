@@ -268,7 +268,7 @@ class TransportNetwork {
   };
 
   struct RouteInternal {
-    RouteInternal(const Id& id, const std::shared_ptr<LineInternal>& line);
+    RouteInternal(Id id, const std::shared_ptr<LineInternal>& line);
 
     Id id;
     std::shared_ptr<LineInternal> line;
@@ -276,7 +276,7 @@ class TransportNetwork {
   };
 
   struct LineInternal {
-    LineInternal(const Id& id, const std::string& name);
+    LineInternal(Id id, std::string name);
 
     Id id;
     std::string name;

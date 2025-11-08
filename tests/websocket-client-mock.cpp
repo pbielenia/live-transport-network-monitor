@@ -24,13 +24,13 @@ inline std::string WebSocketClientMockForStomp::username{};
 inline std::string WebSocketClientMockForStomp::password{};
 inline std::string WebSocketClientMockForStomp::endpoint{};
 
-WebSocketClientMock::WebSocketClientMock(const std::string& url,
+WebSocketClientMock::WebSocketClientMock(std::string url,
                                          const std::string& endpoint,
                                          const std::string& port,
                                          boost::asio::io_context& io_context,
                                          boost::asio::ssl::context& tls_context)
     : async_context_{boost::asio::make_strand(io_context)},
-      server_url_{url} {}
+      server_url_{std::move(url)} {}
 
 void WebSocketClientMock::Connect(
     std::function<void(boost::system::error_code)> on_connected_callback,
