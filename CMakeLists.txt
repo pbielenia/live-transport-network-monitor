@@ -50,9 +50,9 @@ add_executable(${NETWORK_MONITOR_TESTS_EXE_NAME}
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/websocket-client.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/websocket-client-mock.cpp"
 )
-target_compile_features(${NETWORK_MONITOR_LIBRARY_NAME}
+target_compile_features(${NETWORK_MONITOR_TESTS_EXE_NAME}
     PRIVATE
-        cxx_std_17
+        cxx_std_20
 )
 target_compile_definitions(${NETWORK_MONITOR_TESTS_EXE_NAME}
     PRIVATE
