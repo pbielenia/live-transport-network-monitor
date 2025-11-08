@@ -256,7 +256,7 @@ StompError StompFrame::ParseFrame() {
   // Parse headers
   // Headers are optional.
   auto next_line_start{command_end + 1};
-  while (1) {
+  while (true) {
     // Check if there's something more in the frame.
     if (next_line_start >= plain_content.size()) {
       return StompError::MissingBodyNewline;
