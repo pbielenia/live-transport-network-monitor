@@ -15,7 +15,7 @@ BraceWrapping:
 BinPackParameters: false
 ColumnLimit: 80
 ReflowComments:  true
-Standard: c++17
+Standard: c++20
 
 IncludeBlocks: Regroup
 IncludeCategories:
