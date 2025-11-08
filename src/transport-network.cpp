@@ -23,13 +23,11 @@ bool Line::operator==(const Line& other) const {
   return id == other.id;
 }
 
-TransportNetwork::TransportNetwork() {}
+TransportNetwork::TransportNetwork() = default;
 
-TransportNetwork::~TransportNetwork() {}
+TransportNetwork::~TransportNetwork() = default;
 
-TransportNetwork::TransportNetwork(const TransportNetwork& copied)
-    : stations_{copied.stations_},
-      lines_{copied.lines_} {}
+TransportNetwork::TransportNetwork(const TransportNetwork& copied) = default;
 
 TransportNetwork::TransportNetwork(TransportNetwork&& moved) noexcept
     : stations_{std::move(moved.stations_)},

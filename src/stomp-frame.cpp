@@ -185,12 +185,7 @@ StompFrame::StompFrame(std::string&& content)
   stomp_error_ = ValidateFrame();
 }
 
-StompFrame::StompFrame(const StompFrame& other)
-    : stomp_error_{other.stomp_error_},
-      plain_content_{other.plain_content_},
-      command_{other.command_},
-      headers_{other.headers_},
-      body_{other.body_} {}
+StompFrame::StompFrame(const StompFrame& other) = default;
 
 StompFrame::StompFrame(StompFrame&& other) noexcept
     : stomp_error_{other.stomp_error_},
