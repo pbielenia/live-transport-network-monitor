@@ -115,27 +115,24 @@ std::string_view ToStringView(const StompCommand& command) {
   const auto string_representation{stomp_commands_strings.left.find(command)};
   if (string_representation == stomp_commands_strings.left.end()) {
     return stomp_commands_strings.left.find(StompCommand::Invalid)->second;
-  } else {
-    return string_representation->second;
   }
+  return string_representation->second;
 }
 
 std::string_view ToStringView(const StompHeader& header) {
   const auto string_representation{stomp_headers_strings.left.find(header)};
   if (string_representation == stomp_headers_strings.left.end()) {
     return stomp_headers_strings.left.find(StompHeader::Invalid)->second;
-  } else {
-    return string_representation->second;
   }
+  return string_representation->second;
 }
 
 std::string_view ToStringView(const StompError& error) {
   const auto string_representation{stomp_errors_strings.left.find(error)};
   if (string_representation == stomp_errors_strings.left.end()) {
     return stomp_errors_strings.left.find(StompError::UndefinedError)->second;
-  } else {
-    return string_representation->second;
   }
+  return string_representation->second;
 }
 
 std::ostream& network_monitor::operator<<(std::ostream& os,
