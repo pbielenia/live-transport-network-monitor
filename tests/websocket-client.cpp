@@ -1,5 +1,6 @@
 #include "network-monitor/websocket-client.hpp"
 
+#include <chrono>
 #include <filesystem>
 #include <sstream>
 #include <string>
@@ -36,7 +37,7 @@ struct WebSocketClientTestFixture {
 // connection.
 using timeout = boost::unit_test::timeout;
 
-constexpr auto kExpectedTimeout = boost::asio::chrono::milliseconds(250);
+constexpr auto kExpectedTimeout = std::chrono::milliseconds(250);
 
 BOOST_AUTO_TEST_SUITE(network_monitor);
 
