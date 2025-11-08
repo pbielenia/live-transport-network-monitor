@@ -244,9 +244,11 @@ StompError StompFrame::ParseFrame() {
   }
 
   // If no "\n\n" pattern, then the body's newline is missing.
-  const auto double_newline_pointer = std::adjacent_find(
-      plain_content.begin(), plain_content.end(),
-      [](const auto& a, const auto& b) { return a == b && a == '\n'; });
+  const auto double_newline_pointer =
+      std::adjacent_find(plain_content.begin(), plain_content.end(),
+                         [](const auto& lhs, const auto& rhs) {
+                           return lhs == rhs && lhs == '\n';
+                         });
   if (double_newline_pointer == plain_content.end()) {
     return StompError::MissingBodyNewline;
   }
