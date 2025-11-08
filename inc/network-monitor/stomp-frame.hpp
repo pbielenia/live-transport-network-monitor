@@ -130,6 +130,10 @@ class StompFrame {
    */
   StompFrame(StompFrame&& other) noexcept;
 
+  /*! \brief Destructor.
+   */
+  ~StompFrame() = default;
+
   /*! \brief Copy assignment operator.
    */
   StompFrame& operator=(const StompFrame& other);

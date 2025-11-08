@@ -36,9 +36,28 @@ class WebSocketClient {
                   boost::asio::io_context& io_context,
                   boost::asio::ssl::context& tls_context);
 
+  /*! \brief Copy constructor.
+   */
+  WebSocketClient(const WebSocketClient<Resolver, WebSocketStream>& other) =
+      delete;
+
+  /*! \brief Move constructor.
+   */
+  WebSocketClient(WebSocketClient<Resolver, WebSocketStream>&& other) = delete;
+
   /*! \brief Destructor.
    */
   ~WebSocketClient();
+
+  /*! \brief Copy assignment operator.
+   */
+  WebSocketClient<Resolver, WebSocketStream>& operator=(
+      const WebSocketClient<Resolver, WebSocketStream>& other) = delete;
+
+  /*! \brief Move assignment operator.
+   */
+  WebSocketClient<Resolver, WebSocketStream>& operator=(
+      WebSocketClient<Resolver, WebSocketStream>&& other) = delete;
 
   /*! \brief Connect to the server.
    *
