@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <sstream>
 #include <string>
 
 #include <boost/test/unit_test.hpp>
@@ -41,6 +42,41 @@ BOOST_AUTO_TEST_CASE(file_downloader) {
 
   // Clean up.
   std::filesystem::remove(destination);
+}
+
+// TODO: group details test cases
+// TODO: group StreamSizeIsSafeReturn test cases
+
+BOOST_AUTO_TEST_CASE(StreamSizeIsSafeReturnTrueOnSafeInput) {
+  constexpr auto streamsize_max =
+      static_cast<size_t>(std::numeric_limits<std::streamsize>::max());
+  BOOST_TEST(details::StreamSizeIsSafe(streamsize_max / 2) == true);
+}
+
+BOOST_AUTO_TEST_CASE(StreamSizeIsSafeReturnTrueOnMaxLimitInput) {
+  constexpr auto streamsize_max =
+      static_cast<size_t>(std::numeric_limits<std::streamsize>::max());
+  BOOST_TEST(details::StreamSizeIsSafe(streamsize_max) == true);
+}
+
+BOOST_AUTO_TEST_CASE(StreamSizeIsSafeReturnTrueOnOverflowInput) {
+  constexpr auto streamsize_max =
+      static_cast<size_t>(std::numeric_limits<std::streamsize>::max());
+  constexpr auto streamsize_overflow = streamsize_max + 10;
+  BOOST_TEST(details::StreamSizeIsSafe(streamsize_overflow) == false);
+}
+
+BOOST_AUTO_TEST_CASE(WriteFunctionCallback) {
+  const std::string test_input{"test input"};
+  constexpr size_t kInputSize = 1;
+  std::ostringstream stream;
+
+  const auto result = details::WriteFunctionCallback(
+      (void*)(test_input.data()), kInputSize, test_input.size(), &stream);
+
+  // TODO: check if `test_input` was not modified
+  BOOST_CHECK(test_input == stream.str());
+  BOOST_CHECK(result == test_input.size());
 }
 
 BOOST_AUTO_TEST_CASE(parse_json_file) {
