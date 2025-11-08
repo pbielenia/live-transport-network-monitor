@@ -6,7 +6,7 @@
 #include <string>
 
 #include <boost/asio.hpp>
-#include <boost/beast/ssl.hpp>
+#include <boost/beast.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include "boost-mock.hpp"

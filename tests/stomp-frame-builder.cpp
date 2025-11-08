@@ -2,6 +2,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include "network-monitor/stomp-frame.hpp"
+
 using network_monitor::StompCommand;
 using network_monitor::StompError;
 using network_monitor::StompFrame;

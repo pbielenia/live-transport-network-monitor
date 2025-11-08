@@ -1,9 +1,12 @@
 #include "network-monitor/file-downloader.hpp"
 
 #include <cstdio>
+#include <filesystem>
 #include <fstream>
+#include <string>
 
 #include <curl/curl.h>
+#include <nlohmann/json.hpp>
 
 bool network_monitor::DownloadFile(const std::string& file_url,
                                    const std::filesystem::path& destination,

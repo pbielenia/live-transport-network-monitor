@@ -1,7 +1,11 @@
 #include "network-monitor/stomp-client.hpp"
 
+#include <string>
+
+#include <boost/asio.hpp>
 #include <boost/test/unit_test.hpp>
 
+#include "network-monitor/stomp-frame.hpp"
 #include "websocket-client-mock.hpp"
 
 using network_monitor::StompClientError;

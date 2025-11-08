@@ -1,7 +1,13 @@
 #include "network-monitor/transport-network.hpp"
 
 #include <algorithm>
+#include <iterator>
+#include <memory>
 #include <stdexcept>
+#include <utility>
+#include <vector>
+
+#include <nlohmann/json.hpp>
 
 using namespace network_monitor;
 

@@ -4,7 +4,6 @@
 #include <fstream>
 #include <string>
 
-#include <boost/asio.hpp>
 #include <boost/test/unit_test.hpp>
 
 using network_monitor::DownloadFile;

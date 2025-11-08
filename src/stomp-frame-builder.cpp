@@ -1,5 +1,10 @@
 #include "network-monitor/stomp-frame-builder.hpp"
 
+#include <string>
+#include <utility>
+
+#include "network-monitor/stomp-frame.hpp"
+
 using namespace network_monitor;
 
 namespace {

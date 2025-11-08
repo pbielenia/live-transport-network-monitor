@@ -1,9 +1,13 @@
 #include "network-monitor/transport-network.hpp"
 
+#include <algorithm>
 #include <filesystem>
 #include <stdexcept>
+#include <utility>
+#include <vector>
 
 #include <boost/test/unit_test.hpp>
+#include <nlohmann/json.hpp>
 
 #include "network-monitor/file-downloader.hpp"
 

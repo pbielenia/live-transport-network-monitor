@@ -1,6 +1,15 @@
 #include "websocket-client-mock.hpp"
 
+#include <functional>
+#include <queue>
+#include <string>
+#include <utility>
+
+#include <boost/asio.hpp>
+#include <boost/system/error_code.hpp>
+
 #include "network-monitor/stomp-frame-builder.hpp"
+#include "network-monitor/stomp-frame.hpp"
 
 using namespace network_monitor;
 

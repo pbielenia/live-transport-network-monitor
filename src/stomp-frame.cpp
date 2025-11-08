@@ -1,7 +1,15 @@
 #include "network-monitor/stomp-frame.hpp"
 
 #include <algorithm>
+#include <exception>
+#include <initializer_list>
+#include <map>
+#include <ostream>
+#include <set>
 #include <sstream>
+#include <string>
+#include <string_view>
+#include <utility>
 
 #include <boost/bimap.hpp>
 
