@@ -11,7 +11,11 @@ Checks:
   - -modernize-use-nodiscard
   - performance-*
   - readability-*
-  - -readability-identifier-length'
+CheckOptions:
+  - key: readability-identifier-length.IgnoredVariableNames
+    value: '^(ok)$'
+  - key: readability-identifier-length.IgnoredParameterNames
+    value: '^(id|os)$'
 WarningsAsErrors: true
 HeaderFilterRegex: 'inc/*.hpp'
 FormatStyle: file
