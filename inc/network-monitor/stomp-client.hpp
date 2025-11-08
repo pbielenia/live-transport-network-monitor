@@ -6,12 +6,13 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
-#include <network-monitor/stomp-frame-builder.hpp>
-#include <network-monitor/stomp-frame.hpp>
 #include <sstream>
 #include <string>
 #include <string_view>
 #include <unordered_map>
+
+#include "network-monitor/stomp-frame-builder.hpp"
+#include "network-monitor/stomp-frame.hpp"
 
 namespace network_monitor {
 

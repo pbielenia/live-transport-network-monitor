@@ -1,8 +1,9 @@
+#include "network-monitor/file-downloader.hpp"
+
 #include <boost/asio.hpp>
 #include <boost/test/unit_test.hpp>
 #include <filesystem>
 #include <fstream>
-#include <network-monitor/file-downloader.hpp>
 #include <string>
 
 using network_monitor::DownloadFile;

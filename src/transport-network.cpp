@@ -1,5 +1,6 @@
+#include "network-monitor/transport-network.hpp"
+
 #include <algorithm>
-#include <network-monitor/transport-network.hpp>
 #include <stdexcept>
 
 using namespace network_monitor;

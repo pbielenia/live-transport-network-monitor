@@ -1,6 +1,7 @@
+#include "network-monitor/stomp-frame.hpp"
+
 #include <algorithm>
 #include <boost/bimap.hpp>
-#include <network-monitor/stomp-frame.hpp>
 #include <sstream>
 
 using namespace network_monitor;

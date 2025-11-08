@@ -1,6 +1,6 @@
 #pragma once
 
-#include <network-monitor/stomp-frame.hpp>
+#include "network-monitor/stomp-frame.hpp"
 
 namespace network_monitor {
 

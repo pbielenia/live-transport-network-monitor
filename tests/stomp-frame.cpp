@@ -1,5 +1,6 @@
+#include "network-monitor/stomp-frame.hpp"
+
 #include <boost/test/unit_test.hpp>
-#include <network-monitor/stomp-frame.hpp>
 #include <sstream>
 #include <vector>
 
