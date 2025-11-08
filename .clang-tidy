@@ -13,5 +13,5 @@ Checks:
   - readability-*
   - -readability-identifier-length'
 WarningsAsErrors: true
-HeaderFilterRegex: ''
+HeaderFilterRegex: 'inc/*.hpp'
 FormatStyle: file
