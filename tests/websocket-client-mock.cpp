@@ -16,7 +16,6 @@ using namespace network_monitor;
 inline boost::system::error_code WebSocketClientMock::connect_error_code{};
 inline boost::system::error_code WebSocketClientMock::send_error_code{};
 inline boost::system::error_code WebSocketClientMock::close_error_code{};
-inline std::queue<std::string> WebSocketClientMock::message_queue{};
 inline bool WebSocketClientMock::trigger_disconnection{false};
 inline std::function<void(const std::string&)>
     WebSocketClientMock::respond_to_send{[](auto message) { return; }};
@@ -31,6 +30,11 @@ WebSocketClientMock::WebSocketClientMock(std::string url,
                                          boost::asio::ssl::context& tls_context)
     : async_context_{boost::asio::make_strand(io_context)},
       server_url_{std::move(url)} {}
+
+std::queue<std::string>& WebSocketClientMock::GetMessageQueue() {
+  static std::queue<std::string> message_queue;
+  return message_queue;
+}
 
 void WebSocketClientMock::Connect(
     std::function<void(boost::system::error_code)> on_connected_callback,
@@ -112,9 +116,9 @@ void WebSocketClientMock::MockIncomingMessages() {
   }
 
   boost::asio::post(async_context_, [this]() {
-    if (!message_queue.empty()) {
-      auto message{message_queue.front()};
-      message_queue.pop();
+    if (!GetMessageQueue().empty()) {
+      auto message{GetMessageQueue().front()};
+      GetMessageQueue().pop();
       if (on_message_callback_) {
         on_message_callback_({}, std::move((message)));
       }
@@ -161,10 +165,10 @@ void WebSocketClientMockForStomp::OnMessage(const std::string& message) {
 void WebSocketClientMockForStomp::HandleConnectMessage(
     const network_monitor::StompFrame& frame) {
   if (FrameIsValidConnect(frame)) {
-    message_queue.push(
+    GetMessageQueue().push(
         stomp_frame::MakeConnectedFrame(stomp_version, {}, {}, {}).ToString());
   } else {
-    message_queue.push(
+    GetMessageQueue().push(
         stomp_frame::MakeErrorFrame("Authentication failure", {}).ToString());
     trigger_disconnection = true;
   }
@@ -176,11 +180,11 @@ void WebSocketClientMockForStomp::HandleSubscribeMessage(
     auto receipt_id = frame.GetHeaderValue(StompHeader::Receipt);
     auto subscription_id = frame.GetHeaderValue(StompHeader::Id);
     // TODO: add log MockStompServer: __func__: Sending receipt
-    message_queue.push(
+    GetMessageQueue().push(
         stomp_frame::MakeReceiptFrame(std::string{receipt_id}).ToString());
   } else {
     // TODO: add log MockStompServer: __func__: Subscribe
-    message_queue.push(stomp_frame::MakeErrorFrame("Subscribe").ToString());
+    GetMessageQueue().push(stomp_frame::MakeErrorFrame("Subscribe").ToString());
     trigger_disconnection = true;
   }
 }

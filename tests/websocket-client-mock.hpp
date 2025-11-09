@@ -19,7 +19,6 @@ class WebSocketClientMock {
   static boost::system::error_code connect_error_code;
   static boost::system::error_code send_error_code;
   static boost::system::error_code close_error_code;
-  static std::queue<std::string> message_queue;
   static bool trigger_disconnection;
   static std::function<void(const std::string&)> respond_to_send;
 
@@ -28,6 +27,9 @@ class WebSocketClientMock {
                       const std::string& port,
                       boost::asio::io_context& io_context,
                       boost::asio::ssl::context& tls_context);
+
+  //   TODO: why is it static though?
+  static std::queue<std::string>& GetMessageQueue();
 
   void Connect(
       std::function<void(boost::system::error_code)> on_connected_callback,
@@ -43,6 +45,9 @@ class WebSocketClientMock {
 
  private:
   void MockIncomingMessages();
+
+  //   TODO: why is it static though?
+  static std::queue<std::string> message_queue;
 
   boost::asio::strand<boost::asio::io_context::executor_type> async_context_;
   const std::string server_url_;
