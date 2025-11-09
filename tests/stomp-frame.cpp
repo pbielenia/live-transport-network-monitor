@@ -19,7 +19,7 @@ BOOST_AUTO_TEST_SUITE(network_monitor);
 
 BOOST_AUTO_TEST_SUITE(stomp_frame);
 
-static const std::vector<StompCommand> stomp_commands{
+static const std::vector<StompCommand> kStompCommands{
     // clang-format off
     StompCommand::Abort,
     StompCommand::Ack,
@@ -29,6 +29,7 @@ static const std::vector<StompCommand> stomp_commands{
     StompCommand::Connected,
     StompCommand::Disconnect,
     StompCommand::Error,
+    StompCommand::Invalid,
     StompCommand::Message,
     StompCommand::NAck,
     StompCommand::Receipt,
@@ -39,7 +40,7 @@ static const std::vector<StompCommand> stomp_commands{
     // clang-format on
 };
 
-static const std::vector<StompHeader> stomp_headers{
+static const std::vector<StompHeader> kStompHeaders{
     // clang-format off
     StompHeader::AcceptVersion,
     StompHeader::Ack,
@@ -49,6 +50,7 @@ static const std::vector<StompHeader> stomp_headers{
     StompHeader::HeartBeat,
     StompHeader::Host,
     StompHeader::Id,
+    StompHeader::Invalid,
     StompHeader::Login,
     StompHeader::Message,
     StompHeader::MessageId,
@@ -63,10 +65,10 @@ static const std::vector<StompHeader> stomp_headers{
     // clang-format on
 };
 
-static const std::vector<StompError> stomp_errors{
+static const std::vector<StompError> kStompErrors{
     // clang-format off
     StompError::Ok,
-    // StompError::UndefinedError, // Disabled due to `enum_StompError/ostream`.
+    StompError::UndefinedError,
     StompError::InvalidCommand,
     StompError::InvalidHeader,
     StompError::InvalidHeaderValue,
@@ -85,86 +87,78 @@ static const std::vector<StompError> stomp_errors{
     // clang-format on
 };
 
-BOOST_AUTO_TEST_SUITE(enum_StompCommand);
+namespace {
 
-BOOST_AUTO_TEST_CASE(ostream) {
-  // Get the value of invalid
+// Calls `operator<<()` on each value in `enums` and verifies if invalid string
+// is returned only for `invalid_value`.
+template <typename Enum>
+void VerifyOstreamDoesNotReturnInvalidForValidValues(
+    Enum invalid_value, const std::vector<Enum>& enums) {
+  // Get the string of the invalid enum value
   std::stringstream stream{};
-  stream << StompCommand::Invalid;
-  const auto invalid{stream.str()};
+  stream << invalid_value;
+  const auto invalid_string{stream.str()};
 
-  // Check if any valid command doesn't match the invalid
-  for (const auto& command : stomp_commands) {
+  for (auto value : enums) {
     stream.str("");
     stream.clear();
-    stream << command;
-    BOOST_CHECK(stream.str() != invalid);
+    stream << value;
+    if (stream.str() == invalid_string && value != invalid_value) {
+      BOOST_FAIL("invalid string returned for non-invalid value");
+    }
   }
 }
 
-BOOST_AUTO_TEST_CASE(ToString) {
-  const auto invalid{network_monitor::ToString(StompCommand::Invalid)};
+// Calls `network_monitor::ToString()` on each value in `enums` and verifies if
+// invalid string is returned only for `invalid_value`.
+template <typename Enum>
+void VerifyToStringDoesNotReturnInvalidForValidValues(
+    Enum invalid_value, const std::vector<Enum>& enums) {
+  const auto invalid_string{network_monitor::ToString(invalid_value)};
 
-  for (const auto& command : stomp_commands) {
-    BOOST_CHECK(network_monitor::ToString(command) != invalid);
+  for (auto value : enums) {
+    if (network_monitor::ToString(value) == invalid_string &&
+        value != invalid_value) {
+      BOOST_FAIL("invalid string returned for non-invalid value");
+    }
   }
 }
 
-BOOST_AUTO_TEST_SUITE_END();  // enum_StompCommand
+}  // namespace
 
-BOOST_AUTO_TEST_SUITE(enum_StompHeader);
+BOOST_AUTO_TEST_SUITE(enums);
 
-BOOST_AUTO_TEST_CASE(ostream) {
-  // Get the value of invalid
-  std::stringstream stream{};
-  stream << StompHeader::Invalid;
-  const auto invalid{stream.str()};
-
-  // Check if any valid header doesn't match the invalid
-  for (const auto& header : stomp_headers) {
-    stream.str("");
-    stream.clear();
-    stream << header;
-    BOOST_CHECK(stream.str() != invalid);
-  }
+BOOST_AUTO_TEST_CASE(OstreamDoesNotReturnInvalidForValidCommands) {
+  VerifyOstreamDoesNotReturnInvalidForValidValues(StompCommand::Invalid,
+                                                  kStompCommands);
 }
 
-BOOST_AUTO_TEST_CASE(ToString) {
-  const auto invalid{network_monitor::ToString(StompHeader::Invalid)};
-
-  for (const auto& header : stomp_headers) {
-    BOOST_CHECK(network_monitor::ToString(header) != invalid);
-  }
+BOOST_AUTO_TEST_CASE(ToStringDoesNotReturnInvalidForValidCommands) {
+  VerifyToStringDoesNotReturnInvalidForValidValues(StompCommand::Invalid,
+                                                   kStompCommands);
 }
 
-BOOST_AUTO_TEST_SUITE_END();  // enum_StompHeader
-
-BOOST_AUTO_TEST_SUITE(enum_StompError);
-
-BOOST_AUTO_TEST_CASE(ostream) {
-  // Get the value of invalid
-  std::stringstream stream{};
-  stream << StompError::UndefinedError;
-  const auto invalid{stream.str()};
-
-  // Check if any valid error doesn't match the invalid
-  for (const auto& error : stomp_errors) {
-    stream.str("");
-    stream.clear();
-    stream << error;
-    BOOST_CHECK(stream.str() != invalid);
-  }
+BOOST_AUTO_TEST_CASE(OstreamDoesNotReturnInvalidForValidHeaders) {
+  VerifyOstreamDoesNotReturnInvalidForValidValues(StompHeader::Invalid,
+                                                  kStompHeaders);
 }
 
-BOOST_AUTO_TEST_CASE(ToString) {
-  const auto invalid{network_monitor::ToString(StompError::UndefinedError)};
-
-  for (const auto& error : stomp_errors) {
-    BOOST_CHECK(network_monitor::ToString(error) != invalid);
-  }
+BOOST_AUTO_TEST_CASE(ToStringDoesNotReturnInvalidForValidHeaders) {
+  VerifyToStringDoesNotReturnInvalidForValidValues(StompHeader::Invalid,
+                                                   kStompHeaders);
 }
 
-BOOST_AUTO_TEST_SUITE_END();  // enum_StompError
+BOOST_AUTO_TEST_CASE(OstreamDoesNotReturnUndefinedForDefinedError) {
+  VerifyOstreamDoesNotReturnInvalidForValidValues(StompError::UndefinedError,
+                                                  kStompErrors);
+}
+
+BOOST_AUTO_TEST_CASE(ToStringDoesNotReturnUndefinedForDefinedErrors) {
+  VerifyToStringDoesNotReturnInvalidForValidValues(StompError::UndefinedError,
+                                                   kStompErrors);
+}
+
+BOOST_AUTO_TEST_SUITE_END();  // enums
 
 BOOST_AUTO_TEST_SUITE(class_StompFrame);
 
@@ -250,7 +244,7 @@ void ExpectedFrame::Check(StompError parse_error,
 }
 
 void ExpectedFrame::CheckHeaders(const StompFrame& parsed_frame) const {
-  for (const auto& header : stomp_headers) {
+  for (const auto& header : kStompHeaders) {
     CheckHeader(header, parsed_frame);
   }
 }
