@@ -19,7 +19,9 @@ BOOST_AUTO_TEST_SUITE(network_monitor);
 
 BOOST_AUTO_TEST_SUITE(stomp_frame);
 
-static const std::vector<StompCommand> kStompCommands{
+namespace {
+
+constexpr std::array<StompCommand, 16> kStompCommands{
     // clang-format off
     StompCommand::Abort,
     StompCommand::Ack,
@@ -40,7 +42,7 @@ static const std::vector<StompCommand> kStompCommands{
     // clang-format on
 };
 
-static const std::vector<StompHeader> kStompHeaders{
+constexpr std::array<StompHeader, 20> kStompHeaders{
     // clang-format off
     StompHeader::AcceptVersion,
     StompHeader::Ack,
@@ -65,7 +67,7 @@ static const std::vector<StompHeader> kStompHeaders{
     // clang-format on
 };
 
-static const std::vector<StompError> kStompErrors{
+constexpr std::array<StompError, 17> kStompErrors{
     // clang-format off
     StompError::Ok,
     StompError::UndefinedError,
@@ -87,13 +89,11 @@ static const std::vector<StompError> kStompErrors{
     // clang-format on
 };
 
-namespace {
-
 // Calls `operator<<()` on each value in `enums` and verifies if invalid string
 // is returned only for `invalid_value`.
-template <typename Enum>
+template <typename Enum, std::size_t Size>
 void VerifyOstreamDoesNotReturnInvalidForValidValues(
-    Enum invalid_value, const std::vector<Enum>& enums) {
+    Enum invalid_value, const std::array<Enum, Size>& enums) {
   // Get the string of the invalid enum value
   std::stringstream stream{};
   stream << invalid_value;
@@ -111,9 +111,9 @@ void VerifyOstreamDoesNotReturnInvalidForValidValues(
 
 // Calls `network_monitor::ToString()` on each value in `enums` and verifies if
 // invalid string is returned only for `invalid_value`.
-template <typename Enum>
+template <typename Enum, std::size_t Size>
 void VerifyToStringDoesNotReturnInvalidForValidValues(
-    Enum invalid_value, const std::vector<Enum>& enums) {
+    Enum invalid_value, const std::array<Enum, Size>& enums) {
   const auto invalid_string{network_monitor::ToString(invalid_value)};
 
   for (auto value : enums) {
