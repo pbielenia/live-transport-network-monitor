@@ -1,8 +1,9 @@
 #include "network-monitor/stomp-frame.hpp"
 
 #include <algorithm>
+#include <array>
 #include <exception>
-#include <initializer_list>
+#include <optional>
 #include <ostream>
 #include <span>
 #include <sstream>
@@ -10,19 +11,41 @@
 #include <string_view>
 #include <utility>
 
-#include <boost/bimap.hpp>
-
 using namespace network_monitor;
 
-template <typename L, typename R>
-boost::bimap<L, R> MakeBimap(
-    std::initializer_list<typename boost::bimap<L, R>::value_type> list) {
-  return boost::bimap<L, R>(list.begin(), list.end());
-}
+namespace {
 
-static const auto stomp_commands_strings{
-    MakeBimap<StompCommand, std::string_view>({
-        // clang-format off
+template <typename Enum, size_t N>
+class EnumBimap {
+ public:
+  constexpr EnumBimap(std::array<std::pair<Enum, std::string_view>, N> entries)
+      : entries_{std::move(entries)} {}
+
+  constexpr std::optional<std::string_view> ToStringView(
+      Enum entry) const noexcept {
+    for (auto [key, value] : entries_) {
+      if (key == entry) {
+        return value;
+      }
+    }
+    return std::nullopt;
+  }
+
+  constexpr std::optional<Enum> ToEnum(std::string_view entry) const noexcept {
+    for (auto [key, value] : entries_) {
+      if (value == entry) {
+        return key;
+      }
+    }
+    return std::nullopt;
+  }
+
+ private:
+  std::array<std::pair<Enum, std::string_view>, N> entries_;
+};
+
+constexpr EnumBimap<StompCommand, 16> kStompCommands = {{{
+    // clang-format off
     {StompCommand::Abort,           "ABORT"             },
     {StompCommand::Ack,             "ACK"               },
     {StompCommand::Begin,           "BEGIN"             },
@@ -39,12 +62,11 @@ static const auto stomp_commands_strings{
     {StompCommand::Stomp,           "STOMP"             },
     {StompCommand::Subscribe,       "SUBSCRIBE"         },
     {StompCommand::Unsubscribe,     "UNSUBSCRIBE"       },
-        // clang-format on
-    })};
+    // clang-format on
+}}};
 
-static const auto stomp_headers_strings{
-    MakeBimap<StompHeader, std::string_view>({
-        // clang-format off
+constexpr EnumBimap<StompHeader, 20> kStompHeaders{{{
+    // clang-format off
     {StompHeader::AcceptVersion,    "accept-version"    },
     {StompHeader::Ack,              "ack"               },
     {StompHeader::ContentLength,    "content-length"    },
@@ -65,10 +87,10 @@ static const auto stomp_headers_strings{
     {StompHeader::Subscription,     "subscription"      },
     {StompHeader::Transaction,      "transaction"       },
     {StompHeader::Version,          "version"           },
-        // clang-format on
-    })};
+    // clang-format on
+}}};
 
-static const auto stomp_errors_strings{MakeBimap<StompError, std::string_view>({
+constexpr EnumBimap<StompError, 17> kStompErrors{{{
     // clang-format off
     {StompError::Ok,                            "Ok"                            },
     {StompError::UndefinedError,                "UndefinedError"                },
@@ -88,9 +110,7 @@ static const auto stomp_errors_strings{MakeBimap<StompError, std::string_view>({
     {StompError::MissingCommand,                "MissingCommand"                },
     {StompError::NoHeaderName,                  "NoHeaderName"                  },
     // clang-format on
-})};
-
-namespace {
+}}};
 
 namespace required_headers {
 constexpr std::array<StompHeader, 2> kForConnect = {StompHeader::AcceptVersion,
@@ -153,31 +173,31 @@ constexpr std::span<const StompHeader> GetHeadersRequiresByCommand(
   }
 }
 
-}  // namespace
-
 std::string_view ToStringView(const StompCommand& command) {
-  const auto string_representation{stomp_commands_strings.left.find(command)};
-  if (string_representation == stomp_commands_strings.left.end()) {
-    return stomp_commands_strings.left.find(StompCommand::Invalid)->second;
+  const auto result = kStompCommands.ToStringView(command);
+  if (result.has_value()) {
+    return result.value();
   }
-  return string_representation->second;
+  return kStompCommands.ToStringView(StompCommand::Invalid).value();
 }
 
 std::string_view ToStringView(const StompHeader& header) {
-  const auto string_representation{stomp_headers_strings.left.find(header)};
-  if (string_representation == stomp_headers_strings.left.end()) {
-    return stomp_headers_strings.left.find(StompHeader::Invalid)->second;
+  const auto result = kStompHeaders.ToStringView(header);
+  if (result.has_value()) {
+    return result.value();
   }
-  return string_representation->second;
+  return kStompHeaders.ToStringView(StompHeader::Invalid).value();
 }
 
 std::string_view ToStringView(const StompError& error) {
-  const auto string_representation{stomp_errors_strings.left.find(error)};
-  if (string_representation == stomp_errors_strings.left.end()) {
-    return stomp_errors_strings.left.find(StompError::UndefinedError)->second;
+  const auto result = kStompErrors.ToStringView(error);
+  if (result.has_value()) {
+    return result.value();
   }
-  return string_representation->second;
+  return kStompErrors.ToStringView(StompError::UndefinedError).value();
 }
+
+}  // namespace
 
 std::ostream& network_monitor::operator<<(std::ostream& os,
                                           const StompCommand& command) {
@@ -290,12 +310,12 @@ StompError StompFrame::ParseFrame() {
   }
 
   // Parse command
-  auto command_plain{plain_content.substr(0, command_end)};
-  auto command{stomp_commands_strings.right.find(command_plain)};
-  if (command == stomp_commands_strings.right.end()) {
+  auto command_text{plain_content.substr(0, command_end)};
+  auto command{kStompCommands.ToEnum(command_text)};
+  if (!command.has_value()) {
     return StompError::InvalidCommand;
   }
-  command_ = command->second;
+  command_ = command.value();
 
   // Parse headers
   // Headers are optional.
@@ -363,10 +383,10 @@ StompError StompFrame::ParseFrame() {
     // header-1:
 
     // Read header.
-    const auto header_plain{plain_content.substr(
+    const auto header_text{plain_content.substr(
         next_line_start, next_colon_position - next_line_start)};
-    const auto header{stomp_headers_strings.right.find(header_plain)};
-    if (header == stomp_headers_strings.right.end()) {
+    const auto header{kStompHeaders.ToEnum(header_text)};
+    if (!header.has_value()) {
       return StompError::InvalidHeader;
     }
 
@@ -376,7 +396,7 @@ StompError StompFrame::ParseFrame() {
         plain_content.substr(next_colon_position + 1,
                              next_newline_position - next_colon_position - 1)};
 
-    headers_.emplace(header->second, std::move(value));
+    headers_.emplace(header.value(), std::move(value));
     next_line_start = next_newline_position + 1;
   }
 
