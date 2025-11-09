@@ -251,7 +251,7 @@ void ExpectedFrame::CheckHeaders(const StompFrame& parsed_frame) const {
 
 void ExpectedFrame::CheckHeader(StompHeader header,
                                 const StompFrame& parsed_frame) const {
-  if (expected_headers.count(header)) {
+  if (expected_headers.contains(header)) {
     BOOST_CHECK_EQUAL(parsed_frame.HasHeader(header), true);
     BOOST_CHECK_EQUAL(parsed_frame.GetHeaderValue(header),
                       expected_headers.at(header));

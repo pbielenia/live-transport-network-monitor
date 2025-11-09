@@ -479,7 +479,7 @@ StompCommand StompFrame::GetCommand() const {
 }
 
 const bool StompFrame::HasHeader(const StompHeader& header) const {
-  return static_cast<bool>(headers_.count(header));
+  return headers_.contains(header);
 }
 
 const std::string_view& StompFrame::GetHeaderValue(

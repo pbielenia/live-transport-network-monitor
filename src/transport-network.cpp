@@ -251,7 +251,7 @@ unsigned int TransportNetwork::GetTravelTime(const Id& line,
     return total_travel_time;
   }
 
-  if (!lines_.count(line)) {
+  if (!lines_.contains(line)) {
     return total_travel_time;
   }
 
@@ -335,7 +335,7 @@ TransportNetwork::CreateLineInternal(const Id& id, const std::string& name) {
 }
 
 bool TransportNetwork::StationExists(const Id& station_id) const {
-  return stations_.count(station_id);
+  return stations_.contains(station_id);
 }
 
 bool TransportNetwork::StationsExist(const std::vector<Route>& routes) const {
@@ -350,7 +350,7 @@ bool TransportNetwork::StationsExist(const std::vector<Id>& stations) const {
 }
 
 bool TransportNetwork::LineExists(const Line& line) const {
-  return lines_.count(line.id);
+  return lines_.contains(line.id);
 }
 
 bool TransportNetwork::StationsAreAdjacend(const Id& station_a,
