@@ -3,9 +3,8 @@
 #include <algorithm>
 #include <exception>
 #include <initializer_list>
-#include <map>
 #include <ostream>
-#include <set>
+#include <span>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -91,25 +90,70 @@ static const auto stomp_errors_strings{MakeBimap<StompError, std::string_view>({
     // clang-format on
 })};
 
-static const std::map<StompCommand, std::set<StompHeader>>
-    headers_required_by_commands{
-        // clang-format off
-    {StompCommand::Connect,     {StompHeader::AcceptVersion, StompHeader::Host}},
-    {StompCommand::Connected,   {StompHeader::Version}},
-    {StompCommand::Send,        {StompHeader::Destination}},
-    {StompCommand::Subscribe,   {StompHeader::Destination, StompHeader::Id}},
-    {StompCommand::Unsubscribe, {StompHeader::Id}},
-    {StompCommand::Ack,         {StompHeader::Id}},
-    {StompCommand::NAck,        {StompHeader::Id}},
-    {StompCommand::Begin,       {StompHeader::Transaction}},
-    {StompCommand::Commit,      {StompHeader::Transaction}},
-    {StompCommand::Abort,       {StompHeader::Transaction}},
-    {StompCommand::Disconnect,  {}},
-    {StompCommand::Message,     {StompHeader::Destination, StompHeader::MessageId, StompHeader::Subscription}},
-    {StompCommand::Receipt,     {StompHeader::ReceiptId}},
-    {StompCommand::Error,       {}}
-        // clang-format on
-    };
+namespace {
+
+namespace required_headers {
+constexpr std::array<StompHeader, 2> kForConnect = {StompHeader::AcceptVersion,
+                                                    StompHeader::Host};
+constexpr std::array<StompHeader, 1> kForConnected = {StompHeader::Version};
+constexpr std::array<StompHeader, 1> kForSend = {StompHeader::Destination};
+constexpr std::array<StompHeader, 2> kForSubscribe = {StompHeader::Destination,
+                                                      StompHeader::Id};
+constexpr std::array<StompHeader, 3> kForMessage = {StompHeader::Destination,
+                                                    StompHeader::MessageId,
+                                                    StompHeader::Subscription};
+constexpr std::array<StompHeader, 1> kForReceipt = {StompHeader::ReceiptId};
+
+constexpr std::array<StompHeader, 1> kOnlyId = {StompHeader::Id};
+constexpr std::array<StompHeader, 1> kOnlyTransaction = {
+    StompHeader::Transaction};
+constexpr std::array<StompHeader, 0> kNone = {};
+}  // namespace required_headers
+
+constexpr std::span<const StompHeader> GetHeadersRequiresByCommand(
+    StompCommand command) noexcept {
+  switch (command) {
+    case StompCommand::Connect:
+      return required_headers::kForConnect;
+
+    case StompCommand::Connected:
+      return required_headers::kForConnected;
+
+    case StompCommand::Send:
+      return required_headers::kForSend;
+
+    case StompCommand::Subscribe:
+      return required_headers::kForSubscribe;
+
+    case StompCommand::Message:
+      return required_headers::kForMessage;
+
+    case StompCommand::Receipt:
+      return required_headers::kForReceipt;
+
+    case StompCommand::Unsubscribe:
+    case StompCommand::Ack:
+    case StompCommand::NAck:
+      return required_headers::kOnlyId;
+
+    case StompCommand::Begin:
+    case StompCommand::Commit:
+    case StompCommand::Abort:
+      return required_headers::kOnlyTransaction;
+
+    case StompCommand::Disconnect:
+    case StompCommand::Error:
+    case StompCommand::Stomp:
+    case StompCommand::Invalid:
+      return required_headers::kNone;
+
+    default:
+      // TODO: notreached
+      return required_headers::kNone;
+  }
+}
+
+}  // namespace
 
 std::string_view ToStringView(const StompCommand& command) {
   const auto string_representation{stomp_commands_strings.left.find(command)};
@@ -396,7 +440,7 @@ StompError StompFrame::ValidateFrame() {
   }
 
   // Check for required headers.
-  const auto& required_headers = headers_required_by_commands.at(command_);
+  const auto& required_headers = GetHeadersRequiresByCommand(command_);
   for (const auto required_header : required_headers) {
     if (!HasHeader(required_header)) {
       return StompError::MissingRequiredHeader;
