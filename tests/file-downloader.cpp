@@ -7,9 +7,6 @@
 
 #include <boost/test/unit_test.hpp>
 
-using network_monitor::DownloadFile;
-using network_monitor::ParseJsonFile;
-
 BOOST_AUTO_TEST_SUITE(network_monitor);
 
 BOOST_AUTO_TEST_CASE(file_downloader) {
