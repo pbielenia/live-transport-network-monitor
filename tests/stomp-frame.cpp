@@ -1,12 +1,15 @@
 #include "network-monitor/stomp-frame.hpp"
 
-#include <map>
+#include <optional>
+#include <ostream>
 #include <sstream>
 #include <string>
-#include <utility>
 #include <vector>
 
+#include <boost/test/data/test_case.hpp>
 #include <boost/test/unit_test.hpp>
+
+namespace {
 
 using network_monitor::StompCommand;
 using network_monitor::StompError;
@@ -18,8 +21,6 @@ using namespace std::string_literals;
 BOOST_AUTO_TEST_SUITE(network_monitor);
 
 BOOST_AUTO_TEST_SUITE(stomp_frame);
-
-namespace {
 
 constexpr std::array<StompCommand, 16> kStompCommands{
     // clang-format off
@@ -89,6 +90,8 @@ constexpr std::array<StompError, 17> kStompErrors{
     // clang-format on
 };
 
+BOOST_AUTO_TEST_SUITE(enums);
+
 // Calls `operator<<()` on each value in `enums` and verifies if invalid string
 // is returned only for `invalid_value`.
 template <typename Enum, std::size_t Size>
@@ -109,24 +112,20 @@ void VerifyOstreamDoesNotReturnInvalidForValidValues(
   }
 }
 
-// Calls `network_monitor::ToString()` on each value in `enums` and verifies if
-// invalid string is returned only for `invalid_value`.
+// Calls `network_monitor::ToString()` on each value in `enums` and verifies
+// if invalid string is returned only for `invalid_value`.
 template <typename Enum, std::size_t Size>
 void VerifyToStringDoesNotReturnInvalidForValidValues(
     Enum invalid_value, const std::array<Enum, Size>& enums) {
-  const auto invalid_string{network_monitor::ToString(invalid_value)};
+  const auto invalid_string{::network_monitor::ToString(invalid_value)};
 
   for (auto value : enums) {
-    if (network_monitor::ToString(value) == invalid_string &&
+    if (::network_monitor::ToString(value) == invalid_string &&
         value != invalid_value) {
       BOOST_FAIL("invalid string returned for non-invalid value");
     }
   }
 }
-
-}  // namespace
-
-BOOST_AUTO_TEST_SUITE(enums);
 
 BOOST_AUTO_TEST_CASE(OstreamDoesNotReturnInvalidForValidCommands) {
   VerifyOstreamDoesNotReturnInvalidForValidValues(StompCommand::Invalid,
@@ -162,618 +161,664 @@ BOOST_AUTO_TEST_SUITE_END();  // enums
 
 BOOST_AUTO_TEST_SUITE(class_StompFrame);
 
-class ExpectedFrame {
- public:
-  ExpectedFrame() = default;
-
-  void SetError(StompError error);
-  void SetCommand(StompCommand command);
-  void AddHeader(StompHeader header, std::string&& value);
-  void SetHeadersCheck();
-  void SetBody(std::string&& body);
-
-  void Check(StompError parse_error, const StompFrame& parsed_frame) const;
-
- private:
-  using Headers = std::map<StompHeader, std::string>;
-
-  // TODO: Store `parsed_frame` as a private member to simplify invocations of
-  // below
-  //       methods.
-  void CheckHeaders(const StompFrame& parsed_frame) const;
-  void CheckHeader(StompHeader header, const StompFrame& parsed_frame) const;
-
-  StompError expected_error{StompError::UndefinedError};
-  StompCommand expected_command{StompCommand::Invalid};
-  Headers expected_headers;
-  std::string expected_body;
-
-  bool check_error{false};
-  bool check_command{false};
-  bool check_headers{false};
-  bool check_body{false};
+struct ExpectedFrame {
+  std::optional<StompError> error_;
+  std::optional<StompCommand> command_;
+  StompFrame::Headers headers_;
+  std::string body_;
 };
 
-void ExpectedFrame::SetError(StompError error) {
-  check_error = true;
-  expected_error = error;
-}
-
-void ExpectedFrame::SetCommand(StompCommand command) {
-  check_command = true;
-  expected_command = command;
-}
-
-void ExpectedFrame::AddHeader(StompHeader header, std::string&& value) {
-  check_headers = true;
-  expected_headers.emplace(header, std::move(value));
-}
-
-// The purpose of this method is to trigger headers check when no headers are
-// expected. `check_headers` is not `true` by default because there are cases
-// when we don't want to check headers, for instance when the parsing frame
-// returned with an error.
-void ExpectedFrame::SetHeadersCheck() {
-  check_headers = true;
-}
-
-void ExpectedFrame::SetBody(std::string&& body) {
-  check_body = true;
-  expected_body = std::move(body);
-}
-
-void ExpectedFrame::Check(StompError parse_error,
-                          const StompFrame& parsed_frame) const {
-  if (check_error) {
-    BOOST_REQUIRE_EQUAL(parse_error, expected_error);
-    if (expected_error != StompError::Ok) {
-      BOOST_CHECK(parse_error != StompError::Ok);
-      // An error occurred, so accessing other fields may be undefined.
-      return;
-    }
-  }
-  if (check_command) {
-    BOOST_CHECK_EQUAL(parsed_frame.GetCommand(), expected_command);
-  }
-  if (check_headers) {
-    CheckHeaders(parsed_frame);
-  }
-  if (check_body) {
-    BOOST_CHECK_EQUAL(parsed_frame.GetBody(), expected_body);
-  }
-}
-
-void ExpectedFrame::CheckHeaders(const StompFrame& parsed_frame) const {
-  for (const auto& header : kStompHeaders) {
-    CheckHeader(header, parsed_frame);
-  }
-}
-
-void ExpectedFrame::CheckHeader(StompHeader header,
-                                const StompFrame& parsed_frame) const {
-  if (expected_headers.contains(header)) {
-    BOOST_CHECK_EQUAL(parsed_frame.HasHeader(header), true);
-    BOOST_CHECK_EQUAL(parsed_frame.GetHeaderValue(header),
-                      expected_headers.at(header));
+void VerifyHeader(StompHeader header,
+                  const StompFrame& actual,
+                  const ExpectedFrame& expected) {
+  if (expected.headers_.contains(header)) {
+    BOOST_CHECK_EQUAL(actual.HasHeader(header), true);
+    BOOST_CHECK_EQUAL(actual.GetHeaderValue(header),
+                      expected.headers_.at(header));
   } else {
-    BOOST_CHECK_EQUAL(parsed_frame.HasHeader(header), false);
-    BOOST_CHECK_EQUAL(parsed_frame.GetHeaderValue(header), "");
+    BOOST_CHECK_EQUAL(actual.HasHeader(header), false);
+    BOOST_CHECK_EQUAL(actual.GetHeaderValue(header), "");
   }
 }
 
-BOOST_AUTO_TEST_CASE(parse_empty_content) {
-  std::string plain{""s};
+void VerifyHeaders(const StompFrame& actual, const ExpectedFrame& expected) {
+  BOOST_REQUIRE_EQUAL(expected.headers_.size(), actual.GetAllHeaders().size());
 
-  ExpectedFrame expected;
-  expected.SetError(StompError::NoData);
+  if (expected.headers_.empty()) {
+    return;
+  }
 
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
+  for (const auto& header : kStompHeaders) {
+    VerifyHeader(header, actual, expected);
+  }
 }
 
-BOOST_AUTO_TEST_CASE(parse_missing_command) {
-  std::string plain{
-      "\n"
-      "accept-version:42\n"
-      "host:host.com\n"
-      "content-length:0\n"
-      "\n"
-      "\0"s};
+void VerifyFrame(const StompFrame& actual, const ExpectedFrame& expected) {
+  if (expected.error_.has_value()) {
+    BOOST_REQUIRE_EQUAL(actual.GetStompError(), expected.error_.value());
+  }
 
-  ExpectedFrame expected;
-  expected.SetError(StompError::MissingCommand);
+  // Do not check other fields if `actual_frame` is in error state, as
+  // accessing them may be undefined.
+  if (actual.GetStompError() != StompError::Ok) {
+    return;
+  }
 
-  StompFrame frame{std::move(plain)};
+  if (expected.command_.has_value()) {
+    BOOST_CHECK_EQUAL(actual.GetCommand(), expected.command_.value());
+  }
 
-  expected.Check(frame.GetStompError(), frame);
+  VerifyHeaders(actual, expected);
+  BOOST_CHECK_EQUAL(actual.GetBody(), expected.body_);
 }
 
-BOOST_AUTO_TEST_CASE(parse_missing_command_newline) {
-  std::string plain{
-      "CONNECT"
-      "accept-version:42"
-      "\0"s};
+std::ostream& operator<<(std::ostream& os, const StompFrame::Headers& headers) {
+  if (headers.empty()) {
+    os << "[]";
+    return os;
+  }
 
-  ExpectedFrame expected;
-  expected.SetError(StompError::NoNewlineCharacters);
+  os << "[ ";
+  bool first = true;
+  for (const auto& [header, value] : headers) {
+    if (!first) {
+      os << ", ";
+    }
+    first = false;
+    os << R"({ ")" << ToString(header) << R"(": ")" << value << R"(" })";
+  }
+  os << " ]";
 
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
+  return os;
 }
 
-BOOST_AUTO_TEST_CASE(parse_only_command_invalid) {
-  std::string plain{"CONNECT\n\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::MissingBodyNewline);
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
+std::ostream& operator<<(std::ostream& os, const ExpectedFrame& frame) {
+  os << R"({ "error": ")"
+     << (frame.error_.has_value() ? ToString(frame.error_.value()) : "none")
+     << R"(", "command": ")"
+     << (frame.command_.has_value() ? ToString(frame.command_.value()) : "none")
+     << R"(", "headers": )" << frame.headers_ << R"(, "body": ")" << frame.body_
+     << R"(" })";
+  return os;
 }
 
-BOOST_AUTO_TEST_CASE(parse_well_formed) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "host:host.com\n"
-      "\n"
-      "Frame body\0"s};
+BOOST_AUTO_TEST_SUITE(parse);
 
-  ExpectedFrame expected;
-  expected.SetError(StompError::Ok);
-  expected.SetCommand(StompCommand::Connect);
-  expected.AddHeader(StompHeader::AcceptVersion, "42");
-  expected.AddHeader(StompHeader::Host, "host.com");
-  expected.SetBody("Frame body");
+struct TestData {
+  std::string context_name_;
+  std::string stomp_message_;
+  ExpectedFrame expected_;
+};
 
-  StompFrame frame{std::move(plain)};
+std::ostream& operator<<(std::ostream& os, const TestData& data) {
+  os << R"({ "context_name_": ")" << data.context_name_ << R"(", "expected_": )"
+     << data.expected_ << R"(, "stomp_message_": ")" << data.stomp_message_
+     << R"("})";
 
-  expected.Check(frame.GetStompError(), frame);
+  return os;
 }
 
-BOOST_AUTO_TEST_CASE(parse_well_formed_content_length) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "host:host.com\n"
-      "content-length:10\n"
-      "\n"
-      "Frame body\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::Ok);
-  expected.SetCommand(StompCommand::Connect);
-  expected.AddHeader(StompHeader::AcceptVersion, "42");
-  expected.AddHeader(StompHeader::Host, "host.com");
-  expected.AddHeader(StompHeader::ContentLength, "10");
-  expected.SetBody("Frame body");
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
+void VerifyFrame(const TestData& test_data) {
+  BOOST_TEST_CONTEXT("Test name: " << test_data.context_name_) {
+    auto actual_frame = StompFrame{test_data.stomp_message_};
+    VerifyFrame(actual_frame, test_data.expected_);
+  }
 }
 
-BOOST_AUTO_TEST_CASE(parse_empty_body) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "host:host.com\n"
-      "\n"
-      "\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::Ok);
-  expected.SetCommand(StompCommand::Connect);
-  expected.AddHeader(StompHeader::AcceptVersion, "42");
-  expected.AddHeader(StompHeader::Host, "host.com");
-  expected.SetBody("");
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
+BOOST_DATA_TEST_CASE(
+    ValidFormat,
+    boost::unit_test::data::make(std::vector<TestData>{
+        TestData{.context_name_ = "Full",
+                 .stomp_message_ = "CONNECT\n"
+                                   "accept-version:42\n"
+                                   "host:host.com\n"
+                                   "\n"
+                                   "Frame body\0"s,
+                 .expected_ = {.error_ = StompError::Ok,
+                               .command_ = StompCommand::Connect,
+                               .headers_ = {{StompHeader::AcceptVersion, "42"},
+                                            {StompHeader::Host, "host.com"}},
+                               .body_ = "Frame body"}},
+        TestData{.context_name_ =
+                     "content-length header matching the actual body length",
+                 .stomp_message_ = "CONNECT\n"
+                                   "accept-version:42\n"
+                                   "host:host.com\n"
+                                   "content-length:10\n"
+                                   "\n"
+                                   "Frame body\0"s,
+                 .expected_ = {.error_ = StompError::Ok,
+                               .command_ = StompCommand::Connect,
+                               .headers_ = {{StompHeader::AcceptVersion, "42"},
+                                            {StompHeader::Host, "host.com"},
+                                            {StompHeader::ContentLength, "10"}},
+                               .body_ = "Frame body"}},
+        TestData{.context_name_ = "Empty body allowed",
+                 .stomp_message_ = "CONNECT\n"
+                                   "accept-version:42\n"
+                                   "host:host.com\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::Ok,
+                               .command_ = StompCommand::Connect,
+                               .headers_ = {{StompHeader::AcceptVersion, "42"},
+                                            {StompHeader::Host, "host.com"}},
+                               .body_ = ""}},
+        TestData{
+            .context_name_ = "Empty body with matching content-length header",
+            .stomp_message_ = "CONNECT\n"
+                              "accept-version:42\n"
+                              "host:host.com\n"
+                              "content-length:0\n"
+                              "\n"
+                              "\0"s,
+            .expected_ = {.error_ = StompError::Ok,
+                          .command_ = StompCommand::Connect,
+                          .headers_ = {{StompHeader::AcceptVersion, "42"},
+                                       {StompHeader::Host, "host.com"},
+                                       {StompHeader::ContentLength, "0"}},
+                          .body_ = ""}},
+        TestData{.context_name_ = "Empty headers allowed",
+                 .stomp_message_ = "DISCONNECT\n"
+                                   "\n"
+                                   "Frame body\0"s,
+                 .expected_ = {.error_ = StompError::Ok,
+                               .command_ = StompCommand::Disconnect,
+                               .headers_ = {},
+                               .body_ = "Frame body"}},
+        TestData{.context_name_ = "Only command allowed",
+                 .stomp_message_ = "DISCONNECT\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::Ok,
+                               .command_ = StompCommand::Disconnect,
+                               .headers_ = {},
+                               .body_ = ""}},
+        TestData{.context_name_ = "Newline after command allowed",
+                 .stomp_message_ = "DISCONNECT\n"
+                                   "\n"
+                                   "version:42\n"
+                                   "host:host.com\n"
+                                   "\n"
+                                   "Frame body\0"s,
+                 .expected_ =
+                     {.error_ = StompError::Ok,
+                      .command_ = StompCommand::Disconnect,
+                      .body_ = "version:42\nhost:host.com\n\nFrame body\0"}},
+        TestData{.context_name_ = "Repeated the same header allowed",
+                 .stomp_message_ = "CONNECT\n"
+                                   "accept-version:42\n"
+                                   "accept-version:43\n"
+                                   "host:host.com\n"
+                                   "\n"
+                                   "Frame body\0"s,
+                 .expected_ = {.error_ = StompError::Ok,
+                               .command_ = StompCommand::Connect,
+                               .headers_ = {{StompHeader::AcceptVersion, "42"},
+                                            {StompHeader::Host, "host.com"}},
+                               .body_ = "Frame body\0"}},
+    }),
+    test_data) {
+  VerifyFrame(test_data);
 }
 
-BOOST_AUTO_TEST_CASE(parse_empty_body_content_length) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "host:host.com\n"
-      "content-length:0\n"
-      "\n"
-      "\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::Ok);
-  expected.SetCommand(StompCommand::Connect);
-  expected.AddHeader(StompHeader::AcceptVersion, "42");
-  expected.AddHeader(StompHeader::Host, "host.com");
-  expected.AddHeader(StompHeader::ContentLength, "0");
-  expected.SetBody("");
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
+BOOST_DATA_TEST_CASE(
+    InvalidFormat,
+    boost::unit_test::data::make(std::vector<TestData>{
+        TestData{.context_name_ = "Empty content",
+                 .stomp_message_ = ""s,
+                 .expected_{.error_ = StompError::NoData}},
+        TestData{.context_name_ = "Missing command",
+                 .stomp_message_ = "\n"
+                                   "accept-version:42\n"
+                                   "host:host.com\n"
+                                   "content-length:0\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingCommand}},
+        TestData{.context_name_ = "Missing newline characters",
+                 .stomp_message_ = "CONNECT"
+                                   "accept-version:42"
+                                   "\0"s,
+                 .expected_{.error_ = StompError::NoNewlineCharacters}},
+        TestData{.context_name_ = "Missing body newline",
+                 .stomp_message_ = "CONNECT\n\0"s,
+                 .expected_ = {.error_ = StompError::MissingBodyNewline}},
+        TestData{.context_name_ = "Invalid command",
+                 .stomp_message_ = "CONNECT_INVALID\n"
+                                   "accept-version:42\n"
+                                   "host:host.com\n"
+                                   "\n"
+                                   "Frame body\0"s,
+                 .expected_ = {.error_ = StompError::InvalidCommand}},
+        TestData{.context_name_ = "Invalid header",
+                 .stomp_message_ = "CONNECT\n"
+                                   "accept-version:42\n"
+                                   "header_invalid:value\n"
+                                   "\n"
+                                   "Frame body\0"s,
+                 .expected_ = {.error_ = StompError::InvalidHeader}},
+        TestData{.context_name_ = "Missing header value",
+                 .stomp_message_ = "CONNECT\n"
+                                   "accept-version:42\n"
+                                   "login\n"
+                                   "\n"
+                                   "Frame body\0"s,
+                 .expected_ = {.error_ = StompError::NoHeaderValue}},
+        TestData{.context_name_ = "Missing body newline, headers present",
+                 .stomp_message_ = "CONNECT\n"
+                                   "accept-version:42\n"
+                                   "host:host.com\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingBodyNewline}},
+        TestData{.context_name_ = "Missing body newline, no headers",
+                 .stomp_message_ = "CONNECT\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingBodyNewline}},
+        TestData{.context_name_ = "Missing body newline, body present",
+                 .stomp_message_ = "CONNECT\n"
+                                   "accept-version:42\n"
+                                   "host:host.com\n"
+                                   "Frame body\0"s,
+                 .expected_ = {.error_ = StompError::MissingBodyNewline}},
+        TestData{.context_name_ = "Missing last header newline",
+                 .stomp_message_ = "CONNECT\n"
+                                   "accept-version:42\n"
+                                   "host:host.com"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingBodyNewline}},
+        TestData{.context_name_ = "Empty header value",
+                 .stomp_message_ = "CONNECT\n"
+                                   "accept-version:\n"
+                                   "host:host.com\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::EmptyHeaderValue}},
+        // TODO: error or ok?
+        // TestData{.context_name_ = "Parse - double colon in header line",
+        //          .stomp_message_ = "CONNECT\n"
+        //                            "accept-version:42:43\n"
+        //                            "host:host.com\n"
+        //                            "\n"
+        //                            "Frame body\0"s,
+        //          .expected_ = {}},
+        TestData{
+            .context_name_ = "Repeated headers, second one with missing value",
+            .stomp_message_ = "CONNECT\n"
+                              "accept-version:42\n"
+                              "accept-version:\n"
+                              "\n"
+                              "Frame body\0"s,
+            .expected_ = {.error_ = StompError::EmptyHeaderValue}},
+        TestData{
+            .context_name_ = "Unterminated body",
+            .stomp_message_ = "CONNECT\n"
+                              "accept-version:42\n"
+                              "host:host.com\n"
+                              "\n"
+                              "Frame body"s,
+            .expected_ = {.error_ = StompError::MissingClosingNullCharacter}},
+        TestData{
+            .context_name_ = "Unterminated body, content-length header present",
+            .stomp_message_ = "CONNECT\n"
+                              "accept-version:42\n"
+                              "host:host.com\n"
+                              "content-length:10\n"
+                              "\n"
+                              "Frame body"s,
+            .expected_ = {.error_ = StompError::MissingClosingNullCharacter}},
+        TestData{.context_name_ = "Junk after body",
+                 .stomp_message_ = "CONNECT\n"
+                                   "accept-version:42\n"
+                                   "host:host.com\n"
+                                   "\n"
+                                   "Frame body\0\n\njunk\n\0"s,
+                 .expected_ = {.error_ = StompError::JunkAfterBody}},
+        TestData{
+            .context_name_ = "Junk after body, content-length header present",
+            .stomp_message_ = "CONNECT\n"
+                              "accept-version:42\n"
+                              "host:host.com\n"
+                              "content-length:10\n"
+                              "\n"
+                              "Frame body\0\n\njunk\n\0"s,
+            .expected_ = {.error_ = StompError::ContentLengthsDontMatch}},
+        TestData{.context_name_ = "Newlines after body",
+                 .stomp_message_ = "CONNECT\n"
+                                   "accept-version:42\n"
+                                   "host:host.com\n"
+                                   "\n"
+                                   "Frame body\0\n\n\n\0"s,
+                 .expected_ = {.error_ = StompError::JunkAfterBody}},
+        TestData{
+            .context_name_ =
+                "Newlines after body, content-length header present",
+            .stomp_message_ = "CONNECT\n"
+                              "accept-version:42\n"
+                              "host:host.com\n"
+                              "content-length:10\n"
+                              "\n"
+                              "Frame body\0\n\n\n"s,
+            .expected_ = {.error_ = StompError::MissingClosingNullCharacter}},
+        TestData{.context_name_ = "content-length header value lower than the "
+                                  "actual body length",
+                 .stomp_message_ = "CONNECT\n"
+                                   "accept-version:42\n"
+                                   "host:host.com\n"
+                                   "content-length:9\n"  // This is one byte off
+                                   "\n"
+                                   "Frame body\0"s,
+                 .expected_ = {.error_ = StompError::ContentLengthsDontMatch}},
+        TestData{.context_name_ = "content-length heaer value greater than the "
+                                  "actual body length",
+                 .stomp_message_ =
+                     "CONNECT\n"
+                     "accept-version:42\n"
+                     "host:host.com\n"
+                     "content-length:15\n"  // Way above the actual body length
+                     "\n"
+                     "Frame body\0"s,
+                 .expected_ = {.error_ = StompError::ContentLengthsDontMatch}},
+        TestData{
+            .context_name_ = "value of content-length header is not a number",
+            .stomp_message_ = "CONNECT\n"
+                              "accept-version:42\n"
+                              "host:host.com\n"
+                              "content-length:five\n"
+                              "\n"
+                              "Frame body\0"s,
+            .expected_ = {.error_ = StompError::InvalidHeaderValue}},
+    }),
+    test_data) {
+  VerifyFrame(test_data);
 }
 
-BOOST_AUTO_TEST_CASE(parse_empty_headers) {
-  std::string plain{
-      "DISCONNECT\n"
-      "\n"
-      "Frame body\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::Ok);
-  expected.SetCommand(StompCommand::Disconnect);
-  expected.SetHeadersCheck();
-  expected.SetBody("Frame body");
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
+BOOST_DATA_TEST_CASE(
+    RequiredHeaders,
+    boost::unit_test::data::make(std::vector<TestData>{
+        // CONNECT
+        TestData{.context_name_ = "CONNECT - empty headers",
+                 .stomp_message_ = "CONNECT\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{.context_name_ = "CONNECT - missing host",
+                 .stomp_message_ = "CONNECT\n"
+                                   "accept-version:42\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{.context_name_ = "CONNECT - missing accept-version",
+                 .stomp_message_ = "CONNECT\n"
+                                   "host:host.com\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{.context_name_ = "CONNECT - ok",
+                 .stomp_message_ = "CONNECT\n"
+                                   "accept-version:42\n"
+                                   "host:host.com\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::Ok,
+                               .command_ = StompCommand::Connect,
+                               .headers_ = {{StompHeader::AcceptVersion, "42"},
+                                            {StompHeader::Host, "host.com"}}}},
+        // CONNECTED
+        TestData{.context_name_ = "CONNECTED - missing version",
+                 .stomp_message_ = "CONNECTED\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{.context_name_ = "CONNECTED - ok",
+                 .stomp_message_ = "CONNECTED\n"
+                                   "version:42\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::Ok,
+                               .command_ = StompCommand::Connected,
+                               .headers_ = {{StompHeader::Version, "42"}}}},
+        //  SEND
+        TestData{.context_name_ = "SEND - missing destination",
+                 .stomp_message_ = "SEND\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{
+            .context_name_ = "SEND - ok",
+            .stomp_message_ = "SEND\n"
+                              "destination:/queue/a\n"
+                              "\n"
+                              "Frame body\0"s,
+            .expected_ = {.error_ = StompError::Ok,
+                          .command_ = StompCommand::Send,
+                          .headers_ = {{StompHeader::Destination, "/queue/a"}},
+                          .body_ = "Frame body"}},
+        // SUBSCRIBE
+        TestData{.context_name_ = "SUBSCRIBE - empty headers",
+                 .stomp_message_ = "SUBSCRIBE\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{.context_name_ = "SUBSCRIBE - missing destination",
+                 .stomp_message_ = "SUBSCRIBE\n"
+                                   "id:0\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{.context_name_ = "SUBSCRIBE - missing id",
+                 .stomp_message_ = "SUBSCRIBE\n"
+                                   "destination:/queue/foo\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{.context_name_ = "SUBSCRIBE - ok",
+                 .stomp_message_ = "SUBSCRIBE\n"
+                                   "id:0\n"
+                                   "destination:/queue/foo\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::Ok,
+                               .command_ = StompCommand::Subscribe,
+                               .headers_ = {{StompHeader::Id, "0"},
+                                            {StompHeader::Destination,
+                                             "/queue/foo"}}}},
+        // UNSUBSCRIBE
+        TestData{.context_name_ = "UNSUBSCRIBE - missing id",
+                 .stomp_message_ = "UNSUBSCRIBE\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{.context_name_ = "UNSUBSCRIBE - ok",
+                 .stomp_message_ = "UNSUBSCRIBE\n"
+                                   "id:0\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::Ok,
+                               .command_ = StompCommand::Unsubscribe,
+                               .headers_ = {{StompHeader::Id, "0"}}}},
+        // ACK
+        TestData{.context_name_ = "ACK - missing id",
+                 .stomp_message_ = "ACK\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{.context_name_ = "ACK - ok",
+                 .stomp_message_ = "ACK\n"
+                                   "id:12345\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::Ok,
+                               .command_ = StompCommand::Ack,
+                               .headers_ = {{StompHeader::Id, "12345"}}}},
+        // NACK
+        TestData{.context_name_ = "NACK - missing id",
+                 .stomp_message_ = "NACK\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{.context_name_ = "NACK - ok",
+                 .stomp_message_ = "NACK\n"
+                                   "id:12345\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::Ok,
+                               .command_ = StompCommand::NAck,
+                               .headers_ = {{StompHeader::Id, "12345"}}}},
+        // BEGIN
+        TestData{.context_name_ = "BEGIN - missing transaction",
+                 .stomp_message_ = "BEGIN\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{
+            .context_name_ = "BEGIN - ok",
+            .stomp_message_ = "BEGIN\n"
+                              "transaction:tx1\n"
+                              "\n"
+                              "\0"s,
+            .expected_ = {.error_ = StompError::Ok,
+                          .command_ = StompCommand::Begin,
+                          .headers_ = {{StompHeader::Transaction, "tx1"}}}},
+        // COMMIT
+        TestData{.context_name_ = "COMMIT - missing transaction",
+                 .stomp_message_ = "COMMIT\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{
+            .context_name_ = "COMMIT - ok",
+            .stomp_message_ = "COMMIT\n"
+                              "transaction:tx1\n"
+                              "\n"
+                              "\0"s,
+            .expected_ = {.error_ = StompError::Ok,
+                          .command_ = StompCommand::Commit,
+                          .headers_ = {{StompHeader::Transaction, "tx1"}}}},
+        // ABORT
+        TestData{.context_name_ = "ABORT - missing transaction",
+                 .stomp_message_ = "ABORT\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{
+            .context_name_ = "ABORT - ok",
+            .stomp_message_ = "ABORT\n"
+                              "transaction:tx1\n"
+                              "\n"
+                              "\0"s,
+            .expected_ = {.error_ = StompError::Ok,
+                          .command_ = StompCommand::Abort,
+                          .headers_ = {{StompHeader::Transaction, "tx1"}}}},
+        // DISCONNECT
+        TestData{.context_name_ = "DISCONNECT - ok",
+                 .stomp_message_ = "DISCONNECT\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::Ok,
+                               .command_ = StompCommand::Disconnect}},
+        // MESSAGE
+        TestData{.context_name_ = "MESSAGE - empty headers",
+                 .stomp_message_ = "MESSAGE\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{
+            .context_name_ = "MESSAGE - missing message-id and destination",
+            .stomp_message_ = "MESSAGE\n"
+                              "subscription:0\n"
+                              "\n"
+                              "\0"s,
+            .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{
+            .context_name_ = "MESSAGE - missing subscription and destination",
+            .stomp_message_ = "MESSAGE\n"
+                              "message-id:007\n"
+                              "\n"
+                              "\0"s,
+            .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{
+            .context_name_ = "MESSAGE - missing subscription and message-id",
+            .stomp_message_ = "MESSAGE\n"
+                              "destination:/queue/a\n"
+                              "\n"
+                              "\0"s,
+            .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{.context_name_ = "MESSAGE - missing destination",
+                 .stomp_message_ = "MESSAGE\n"
+                                   "subscription:0\n"
+                                   "message-id:007\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{.context_name_ = "MESSAGE - missing message-id",
+                 .stomp_message_ = "MESSAGE\n"
+                                   "subscription:0\n"
+                                   "destination:/queue/a\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{.context_name_ = "MESSAGE - missing subscription",
+                 .stomp_message_ = "MESSAGE\n"
+                                   "message-id:007\n"
+                                   "destination:/queue/a\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{
+            .context_name_ = "MESSAGE - ok",
+            .stomp_message_ = "MESSAGE\n"
+                              "subscription:0\n"
+                              "message-id:007\n"
+                              "destination:/queue/a\n"
+                              "\n"
+                              "hello queue a\0"s,
+            .expected_ = {.error_ = StompError::Ok,
+                          .command_ = StompCommand::Message,
+                          .headers_ = {{StompHeader::Subscription, "0"},
+                                       {StompHeader::MessageId, "007"},
+                                       {StompHeader::Destination, "/queue/a"}},
+                          .body_ = "hello queue a"}},
+        // RECEIPT
+        TestData{.context_name_ = "RECEIPT - missing receipt-id",
+                 .stomp_message_ = "RECEIPT\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::MissingRequiredHeader}},
+        TestData{.context_name_ = "RECEIPT - ok",
+                 .stomp_message_ = "RECEIPT\n"
+                                   "receipt-id:77\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::Ok,
+                               .command_ = StompCommand::Receipt,
+                               .headers_ = {{StompHeader::ReceiptId, "77"}}}},
+        // ERROR
+        // TODO: doesn't it need to carry any message?
+        TestData{.context_name_ = "ERROR - ok",
+                 .stomp_message_ = "ERROR\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::Ok,
+                               .command_ = StompCommand::Error}},
+    }),
+    test_data) {
+  VerifyFrame(test_data);
 }
 
-BOOST_AUTO_TEST_CASE(parse_only_command) {
-  std::string plain{
-      "DISCONNECT\n"
-      "\n"
-      "\0"s};
+BOOST_AUTO_TEST_SUITE_END();  // parse
 
-  ExpectedFrame expected;
-  expected.SetError(StompError::Ok);
-  expected.SetCommand(StompCommand::Disconnect);
-  expected.SetHeadersCheck();
-  expected.SetBody("");
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
-
-BOOST_AUTO_TEST_CASE(parse_invalid_command) {
-  std::string plain{
-      "CONNECT_INVALID\n"
-      "accept-version:42\n"
-      "host:host.com\n"
-      "\n"
-      "Frame body\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::InvalidCommand);
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
-
-BOOST_AUTO_TEST_CASE(parse_invalid_header) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "header_invalid:value\n"
-      "\n"
-      "Frame body\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::InvalidHeader);
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
-
-BOOST_AUTO_TEST_CASE(parse_header_no_value) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "login\n"
-      "\n"
-      "Frame body\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::NoHeaderValue);
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
-
-BOOST_AUTO_TEST_CASE(parse_missing_body_newline_with_headers) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "host:host.com\n"
-      "\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::MissingBodyNewline);
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
-
-BOOST_AUTO_TEST_CASE(parse_missing_body_newline_no_headers) {
-  std::string plain{
-      "CONNECT\n"
-      "\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::MissingBodyNewline);
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
-
-BOOST_AUTO_TEST_CASE(parse_missing_body_newline_with_body) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "host:host.com\n"
-      "Frame body\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::MissingBodyNewline);
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
-
-BOOST_AUTO_TEST_CASE(parse_missing_last_header_newline) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "host:host.com"
-      "\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::MissingBodyNewline);
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
-
-BOOST_AUTO_TEST_CASE(parse_empty_header_value) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:\n"
-      "host:host.com\n"
-      "\n"
-      "\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::EmptyHeaderValue);
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
-
-BOOST_AUTO_TEST_CASE(parse_newline_after_command) {
-  std::string plain{
-      "DISCONNECT\n"
-      "\n"
-      "version:42\n"
-      "host:host.com\n"
-      "\n"
-      "Frame body\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::Ok);
-  expected.SetCommand(StompCommand::Disconnect);
-  expected.SetHeadersCheck();
-  expected.SetBody("version:42\nhost:host.com\n\nFrame body\0");
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
-
-BOOST_AUTO_TEST_CASE(parse_double_colon_in_header_line,
-                     *boost::unit_test::disabled()) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42:43\n"
-      "host:host.com\n"
-      "\n"
-      "Frame body\0"s};
-  // StompError::Ok? seems so
-}
-
-BOOST_AUTO_TEST_CASE(parse_repeated_headers) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "accept-version:43\n"
-      "host:host.com\n"
-      "\n"
-      "Frame body\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::Ok);
-  expected.SetCommand(StompCommand::Connect);
-  expected.AddHeader(StompHeader::AcceptVersion, "42");
-  expected.AddHeader(StompHeader::Host, "host.com");
-  expected.SetBody("Frame body\0");
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
-
-BOOST_AUTO_TEST_CASE(parse_repeated_headers_error_in_second) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "accept-version:\n"
-      "\n"
-      "Frame body\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::EmptyHeaderValue);
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
-
-BOOST_AUTO_TEST_CASE(parse_unterminated_body) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "host:host.com\n"
-      "\n"
-      "Frame body"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::MissingClosingNullCharacter);
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
-
-BOOST_AUTO_TEST_CASE(parse_unterminated_body_content_length) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "host:host.com\n"
-      "content-length:10\n"
-      "\n"
-      "Frame body"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::MissingClosingNullCharacter);
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
-
-BOOST_AUTO_TEST_CASE(parse_junk_after_body) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "host:host.com\n"
-      "\n"
-      "Frame body\0\n\njunk\n\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::JunkAfterBody);
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
-
-BOOST_AUTO_TEST_CASE(parse_junk_after_body_content_length) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "host:host.com\n"
-      "content-length:10\n"
-      "\n"
-      "Frame body\0\n\njunk\n\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::ContentLengthsDontMatch);
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
-
-BOOST_AUTO_TEST_CASE(parse_newlines_after_body) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "host:host.com\n"
-      "\n"
-      "Frame body\0\n\n\n\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::JunkAfterBody);
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
-
-BOOST_AUTO_TEST_CASE(parse_newlines_after_body_content_length) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "host:host.com\n"
-      "content-length:10\n"
-      "\n"
-      "Frame body\0\n\n\n"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::MissingClosingNullCharacter);
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
-
-BOOST_AUTO_TEST_CASE(parse_content_length_wrong_number) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "host:host.com\n"
-      "content-length:9\n"  // This is one byte off
-      "\n"
-      "Frame body\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::ContentLengthsDontMatch);
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
-
-BOOST_AUTO_TEST_CASE(parse_content_length_exceeding) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "host:host.com\n"
-      "content-length:15\n"  // Way above the actual body length
-      "\n"
-      "Frame body\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::ContentLengthsDontMatch);
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
-
-BOOST_AUTO_TEST_CASE(parse_invalid_content_length_value) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "host:host.com\n"
-      "content-length:five\n"
-      "\n"
-      "Frame body\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::InvalidHeaderValue);
-
-  StompFrame frame{std::move(plain)};
-
-  expected.Check(frame.GetStompError(), frame);
-}
+BOOST_AUTO_TEST_SUITE(constructors_and_operators)
 
 BOOST_AUTO_TEST_CASE(copy_constructor) {
-  std::string plain{
+  ExpectedFrame expected_frame{.error_ = StompError::Ok,
+                               .command_ = StompCommand::Connect,
+                               .headers_ = {{StompHeader::AcceptVersion, "42"},
+                                            {StompHeader::Host, "host.com"},
+                                            {StompHeader::ContentLength, "10"}},
+                               .body_ = "Frame body"};
+
+  StompFrame parsed_frame{
       "CONNECT\n"
       "accept-version:42\n"
       "host:host.com\n"
@@ -781,23 +826,29 @@ BOOST_AUTO_TEST_CASE(copy_constructor) {
       "\n"
       "Frame body\0"s};
 
-  ExpectedFrame expected;
-  expected.SetError(StompError::Ok);
-  expected.AddHeader(StompHeader::AcceptVersion, "42");
-  expected.AddHeader(StompHeader::Host, "host.com");
-  expected.AddHeader(StompHeader::ContentLength, "10");
-  expected.SetBody("Frame body");
+  VerifyFrame(parsed_frame, expected_frame);
 
-  StompFrame parsed_frame{std::move(plain)};
-
-  expected.Check(parsed_frame.GetStompError(), parsed_frame);
-
-  const auto other_frame{parsed_frame};
-  expected.Check(parsed_frame.GetStompError(), other_frame);
+  // NOLINTBEGIN(performance-unnecessary-copy-initialization)
+  const auto copied_frame{parsed_frame};
+  // NOLINTEND(performance-unnecessary-copy-initialization)
+  // TODO: verify copied_frame.body_ points at copied_frame.plain_content_
+  VerifyFrame(copied_frame, expected_frame);
 }
 
 BOOST_AUTO_TEST_CASE(move_constructor) {
-  std::string plain{
+  ExpectedFrame expected_frame{.error_ = StompError::Ok,
+                               .command_ = StompCommand::Connect,
+                               .headers_ = {{StompHeader::AcceptVersion, "42"},
+                                            {StompHeader::Host, "host.com"},
+                                            {StompHeader::ContentLength, "10"}},
+                               .body_ = "Frame body"};
+  // TODO: moved-from std::string_view body_ should be reset
+  // ExpectedFrame expected_from_move_frame{.error_ = StompError::Ok,
+  //                                        .command_ = StompCommand::Connect,
+  //                                        .headers_ = {},
+  //                                        .body_ = ""};
+
+  StompFrame parsed_frame{
       "CONNECT\n"
       "accept-version:42\n"
       "host:host.com\n"
@@ -805,47 +856,30 @@ BOOST_AUTO_TEST_CASE(move_constructor) {
       "\n"
       "Frame body\0"s};
 
-  ExpectedFrame expected;
-  expected.SetError(StompError::Ok);
-  expected.AddHeader(StompHeader::AcceptVersion, "42");
-  expected.AddHeader(StompHeader::Host, "host.com");
-  expected.AddHeader(StompHeader::ContentLength, "10");
-  expected.SetBody("Frame body");
+  VerifyFrame(parsed_frame, expected_frame);
 
-  StompFrame parsed_frame{std::move(plain)};
-
-  expected.Check(parsed_frame.GetStompError(), parsed_frame);
-
-  const auto other_frame{std::move(parsed_frame)};
-  expected.Check(parsed_frame.GetStompError(), other_frame);
-}
-
-BOOST_AUTO_TEST_CASE(move_assignment_operator) {
-  std::string plain{
-      "CONNECT\n"
-      "accept-version:42\n"
-      "host:host.com\n"
-      "content-length:10\n"
-      "\n"
-      "Frame body\0"s};
-
-  ExpectedFrame expected;
-  expected.SetError(StompError::Ok);
-  expected.AddHeader(StompHeader::AcceptVersion, "42");
-  expected.AddHeader(StompHeader::Host, "host.com");
-  expected.AddHeader(StompHeader::ContentLength, "10");
-  expected.SetBody("Frame body");
-
-  StompFrame parsed_frame{std::move(plain)};
-
-  expected.Check(parsed_frame.GetStompError(), parsed_frame);
-
-  const auto other_frame = std::move(parsed_frame);
-  expected.Check(parsed_frame.GetStompError(), other_frame);
+  // NOLINTBEGIN(performance-unnecessary-copy-initialization)
+  const auto from_move_frame{parsed_frame};
+  // NOLINTEND(performance-unnecessary-copy-initialization)
+  VerifyFrame(from_move_frame, expected_frame);
+  // TODO: moved-from std::string_view body_ should be reset
+  // VerifyFrame(parsed_frame, expected_from_move_frame);
 }
 
 BOOST_AUTO_TEST_CASE(copy_assignment_operator) {
-  std::string plain{
+  ExpectedFrame expected_frame{.error_ = StompError::Ok,
+                               .command_ = StompCommand::Connect,
+                               .headers_ = {{StompHeader::AcceptVersion, "42"},
+                                            {StompHeader::Host, "host.com"},
+                                            {StompHeader::ContentLength, "10"}},
+                               .body_ = "Frame body"};
+  // TODO: moved-from std::string_view body_ should be reset
+  // ExpectedFrame expected_from_move_frame{.error_ = StompError::Ok,
+  //                                        .command_ = StompCommand::Connect,
+  //                                        .headers_ = {},
+  //                                        .body_ = ""};
+
+  StompFrame parsed_frame{
       "CONNECT\n"
       "accept-version:42\n"
       "host:host.com\n"
@@ -853,515 +887,39 @@ BOOST_AUTO_TEST_CASE(copy_assignment_operator) {
       "\n"
       "Frame body\0"s};
 
-  ExpectedFrame expected;
-  expected.SetError(StompError::Ok);
-  expected.AddHeader(StompHeader::AcceptVersion, "42");
-  expected.AddHeader(StompHeader::Host, "host.com");
-  expected.AddHeader(StompHeader::ContentLength, "10");
-  expected.SetBody("Frame body");
+  VerifyFrame(parsed_frame, expected_frame);
 
-  StompFrame parsed_frame{std::move(plain)};
-
-  expected.Check(parsed_frame.GetStompError(), parsed_frame);
-
-  const auto other_frame = parsed_frame;
-  expected.Check(parsed_frame.GetStompError(), other_frame);
+  // NOLINTBEGIN(performance-unnecessary-copy-initialization)
+  const auto copied_frame = parsed_frame;
+  // NOLINTEND(performance-unnecessary-copy-initialization)
+  VerifyFrame(copied_frame, expected_frame);
+  // TODO: moved-from std::string_view body_ should be reset
+  // VerifyFrame(parsed_frame, expected_from_move_frame);
 }
 
-BOOST_AUTO_TEST_CASE(parse_required_headers) {
-  {
-    std::string plain{
-        "CONNECT\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "CONNECT\n"
-        "accept-version:42\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "CONNECT\n"
-        "host:host.com\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "CONNECT\n"
-        "accept-version:42\n"
-        "host:host.com\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::Ok);
-    expected.SetCommand(StompCommand::Connect);
-    expected.AddHeader(StompHeader::AcceptVersion, "42");
-    expected.AddHeader(StompHeader::Host, "host.com");
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "CONNECTED\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "CONNECTED\n"
-        "version:42\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::Ok);
-    expected.SetCommand(StompCommand::Connected);
-    expected.AddHeader(StompHeader::Version, "42");
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "SEND\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "SEND\n"
-        "destination:/queue/a\n"
-        "\n"
-        "Frame body\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::Ok);
-    expected.SetCommand(StompCommand::Send);
-    expected.AddHeader(StompHeader::Destination, "/queue/a");
-    expected.SetBody("Frame body");
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "SUBSCRIBE\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "SUBSCRIBE\n"
-        "id:0\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "SUBSCRIBE\n"
-        "destination:/queue/foo\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "SUBSCRIBE\n"
-        "id:0\n"
-        "destination:/queue/foo\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::Ok);
-    expected.SetCommand(StompCommand::Subscribe);
-    expected.AddHeader(StompHeader::Id, "0");
-    expected.AddHeader(StompHeader::Destination, "/queue/foo");
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "UNSUBSCRIBE\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "UNSUBSCRIBE\n"
-        "id:0\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::Ok);
-    expected.SetCommand(StompCommand::Unsubscribe);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "ACK\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "ACK\n"
-        "id:12345\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::Ok);
-    expected.SetCommand(StompCommand::Ack);
-    expected.AddHeader(StompHeader::Id, "12345");
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "NACK\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "NACK\n"
-        "id:12345\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::Ok);
-    expected.SetCommand(StompCommand::NAck);
-    expected.AddHeader(StompHeader::Id, "12345");
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "BEGIN\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "BEGIN\n"
-        "transaction:tx1\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::Ok);
-    expected.SetCommand(StompCommand::Begin);
-    expected.AddHeader(StompHeader::Transaction, "tx1");
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "COMMIT\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "COMMIT\n"
-        "transaction:tx1\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::Ok);
-    expected.SetCommand(StompCommand::Commit);
-    expected.AddHeader(StompHeader::Transaction, "tx1");
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "ABORT\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "ABORT\n"
-        "transaction:tx1\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::Ok);
-    expected.SetCommand(StompCommand::Abort);
-    expected.AddHeader(StompHeader::Transaction, "tx1");
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "DISCONNECT\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::Ok);
-    expected.SetCommand(StompCommand::Disconnect);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "MESSAGE\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "MESSAGE\n"
-        "subscription:0\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "MESSAGE\n"
-        "message-id:007\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "MESSAGE\n"
-        "destination:/queue/a\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "MESSAGE\n"
-        "subscription:0\n"
-        "message-id:007\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "MESSAGE\n"
-        "subscription:0\n"
-        "destination:/queue/a\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-
-  {
-    std::string plain{
-        "MESSAGE\n"
-        "message-id:007\n"
-        "destination:/queue/a\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "MESSAGE\n"
-        "subscription:0\n"
-        "message-id:007\n"
-        "destination:/queue/a\n"
-        "\n"
-        "hello queue a\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::Ok);
-    expected.SetCommand(StompCommand::Message);
-    expected.AddHeader(StompHeader::Subscription, "0");
-    expected.AddHeader(StompHeader::MessageId, "007");
-    expected.AddHeader(StompHeader::Destination, "/queue/a");
-    expected.SetBody("hello queue a");
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "RECEIPT\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::MissingRequiredHeader);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "RECEIPT\n"
-        "receipt-id:77\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::Ok);
-    expected.SetCommand(StompCommand::Receipt);
-    expected.AddHeader(StompHeader::ReceiptId, "77");
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
-  {
-    std::string plain{
-        "ERROR\n"
-        "\n"
-        "\0"s};
-    ExpectedFrame expected;
-    expected.SetError(StompError::Ok);
-    expected.SetCommand(StompCommand::Error);
-
-    StompFrame frame{std::move(plain)};
-
-    expected.Check(frame.GetStompError(), frame);
-  }
+BOOST_AUTO_TEST_CASE(move_assignment_operator) {
+  ExpectedFrame expected_frame{.error_ = StompError::Ok,
+                               .command_ = StompCommand::Connect,
+                               .headers_ = {{StompHeader::AcceptVersion, "42"},
+                                            {StompHeader::Host, "host.com"},
+                                            {StompHeader::ContentLength, "10"}},
+                               .body_ = "Frame body"};
+
+  StompFrame parsed_frame{
+      "CONNECT\n"
+      "accept-version:42\n"
+      "host:host.com\n"
+      "content-length:10\n"
+      "\n"
+      "Frame body\0"s};
+
+  VerifyFrame(parsed_frame, expected_frame);
+
+  // NOLINTBEGIN(performance-unnecessary-copy-initialization)
+  const auto copied_frame = std::move(parsed_frame);
+  // NOLINTEND(performance-unnecessary-copy-initialization)
+  // TODO: verify copied_frame.body_ points at copied_frame.plain_content_
+  VerifyFrame(copied_frame, expected_frame);
 }
 
 BOOST_AUTO_TEST_CASE(to_string_method) {
@@ -1392,6 +950,8 @@ BOOST_AUTO_TEST_CASE(to_string_method) {
   BOOST_CHECK(frame_text.find("destination:/queue/a\n"));
 }
 
+BOOST_AUTO_TEST_SUITE_END()  // constructors_and_operators
+
 // TODO: test what GetHeaderValue returns when HasHeader returns false
 // TODO: test enums' ToString and operator<<
 
@@ -1400,3 +960,5 @@ BOOST_AUTO_TEST_SUITE_END();  // class_StompFrame
 BOOST_AUTO_TEST_SUITE_END();  // stomp_frame
 
 BOOST_AUTO_TEST_SUITE_END();  // network_monitor
+
+}  // namespace
