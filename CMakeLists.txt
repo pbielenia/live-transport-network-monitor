@@ -24,7 +24,7 @@ add_library(${NETWORK_MONITOR_LIBRARY_NAME} STATIC
 )
 target_compile_features(${NETWORK_MONITOR_LIBRARY_NAME}
     PRIVATE
-        cxx_std_20
+        cxx_std_23
 )
 target_link_libraries(${NETWORK_MONITOR_LIBRARY_NAME}
     PUBLIC
@@ -52,7 +52,7 @@ add_executable(${NETWORK_MONITOR_TESTS_EXE_NAME}
 )
 target_compile_features(${NETWORK_MONITOR_TESTS_EXE_NAME}
     PRIVATE
-        cxx_std_20
+        cxx_std_23
 )
 target_compile_definitions(${NETWORK_MONITOR_TESTS_EXE_NAME}
     PRIVATE
