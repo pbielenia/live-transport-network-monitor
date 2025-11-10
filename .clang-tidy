@@ -17,5 +17,5 @@ CheckOptions:
   - key: readability-identifier-length.IgnoredParameterNames
     value: '^(id|os)$'
 WarningsAsErrors: true
-HeaderFilterRegex: 'inc/*.hpp'
+HeaderFilterRegex: 'include/*.hpp'
 FormatStyle: file

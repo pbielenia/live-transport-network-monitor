@@ -36,7 +36,7 @@ target_link_libraries(${NETWORK_MONITOR_LIBRARY_NAME}
 )
 target_include_directories(${NETWORK_MONITOR_LIBRARY_NAME}
     PUBLIC
-        inc
+        include
 )
 
 # Tests
