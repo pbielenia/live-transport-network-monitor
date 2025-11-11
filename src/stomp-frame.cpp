@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <exception>
+#include <expected>
 #include <optional>
 #include <ostream>
 #include <span>
@@ -14,6 +15,10 @@
 using namespace network_monitor;
 
 namespace {
+
+constexpr char kNewlineCharacter{'\n'};
+constexpr char kColonCharacter{':'};
+constexpr char kNullCharacter{'\0'};
 
 template <typename Enum, size_t N>
 class EnumBimap {
@@ -197,6 +202,101 @@ std::string_view ToStringView(const StompError& error) {
   return kStompErrors.ToStringView(StompError::UndefinedError).value();
 }
 
+// `current_line` - parsing start point
+// Returns:
+//   - `StompFrame::Headers` - parsed headers
+//   - `std::string_view::size_type` - points at one character after the newline
+//                                     character of the last header
+auto ParseHeaders(std::string_view content,
+                  std::string_view::size_type current_line)
+    -> std::expected<
+        std::pair<StompFrame::Headers, std::string_view::size_type>,
+        StompError> {
+  // Headers are optional.
+  StompFrame::Headers headers;
+
+  while (true) {
+    // Check if there's something more in the frame.
+    if (current_line >= content.size()) {
+      return std::unexpected(StompError::MissingBodyNewline);
+    }
+
+    if (content.at(current_line) == kNewlineCharacter) {
+      // CONNECT\n
+      // \n
+      //
+      // No more headers.
+      break;
+    }
+    if (content.at(current_line) == kColonCharacter) {
+      // CONNECT\n
+      // :
+      return std::unexpected(StompError::NoHeaderName);
+    }
+    if (content.at(current_line) == kNullCharacter) {
+      // CONNECT\n
+      // \0
+      return std::unexpected(StompError::MissingBodyNewline);
+    }
+
+    const auto next_colon_position{content.find(kColonCharacter, current_line)};
+    const auto next_newline_position{
+        content.find(kNewlineCharacter, current_line)};
+
+    if (next_colon_position == std::string::npos) {
+      // CONNECT\n
+      // header-1:value\n
+      // header-2\n
+      //       ^ no header value
+      return std::unexpected(StompError::NoHeaderValue);
+    }
+    if (next_newline_position == std::string::npos) {
+      // CONNECT\n
+      // header:value
+      //     <-- missing newline
+      // \0
+      return std::unexpected(StompError::MissingLastHeaderNewline);
+    }
+    if (next_newline_position < next_colon_position) {
+      // CONNECT\n
+      // header-1\n
+      //         ^ missing colon
+      // header-2:value\n
+      // \0
+      return std::unexpected(StompError::NoHeaderValue);
+    }
+    if (content.at(next_colon_position + 1) ==
+        content.at(next_newline_position)) {
+      // CONNECT\n
+      // header:\n
+      //       ^ ^ missing header value
+      return std::unexpected(StompError::EmptyHeaderValue);
+    }
+
+    // CONNECT\n
+    // header-1:
+
+    // Read header.
+    const auto header_text{
+        content.substr(current_line, next_colon_position - current_line)};
+    const auto header{kStompHeaders.ToEnum(header_text)};
+    if (!header.has_value()) {
+      return std::unexpected(StompError::InvalidHeader);
+    }
+
+    // Find the value. It's known '\n' is in a further part, so no frame end
+    // concerns. Also the value will be no empty.
+    std::string_view value{
+        content.substr(next_colon_position + 1,
+                       next_newline_position - next_colon_position - 1)};
+
+    headers.emplace(header.value(), value);
+    current_line = next_newline_position + 1;
+  }
+
+  return std::pair{headers, current_line};
+}
+
 }  // namespace
 
 std::ostream& network_monitor::operator<<(std::ostream& os,
@@ -254,11 +354,15 @@ StompFrame::StompFrame(const StompFrame& other) = default;
 StompFrame::StompFrame(StompFrame&& other) noexcept
     : stomp_error_{other.stomp_error_},
       plain_content_{std::move(other.plain_content_)},
-      command_{std::move(other.command_)},
+      command_{other.command_},
       headers_{std::move(other.headers_)},
-      body_{std::move(other.body_)} {}
+      body_{other.body_} {}
 
 StompFrame& StompFrame::operator=(const StompFrame& other) {
+  if (this == &other) {
+    return *this;
+  }
+
   plain_content_ = other.plain_content_;
   command_ = other.command_;
   headers_ = other.headers_;
@@ -268,17 +372,13 @@ StompFrame& StompFrame::operator=(const StompFrame& other) {
 
 StompFrame& StompFrame::operator=(StompFrame&& other) noexcept {
   plain_content_ = std::move(other.plain_content_);
-  command_ = std::move(other.command_);
+  command_ = other.command_;
   headers_ = std::move(other.headers_);
-  body_ = std::move(other.body_);
+  body_ = other.body_;
   return *this;
 }
 
 StompError StompFrame::ParseFrame() {
-  static const char newline_character{'\n'};
-  static const char colon_character{':'};
-  static const char null_character{'\0'};
-
   // Run pre-checks
   std::string_view plain_content = plain_content_;
 
@@ -286,25 +386,24 @@ StompError StompFrame::ParseFrame() {
     return StompError::NoData;
   }
 
-  if (plain_content.at(0) == newline_character) {
+  if (plain_content.at(0) == kNewlineCharacter) {
     return StompError::MissingCommand;
   }
 
-  if (plain_content.back() != null_character) {
+  if (plain_content.back() != kNullCharacter) {
     return StompError::MissingClosingNullCharacter;
   }
 
-  const auto command_end{plain_content.find(newline_character)};
+  const auto command_end{plain_content.find(kNewlineCharacter)};
   if (command_end == std::string::npos) {
     return StompError::NoNewlineCharacters;
   }
 
   // If no "\n\n" pattern, then the body's newline is missing.
-  const auto double_newline_pointer =
-      std::adjacent_find(plain_content.begin(), plain_content.end(),
-                         [](const auto& lhs, const auto& rhs) {
-                           return lhs == rhs && lhs == '\n';
-                         });
+  const auto* double_newline_pointer = std::ranges::adjacent_find(
+      plain_content, [](const auto& lhs, const auto& rhs) {
+        return lhs == rhs && lhs == '\n';
+      });
   if (double_newline_pointer == plain_content.end()) {
     return StompError::MissingBodyNewline;
   }
@@ -318,105 +417,30 @@ StompError StompFrame::ParseFrame() {
   command_ = command.value();
 
   // Parse headers
-  // Headers are optional.
-  auto next_line_start{command_end + 1};
-  while (true) {
-    // Check if there's something more in the frame.
-    if (next_line_start >= plain_content.size()) {
-      return StompError::MissingBodyNewline;
-    }
-
-    if (plain_content.at(next_line_start) == newline_character) {
-      // CONNECT\n
-      // \n
-      //
-      // No headers, go parse the body.
-      break;
-    }
-    if (plain_content.at(next_line_start) == colon_character) {
-      // CONNECT\n
-      // :
-      return StompError::NoHeaderName;
-    }
-    if (plain_content.at(next_line_start) == null_character) {
-      // CONNECT\n
-      // \0
-      return StompError::MissingBodyNewline;
-    }
-
-    const auto next_colon_position{
-        plain_content.find(colon_character, next_line_start)};
-    const auto next_newline_position{
-        plain_content.find(newline_character, next_line_start)};
-
-    if (next_colon_position == std::string::npos) {
-      // CONNECT\n
-      // header-1:value\n
-      // header-2\n
-      //       ^ no header value
-      return StompError::NoHeaderValue;
-    }
-    if (next_newline_position == std::string::npos) {
-      // CONNECT\n
-      // header:value
-      //     <-- missing newline
-      // \0
-      return StompError::MissingLastHeaderNewline;
-    }
-    if (next_newline_position < next_colon_position) {
-      // CONNECT\n
-      // header-1\n
-      //         ^ missing colon
-      // header-2:value\n
-      // \0
-      return StompError::NoHeaderValue;
-    }
-    if (plain_content.at(next_colon_position + 1) ==
-        plain_content.at(next_newline_position)) {
-      // CONNECT\n
-      // header:\n
-      //       ^ ^ missing header value
-      return StompError::EmptyHeaderValue;
-    }
-
-    // CONNECT\n
-    // header-1:
-
-    // Read header.
-    const auto header_text{plain_content.substr(
-        next_line_start, next_colon_position - next_line_start)};
-    const auto header{kStompHeaders.ToEnum(header_text)};
-    if (!header.has_value()) {
-      return StompError::InvalidHeader;
-    }
-
-    // Find the value. It's known '\n' is in a further part, so no frame end
-    // concerns. Also the value will be no empty.
-    std::string_view value{
-        plain_content.substr(next_colon_position + 1,
-                             next_newline_position - next_colon_position - 1)};
-
-    headers_.emplace(header.value(), std::move(value));
-    next_line_start = next_newline_position + 1;
+  auto headers = ParseHeaders(plain_content, command_end + 1);
+  if (!headers.has_value()) {
+    return headers.error();
   }
+  headers_ = std::move(headers.value().first);
+  auto current_line_position{headers.value().second};
 
   // Parse body
 
   // CONNECT\n
-  // header-1:value
-  // \n <-- check if the newline is present
-  if (plain_content.at(next_line_start) != newline_character) {
+  // header-1:value\n
+  // \n <-- check if the newline is present (empty line before the body)
+  if (plain_content.at(current_line_position) != kNewlineCharacter) {
     return StompError::MissingBodyNewline;
   }
-  next_line_start++;
+  current_line_position++;
 
-  if (next_line_start >= plain_content.size()) {
+  if (current_line_position >= plain_content.size()) {
     // CONNECT\n
     // \n
     //     <-- missing null
     return StompError::MissingClosingNullCharacter;
   }
-  const auto null_position{plain_content.find(null_character)};
+  const auto null_position{plain_content.find(kNullCharacter)};
   if (null_position == std::string::npos) {
     // CONNECT\n
     // \n
@@ -427,8 +451,9 @@ StompError StompFrame::ParseFrame() {
 
   if (HasHeader(StompHeader::ContentLength)) {
     // -2 excludes the closing null character.
-    body_ = plain_content.substr(next_line_start,
-                                 plain_content.size() - next_line_start - 1);
+    body_ =
+        plain_content.substr(current_line_position,
+                             plain_content.size() - current_line_position - 1);
   } else {
     if (null_position + 1 != plain_content.size()) {
       // CONNECT\n
@@ -437,8 +462,8 @@ StompError StompFrame::ParseFrame() {
       //             ^ unexpected characters
       return StompError::JunkAfterBody;
     }
-    body_ =
-        plain_content.substr(next_line_start, null_position - next_line_start);
+    body_ = plain_content.substr(current_line_position,
+                                 null_position - current_line_position);
   }
 
   return StompError::Ok;
@@ -478,7 +503,7 @@ StompCommand StompFrame::GetCommand() const {
   return command_;
 }
 
-const bool StompFrame::HasHeader(const StompHeader& header) const {
+bool StompFrame::HasHeader(const StompHeader& header) const {
   return headers_.contains(header);
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -8,7 +9,7 @@ namespace network_monitor {
 
 /*! \brief Available STOMP commands, from the STOMP protocol v1.2.
  */
-enum class StompCommand {
+enum class StompCommand : std::uint8_t {
   Abort,
   Ack,
   Begin,
@@ -37,7 +38,7 @@ std::string ToString(const StompCommand& command);
 
 /*! \brief Available STOMP headers, from the STOMP protocol v1.2.
  */
-enum class StompHeader {
+enum class StompHeader : std::uint8_t {
   AcceptVersion,
   Ack,
   ContentLength,
@@ -70,7 +71,7 @@ std::string ToString(const StompHeader& header);
 
 /*! \brief Error codes for the STOMP protocol
  */
-enum class StompError {
+enum class StompError : std::uint8_t {
   Ok = 0,
   UndefinedError,
   InvalidCommand,
@@ -155,7 +156,7 @@ class StompFrame {
 
   /*! \brief Check if the frame has a specified header.
    */
-  const bool HasHeader(const StompHeader& header) const;
+  bool HasHeader(const StompHeader& header) const;
 
   /*! \brief Get the value for the specified header.
    *
