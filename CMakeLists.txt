@@ -49,6 +49,7 @@ add_executable(${NETWORK_MONITOR_TESTS_EXE_NAME}
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/transport-network.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/websocket-client.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/websocket-client-mock.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/utils/formatters.cpp"
 )
 target_compile_features(${NETWORK_MONITOR_TESTS_EXE_NAME}
     PRIVATE

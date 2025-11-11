@@ -256,8 +256,14 @@ std::string StompClient<WebSocketClient>::Subscribe(
   auto subscription_id{GenerateSubscriptionId()};
 
   // TODO: handle error ocurred when creating a frame
-  auto stomp_frame{stomp_frame::MakeSubscribeFrame(destination, subscription_id,
-                                                   "auto", subscription_id)};
+  // TODO: setting subscription_id to Id and Receipt is misleading
+  auto stomp_frame{StompFrameBuilder()
+                       .SetCommand(StompCommand::Subscribe)
+                       .AddHeader(StompHeader::Destination, destination)
+                       .AddHeader(StompHeader::Id, subscription_id)
+                       .AddHeader(StompHeader::Ack, "auto")
+                       .AddHeader(StompHeader::Receipt, subscription_id)
+                       .BuildString()};
 
   Subscription subscription{destination, on_subscribed_callback,
                             on_message_callback};
@@ -269,7 +275,7 @@ std::string StompClient<WebSocketClient>::Subscribe(
     OnWebSocketSentSubscribe(result, subscription_id, std::move(subscription));
   };
 
-  websocket_client_.Send(stomp_frame.ToString(), on_websocket_sent_callback);
+  websocket_client_.Send(stomp_frame, on_websocket_sent_callback);
 
   return subscription_id;
 }
@@ -287,23 +293,16 @@ void StompClient<WebSocketClient>::OnWebSocketConnected(
 
   websocket_connected_ = true;
 
-  // TODO: use stomp_frame::MakeConnectFrame
-  stomp_frame::BuildParameters parameters(StompCommand::Connect);
-  parameters.headers.emplace(StompHeader::AcceptVersion, "1.2");
-  parameters.headers.emplace(StompHeader::Host,
-                             websocket_client_.GetServerUrl());
-  parameters.headers.emplace(StompHeader::Login, user_name_);
-  parameters.headers.emplace(StompHeader::Passcode, user_password_);
+  auto stomp_frame{
+      StompFrameBuilder()
+          .SetCommand(StompCommand::Connect)
+          .AddHeader(StompHeader::AcceptVersion, "1.2")
+          .AddHeader(StompHeader::Host, websocket_client_.GetServerUrl())
+          .AddHeader(StompHeader::Login, user_name_)
+          .AddHeader(StompHeader::Passcode, user_password_)
+          .BuildString()};
 
-  const auto frame = stomp_frame::Build(parameters);
-  if (frame.GetStompError() != StompError::Ok) {
-    // add log StompClient: Could not create a valid frame: {error}
-    CallOnConnectedCallbackWithErrorIfValid(
-        StompClientError::UnexpectedCouldNotCreateValidFrame);
-    return;
-  }
-
-  websocket_client_.Send(frame.ToString(), [this](auto result) {
+  websocket_client_.Send(stomp_frame, [this](auto result) {
     OnWebSocketConnectMessageSent(result);
   });
 }

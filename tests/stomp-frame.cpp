@@ -9,6 +9,8 @@
 #include <boost/test/data/test_case.hpp>
 #include <boost/test/unit_test.hpp>
 
+#include "utils/formatters.hpp"
+
 namespace {
 
 using network_monitor::StompCommand;
@@ -210,26 +212,6 @@ void VerifyFrame(const StompFrame& actual, const ExpectedFrame& expected) {
 
   VerifyHeaders(actual, expected);
   BOOST_CHECK_EQUAL(actual.GetBody(), expected.body_);
-}
-
-std::ostream& operator<<(std::ostream& os, const StompFrame::Headers& headers) {
-  if (headers.empty()) {
-    os << "[]";
-    return os;
-  }
-
-  os << "[ ";
-  bool first = true;
-  for (const auto& [header, value] : headers) {
-    if (!first) {
-      os << ", ";
-    }
-    first = false;
-    os << R"({ ")" << ToString(header) << R"(": ")" << value << R"(" })";
-  }
-  os << " ]";
-
-  return os;
 }
 
 std::ostream& operator<<(std::ostream& os, const ExpectedFrame& frame) {

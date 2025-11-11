@@ -1,46 +1,42 @@
 #pragma once
 
+#include <string>
+#include <string_view>
+
 #include "network-monitor/stomp-frame.hpp"
 
 namespace network_monitor {
 
-namespace stomp_frame {
+class StompFrameBuilder {
+ public:
+  StompFrameBuilder& SetCommand(StompCommand command);
+  StompFrameBuilder& AddHeader(StompHeader header, std::string_view value);
+  StompFrameBuilder& SetBody(std::string_view body);
 
-struct BuildParameters {
-  BuildParameters(StompCommand command) : command{command} {}
+  std::string BuildString();
 
-  StompCommand command;
-  // TODO: StompFrame::Headers may be used possibly
-  StompFrame::Headers headers;
-  std::string body;
+ private:
+  StompCommand command_;
+  StompFrame::Headers headers_;
+  std::string body_;
 };
 
-// TODO: make a version involving less copying
-// StompFrame Build(BuildParameters&& parameters);
+StompFrame MakeFrameConnected(std::string_view version,
+                              std::string_view session,
+                              std::string_view server,
+                              std::string_view heart_beat);
+StompFrame MakeFrameError(std::string_view message, std::string_view body = {});
+StompFrame MakeFrameReceipt(std::string_view receipt_id);
+StompFrame MakeFrameMessage(std::string_view destination,
+                            std::string_view message_id,
+                            std::string_view subscription,
+                            std::string_view ack,
+                            std::string_view body,
+                            std::string_view content_length,
+                            std::string_view content_type);
+StompFrame MakeFrameSubscribe(std::string_view destination,
+                              std::string_view id,
+                              std::string_view ack,
+                              std::string_view receipt);
 
-// TODO: rename to `BuildFrame` or `MakeFrame`
-// Remark: Remember to verify the result with StompFrame::GetStompResult().
-StompFrame Build(const BuildParameters& parameters);
-
-// Server frames.
-StompFrame MakeConnectedFrame(const std::string& version,
-                              const std::string& session,
-                              const std::string& server,
-                              const std::string& heart_beat);
-StompFrame MakeErrorFrame(const std::string& message,
-                          const std::string& body = {});
-StompFrame MakeReceiptFrame(const std::string& receipt_id);
-StompFrame MakeMessageFrame(const std::string& destination,
-                            const std::string& message_id,
-                            const std::string& subscription,
-                            const std::string& ack,
-                            const std::string& body,
-                            const std::string& content_length,
-                            const std::string& content_type);
-StompFrame MakeSubscribeFrame(const std::string& destination,
-                              const std::string& id,
-                              const std::string& ack,
-                              const std::string& receipt);
-
-}  // namespace stomp_frame
 }  // namespace network_monitor
