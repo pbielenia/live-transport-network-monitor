@@ -249,97 +249,115 @@ void VerifyFrame(const TestData& test_data) {
 
 BOOST_DATA_TEST_CASE(
     ValidFormat,
-    boost::unit_test::data::make(std::vector<TestData>{
-        TestData{.context_name_ = "Full",
-                 .stomp_message_ = "CONNECT\n"
-                                   "accept-version:42\n"
-                                   "host:host.com\n"
-                                   "\n"
-                                   "Frame body\0"s,
-                 .expected_ = {.error_ = StompError::Ok,
-                               .command_ = StompCommand::Connect,
-                               .headers_ = {{StompHeader::AcceptVersion, "42"},
-                                            {StompHeader::Host, "host.com"}},
-                               .body_ = "Frame body"}},
-        TestData{.context_name_ =
-                     "content-length header matching the actual body length",
-                 .stomp_message_ = "CONNECT\n"
-                                   "accept-version:42\n"
-                                   "host:host.com\n"
-                                   "content-length:10\n"
-                                   "\n"
-                                   "Frame body\0"s,
-                 .expected_ = {.error_ = StompError::Ok,
-                               .command_ = StompCommand::Connect,
-                               .headers_ = {{StompHeader::AcceptVersion, "42"},
-                                            {StompHeader::Host, "host.com"},
-                                            {StompHeader::ContentLength, "10"}},
-                               .body_ = "Frame body"}},
-        TestData{.context_name_ = "Empty body allowed",
-                 .stomp_message_ = "CONNECT\n"
-                                   "accept-version:42\n"
-                                   "host:host.com\n"
-                                   "\n"
-                                   "\0"s,
-                 .expected_ = {.error_ = StompError::Ok,
-                               .command_ = StompCommand::Connect,
-                               .headers_ = {{StompHeader::AcceptVersion, "42"},
-                                            {StompHeader::Host, "host.com"}},
-                               .body_ = ""}},
-        TestData{
-            .context_name_ = "Empty body with matching content-length header",
-            .stomp_message_ = "CONNECT\n"
-                              "accept-version:42\n"
-                              "host:host.com\n"
-                              "content-length:0\n"
-                              "\n"
-                              "\0"s,
-            .expected_ = {.error_ = StompError::Ok,
-                          .command_ = StompCommand::Connect,
-                          .headers_ = {{StompHeader::AcceptVersion, "42"},
-                                       {StompHeader::Host, "host.com"},
-                                       {StompHeader::ContentLength, "0"}},
-                          .body_ = ""}},
-        TestData{.context_name_ = "Empty headers allowed",
-                 .stomp_message_ = "DISCONNECT\n"
-                                   "\n"
-                                   "Frame body\0"s,
-                 .expected_ = {.error_ = StompError::Ok,
-                               .command_ = StompCommand::Disconnect,
-                               .headers_ = {},
-                               .body_ = "Frame body"}},
-        TestData{.context_name_ = "Only command allowed",
-                 .stomp_message_ = "DISCONNECT\n"
-                                   "\n"
-                                   "\0"s,
-                 .expected_ = {.error_ = StompError::Ok,
-                               .command_ = StompCommand::Disconnect,
-                               .headers_ = {},
-                               .body_ = ""}},
-        TestData{.context_name_ = "Newline after command allowed",
-                 .stomp_message_ = "DISCONNECT\n"
-                                   "\n"
-                                   "version:42\n"
-                                   "host:host.com\n"
-                                   "\n"
-                                   "Frame body\0"s,
-                 .expected_ =
-                     {.error_ = StompError::Ok,
-                      .command_ = StompCommand::Disconnect,
-                      .body_ = "version:42\nhost:host.com\n\nFrame body\0"}},
-        TestData{.context_name_ = "Repeated the same header allowed",
-                 .stomp_message_ = "CONNECT\n"
-                                   "accept-version:42\n"
-                                   "accept-version:43\n"
-                                   "host:host.com\n"
-                                   "\n"
-                                   "Frame body\0"s,
-                 .expected_ = {.error_ = StompError::Ok,
-                               .command_ = StompCommand::Connect,
-                               .headers_ = {{StompHeader::AcceptVersion, "42"},
-                                            {StompHeader::Host, "host.com"}},
-                               .body_ = "Frame body\0"}},
-    }),
+    boost::unit_test::data::make(
+        std::vector<TestData>{
+            TestData{.context_name_ = "Full",
+                     .stomp_message_ = "CONNECT\n"
+                                       "accept-version:42\n"
+                                       "host:host.com\n"
+                                       "\n"
+                                       "Frame body\0"s,
+                     .expected_ = {.error_ = StompError::Ok,
+                                   .command_ = StompCommand::Connect,
+                                   .headers_ =
+                                       {
+                                           {StompHeader::AcceptVersion, "42"},
+                                           {StompHeader::Host, "host.com"},
+                                       },
+                                   .body_ = "Frame body"}},
+            TestData{
+                .context_name_ =
+                    "content-length header matching the actual body length",
+                .stomp_message_ = "CONNECT\n"
+                                  "accept-version:42\n"
+                                  "host:host.com\n"
+                                  "content-length:10\n"
+                                  "\n"
+                                  "Frame body\0"s,
+                .expected_ = {.error_ = StompError::Ok,
+                              .command_ = StompCommand::Connect,
+                              .headers_ =
+                                  {
+                                      {StompHeader::AcceptVersion, "42"},
+                                      {StompHeader::Host, "host.com"},
+                                      {StompHeader::ContentLength, "10"},
+                                  },
+                              .body_ = "Frame body"}},
+            TestData{.context_name_ = "Empty body allowed",
+                     .stomp_message_ = "CONNECT\n"
+                                       "accept-version:42\n"
+                                       "host:host.com\n"
+                                       "\n"
+                                       "\0"s,
+                     .expected_ = {.error_ = StompError::Ok,
+                                   .command_ = StompCommand::Connect,
+                                   .headers_ =
+                                       {
+                                           {StompHeader::AcceptVersion, "42"},
+                                           {StompHeader::Host, "host.com"},
+                                       },
+                                   .body_ = ""}},
+            TestData{.context_name_ =
+                         "Empty body with matching content-length header",
+                     .stomp_message_ = "CONNECT\n"
+                                       "accept-version:42\n"
+                                       "host:host.com\n"
+                                       "content-length:0\n"
+                                       "\n"
+                                       "\0"s,
+                     .expected_ = {.error_ = StompError::Ok,
+                                   .command_ = StompCommand::Connect,
+                                   .headers_ =
+                                       {
+                                           {StompHeader::AcceptVersion, "42"},
+                                           {StompHeader::Host, "host.com"},
+                                           {StompHeader::ContentLength, "0"},
+                                       },
+                                   .body_ = ""}},
+            TestData{.context_name_ = "Empty headers allowed",
+                     .stomp_message_ = "DISCONNECT\n"
+                                       "\n"
+                                       "Frame body\0"s,
+                     .expected_ = {.error_ = StompError::Ok,
+                                   .command_ = StompCommand::Disconnect,
+                                   .headers_ = {},
+                                   .body_ = "Frame body"}},
+            TestData{.context_name_ = "Only command allowed",
+                     .stomp_message_ = "DISCONNECT\n"
+                                       "\n"
+                                       "\0"s,
+                     .expected_ = {.error_ = StompError::Ok,
+                                   .command_ = StompCommand::Disconnect,
+                                   .headers_ = {},
+                                   .body_ = ""}},
+            TestData{
+                .context_name_ = "Newline after command allowed",
+                .stomp_message_ = "DISCONNECT\n"
+                                  "\n"
+                                  "version:42\n"
+                                  "host:host.com\n"
+                                  "\n"
+                                  "Frame body\0"s,
+                .expected_ =
+                    {.error_ = StompError::Ok,
+                     .command_ = StompCommand::Disconnect,
+                     .body_ = "version:42\nhost:host.com\n\nFrame body\0"}},
+            TestData{.context_name_ = "Repeated the same header allowed",
+                     .stomp_message_ = "CONNECT\n"
+                                       "accept-version:42\n"
+                                       "accept-version:43\n"
+                                       "host:host.com\n"
+                                       "\n"
+                                       "Frame body\0"s,
+                     .expected_ = {.error_ = StompError::Ok,
+                                   .command_ = StompCommand::Connect,
+                                   .headers_ =
+                                       {
+                                           {StompHeader::AcceptVersion, "42"},
+                                           {StompHeader::Host, "host.com"},
+                                       },
+                                   .body_ = "Frame body\0"}},
+        }),
     test_data) {
   VerifyFrame(test_data);
 }
@@ -544,8 +562,11 @@ BOOST_DATA_TEST_CASE(
                                    "\0"s,
                  .expected_ = {.error_ = StompError::Ok,
                                .command_ = StompCommand::Connect,
-                               .headers_ = {{StompHeader::AcceptVersion, "42"},
-                                            {StompHeader::Host, "host.com"}}}},
+                               .headers_ =
+                                   {
+                                       {StompHeader::AcceptVersion, "42"},
+                                       {StompHeader::Host, "host.com"},
+                                   }}},
         // CONNECTED
         TestData{.context_name_ = "CONNECTED - missing version",
                  .stomp_message_ = "CONNECTED\n"
@@ -559,23 +580,28 @@ BOOST_DATA_TEST_CASE(
                                    "\0"s,
                  .expected_ = {.error_ = StompError::Ok,
                                .command_ = StompCommand::Connected,
-                               .headers_ = {{StompHeader::Version, "42"}}}},
+                               .headers_ =
+                                   {
+                                       {StompHeader::Version, "42"},
+                                   }}},
         //  SEND
         TestData{.context_name_ = "SEND - missing destination",
                  .stomp_message_ = "SEND\n"
                                    "\n"
                                    "\0"s,
                  .expected_ = {.error_ = StompError::MissingRequiredHeader}},
-        TestData{
-            .context_name_ = "SEND - ok",
-            .stomp_message_ = "SEND\n"
-                              "destination:/queue/a\n"
-                              "\n"
-                              "Frame body\0"s,
-            .expected_ = {.error_ = StompError::Ok,
-                          .command_ = StompCommand::Send,
-                          .headers_ = {{StompHeader::Destination, "/queue/a"}},
-                          .body_ = "Frame body"}},
+        TestData{.context_name_ = "SEND - ok",
+                 .stomp_message_ = "SEND\n"
+                                   "destination:/queue/a\n"
+                                   "\n"
+                                   "Frame body\0"s,
+                 .expected_ = {.error_ = StompError::Ok,
+                               .command_ = StompCommand::Send,
+                               .headers_ =
+                                   {
+                                       {StompHeader::Destination, "/queue/a"},
+                                   },
+                               .body_ = "Frame body"}},
         // SUBSCRIBE
         TestData{.context_name_ = "SUBSCRIBE - empty headers",
                  .stomp_message_ = "SUBSCRIBE\n"
@@ -602,9 +628,11 @@ BOOST_DATA_TEST_CASE(
                                    "\0"s,
                  .expected_ = {.error_ = StompError::Ok,
                                .command_ = StompCommand::Subscribe,
-                               .headers_ = {{StompHeader::Id, "0"},
-                                            {StompHeader::Destination,
-                                             "/queue/foo"}}}},
+                               .headers_ =
+                                   {
+                                       {StompHeader::Id, "0"},
+                                       {StompHeader::Destination, "/queue/foo"},
+                                   }}},
         // UNSUBSCRIBE
         TestData{.context_name_ = "UNSUBSCRIBE - missing id",
                  .stomp_message_ = "UNSUBSCRIBE\n"
@@ -618,7 +646,10 @@ BOOST_DATA_TEST_CASE(
                                    "\0"s,
                  .expected_ = {.error_ = StompError::Ok,
                                .command_ = StompCommand::Unsubscribe,
-                               .headers_ = {{StompHeader::Id, "0"}}}},
+                               .headers_ =
+                                   {
+                                       {StompHeader::Id, "0"},
+                                   }}},
         // ACK
         TestData{.context_name_ = "ACK - missing id",
                  .stomp_message_ = "ACK\n"
@@ -632,7 +663,10 @@ BOOST_DATA_TEST_CASE(
                                    "\0"s,
                  .expected_ = {.error_ = StompError::Ok,
                                .command_ = StompCommand::Ack,
-                               .headers_ = {{StompHeader::Id, "12345"}}}},
+                               .headers_ =
+                                   {
+                                       {StompHeader::Id, "12345"},
+                                   }}},
         // NACK
         TestData{.context_name_ = "NACK - missing id",
                  .stomp_message_ = "NACK\n"
@@ -646,52 +680,61 @@ BOOST_DATA_TEST_CASE(
                                    "\0"s,
                  .expected_ = {.error_ = StompError::Ok,
                                .command_ = StompCommand::NAck,
-                               .headers_ = {{StompHeader::Id, "12345"}}}},
+                               .headers_ =
+                                   {
+                                       {StompHeader::Id, "12345"},
+                                   }}},
         // BEGIN
         TestData{.context_name_ = "BEGIN - missing transaction",
                  .stomp_message_ = "BEGIN\n"
                                    "\n"
                                    "\0"s,
                  .expected_ = {.error_ = StompError::MissingRequiredHeader}},
-        TestData{
-            .context_name_ = "BEGIN - ok",
-            .stomp_message_ = "BEGIN\n"
-                              "transaction:tx1\n"
-                              "\n"
-                              "\0"s,
-            .expected_ = {.error_ = StompError::Ok,
-                          .command_ = StompCommand::Begin,
-                          .headers_ = {{StompHeader::Transaction, "tx1"}}}},
+        TestData{.context_name_ = "BEGIN - ok",
+                 .stomp_message_ = "BEGIN\n"
+                                   "transaction:tx1\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::Ok,
+                               .command_ = StompCommand::Begin,
+                               .headers_ =
+                                   {
+                                       {StompHeader::Transaction, "tx1"},
+                                   }}},
         // COMMIT
         TestData{.context_name_ = "COMMIT - missing transaction",
                  .stomp_message_ = "COMMIT\n"
                                    "\n"
                                    "\0"s,
                  .expected_ = {.error_ = StompError::MissingRequiredHeader}},
-        TestData{
-            .context_name_ = "COMMIT - ok",
-            .stomp_message_ = "COMMIT\n"
-                              "transaction:tx1\n"
-                              "\n"
-                              "\0"s,
-            .expected_ = {.error_ = StompError::Ok,
-                          .command_ = StompCommand::Commit,
-                          .headers_ = {{StompHeader::Transaction, "tx1"}}}},
+        TestData{.context_name_ = "COMMIT - ok",
+                 .stomp_message_ = "COMMIT\n"
+                                   "transaction:tx1\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::Ok,
+                               .command_ = StompCommand::Commit,
+                               .headers_ =
+                                   {
+                                       {StompHeader::Transaction, "tx1"},
+                                   }}},
         // ABORT
         TestData{.context_name_ = "ABORT - missing transaction",
                  .stomp_message_ = "ABORT\n"
                                    "\n"
                                    "\0"s,
                  .expected_ = {.error_ = StompError::MissingRequiredHeader}},
-        TestData{
-            .context_name_ = "ABORT - ok",
-            .stomp_message_ = "ABORT\n"
-                              "transaction:tx1\n"
-                              "\n"
-                              "\0"s,
-            .expected_ = {.error_ = StompError::Ok,
-                          .command_ = StompCommand::Abort,
-                          .headers_ = {{StompHeader::Transaction, "tx1"}}}},
+        TestData{.context_name_ = "ABORT - ok",
+                 .stomp_message_ = "ABORT\n"
+                                   "transaction:tx1\n"
+                                   "\n"
+                                   "\0"s,
+                 .expected_ = {.error_ = StompError::Ok,
+                               .command_ = StompCommand::Abort,
+                               .headers_ =
+                                   {
+                                       {StompHeader::Transaction, "tx1"},
+                                   }}},
         // DISCONNECT
         TestData{.context_name_ = "DISCONNECT - ok",
                  .stomp_message_ = "DISCONNECT\n"
@@ -747,20 +790,22 @@ BOOST_DATA_TEST_CASE(
                                    "\n"
                                    "\0"s,
                  .expected_ = {.error_ = StompError::MissingRequiredHeader}},
-        TestData{
-            .context_name_ = "MESSAGE - ok",
-            .stomp_message_ = "MESSAGE\n"
-                              "subscription:0\n"
-                              "message-id:007\n"
-                              "destination:/queue/a\n"
-                              "\n"
-                              "hello queue a\0"s,
-            .expected_ = {.error_ = StompError::Ok,
-                          .command_ = StompCommand::Message,
-                          .headers_ = {{StompHeader::Subscription, "0"},
+        TestData{.context_name_ = "MESSAGE - ok",
+                 .stomp_message_ = "MESSAGE\n"
+                                   "subscription:0\n"
+                                   "message-id:007\n"
+                                   "destination:/queue/a\n"
+                                   "\n"
+                                   "hello queue a\0"s,
+                 .expected_ = {.error_ = StompError::Ok,
+                               .command_ = StompCommand::Message,
+                               .headers_ =
+                                   {
+                                       {StompHeader::Subscription, "0"},
                                        {StompHeader::MessageId, "007"},
-                                       {StompHeader::Destination, "/queue/a"}},
-                          .body_ = "hello queue a"}},
+                                       {StompHeader::Destination, "/queue/a"},
+                                   },
+                               .body_ = "hello queue a"}},
         // RECEIPT
         TestData{.context_name_ = "RECEIPT - missing receipt-id",
                  .stomp_message_ = "RECEIPT\n"
@@ -774,7 +819,10 @@ BOOST_DATA_TEST_CASE(
                                    "\0"s,
                  .expected_ = {.error_ = StompError::Ok,
                                .command_ = StompCommand::Receipt,
-                               .headers_ = {{StompHeader::ReceiptId, "77"}}}},
+                               .headers_ =
+                                   {
+                                       {StompHeader::ReceiptId, "77"},
+                                   }}},
         // ERROR
         // TODO: doesn't it need to carry any message?
         TestData{.context_name_ = "ERROR - ok",
@@ -795,9 +843,12 @@ BOOST_AUTO_TEST_SUITE(constructors_and_operators)
 BOOST_AUTO_TEST_CASE(copy_constructor) {
   ExpectedFrame expected_frame{.error_ = StompError::Ok,
                                .command_ = StompCommand::Connect,
-                               .headers_ = {{StompHeader::AcceptVersion, "42"},
-                                            {StompHeader::Host, "host.com"},
-                                            {StompHeader::ContentLength, "10"}},
+                               .headers_ =
+                                   {
+                                       {StompHeader::AcceptVersion, "42"},
+                                       {StompHeader::Host, "host.com"},
+                                       {StompHeader::ContentLength, "10"},
+                                   },
                                .body_ = "Frame body"};
 
   StompFrame parsed_frame{
@@ -820,9 +871,12 @@ BOOST_AUTO_TEST_CASE(copy_constructor) {
 BOOST_AUTO_TEST_CASE(move_constructor) {
   ExpectedFrame expected_frame{.error_ = StompError::Ok,
                                .command_ = StompCommand::Connect,
-                               .headers_ = {{StompHeader::AcceptVersion, "42"},
-                                            {StompHeader::Host, "host.com"},
-                                            {StompHeader::ContentLength, "10"}},
+                               .headers_ =
+                                   {
+                                       {StompHeader::AcceptVersion, "42"},
+                                       {StompHeader::Host, "host.com"},
+                                       {StompHeader::ContentLength, "10"},
+                                   },
                                .body_ = "Frame body"};
   // TODO: moved-from std::string_view body_ should be reset
   // ExpectedFrame expected_from_move_frame{.error_ = StompError::Ok,
@@ -851,9 +905,12 @@ BOOST_AUTO_TEST_CASE(move_constructor) {
 BOOST_AUTO_TEST_CASE(copy_assignment_operator) {
   ExpectedFrame expected_frame{.error_ = StompError::Ok,
                                .command_ = StompCommand::Connect,
-                               .headers_ = {{StompHeader::AcceptVersion, "42"},
-                                            {StompHeader::Host, "host.com"},
-                                            {StompHeader::ContentLength, "10"}},
+                               .headers_ =
+                                   {
+                                       {StompHeader::AcceptVersion, "42"},
+                                       {StompHeader::Host, "host.com"},
+                                       {StompHeader::ContentLength, "10"},
+                                   },
                                .body_ = "Frame body"};
   // TODO: moved-from std::string_view body_ should be reset
   // ExpectedFrame expected_from_move_frame{.error_ = StompError::Ok,
@@ -882,9 +939,12 @@ BOOST_AUTO_TEST_CASE(copy_assignment_operator) {
 BOOST_AUTO_TEST_CASE(move_assignment_operator) {
   ExpectedFrame expected_frame{.error_ = StompError::Ok,
                                .command_ = StompCommand::Connect,
-                               .headers_ = {{StompHeader::AcceptVersion, "42"},
-                                            {StompHeader::Host, "host.com"},
-                                            {StompHeader::ContentLength, "10"}},
+                               .headers_ =
+                                   {
+                                       {StompHeader::AcceptVersion, "42"},
+                                       {StompHeader::Host, "host.com"},
+                                       {StompHeader::ContentLength, "10"},
+                                   },
                                .body_ = "Frame body"};
 
   StompFrame parsed_frame{
