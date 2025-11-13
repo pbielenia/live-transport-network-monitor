@@ -116,7 +116,7 @@ class WebSocketClient {
   void SetSuggestedTcpStreamTimeout();
   void HandshakeTls();
   void HandshakeWebSocket();
-  void ListenToIncomingMessage(boost::system::error_code error);
+  void ListenToIncomingMessage();
   std::string ReadMessage(size_t received_bytes_count);
 
   void OnServerUrlResolved(
@@ -275,19 +275,11 @@ void WebSocketClient<Resolver, WebSocketStream>::OnWebSocketHandshakeCompleted(
 
   connection_is_open_ = true;
   OnConnectingToServerCompleted(error);
-  ListenToIncomingMessage(error);
+  ListenToIncomingMessage();
 }
 
 template <typename Resolver, typename WebSocketStream>
-void WebSocketClient<Resolver, WebSocketStream>::ListenToIncomingMessage(
-    boost::system::error_code error) {
-  if (error == boost::asio::error::operation_aborted) {
-    if (on_disconnected_callback_ && connection_is_open_) {
-      connection_is_open_ = false;
-      on_disconnected_callback_(error);
-    }
-    return;
-  }
+void WebSocketClient<Resolver, WebSocketStream>::ListenToIncomingMessage() {
   websocket_stream_.async_read(response_buffer_,
                                [this](auto error, auto received_bytes_count) {
                                  OnMessageReceived(error, received_bytes_count);
@@ -297,17 +289,19 @@ void WebSocketClient<Resolver, WebSocketStream>::ListenToIncomingMessage(
 template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::OnMessageReceived(
     boost::system::error_code error, const size_t received_bytes_count) {
-  // FIXME: this return on error prevents calling the remaining stuff if there's
-  //        an error and even so wants to pass the error to them
-  if (error) {
+  if (error == boost::asio::error::operation_aborted) {
+    if (on_disconnected_callback_ && connection_is_open_) {
+      connection_is_open_ = false;
+      on_disconnected_callback_(error);
+    }
     return;
   }
 
-  if (on_message_received_callback_) {
+  if (!error.failed() && on_message_received_callback_) {
     on_message_received_callback_(error, ReadMessage(received_bytes_count));
   }
 
-  ListenToIncomingMessage(error);
+  ListenToIncomingMessage();
 }
 
 template <typename Resolver, typename WebSocketStream>
