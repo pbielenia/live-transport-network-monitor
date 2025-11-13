@@ -18,6 +18,7 @@ enable_testing()
 # Library
 add_library(${NETWORK_MONITOR_LIBRARY_NAME} STATIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src/file-downloader.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/stomp-client.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/stomp-frame.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/stomp-frame-builder.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/transport-network.cpp"

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -7,7 +8,6 @@
 
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
-#include <boost/bimap.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -19,7 +19,7 @@ namespace network_monitor {
 
 /*! \brief Error codes for the STOMP client.
  */
-enum class StompClientError {
+enum class StompClientError : std::uint8_t {
   Ok = 0,
   CouldNotConnectToWebSocketServer,
   UnexpectedCouldNotCreateValidFrame,
@@ -32,46 +32,8 @@ enum class StompClientError {
   // TODO
 };
 
-// TODO: move it to the common space with stomp-frame.cpp
-template <typename L, typename R>
-boost::bimap<L, R> MakeBimap(
-    std::initializer_list<typename boost::bimap<L, R>::value_type> list) {
-  return boost::bimap<L, R>(list.begin(), list.end());
-}
-
-// TODO: move it to stomp-client.cpp
-static const auto stomp_client_error_strings{
-    // clang-format off
-    MakeBimap<StompClientError, std::string_view>({
-        {StompClientError::Ok,                                    "Ok"                                    },
-        {StompClientError::CouldNotConnectToWebSocketServer,      "CouldNotConnectToWebSocketServer"      },
-        {StompClientError::UnexpectedCouldNotCreateValidFrame,    "UnexpectedCouldNotCreateValidFrame"    },
-        {StompClientError::CouldNotSendConnectFrame,              "CouldNotSendConnectFrame"              },
-        {StompClientError::CouldNotParseMessageAsStompFrame,      "CouldNotParseMessageAsStompFrame"      },
-        {StompClientError::CouldNotCloseWebSocketConnection,      "CouldNotCloseWebSocketConnection"      },
-        {StompClientError::WebSocketServerDisconnected,           "WebSocketServerDisconnected"           },
-        {StompClientError::CouldNotSendSubscribeFrame,            "CouldNotSendSubscribeFrame"            },
-        {StompClientError::UndefinedError,                        "UndefinedError"                        }
-    })
-    // clang-format on
-};
-
-std::string_view ToStringView(const StompClientError& command) {
-  const auto string_representation{
-      stomp_client_error_strings.left.find(command)};
-  if (string_representation == stomp_client_error_strings.left.end()) {
-    return stomp_client_error_strings.left
-        .find(StompClientError::UndefinedError)
-        ->second;
-  } else {
-    return string_representation->second;
-  }
-}
-
-std::ostream& operator<<(std::ostream& os, const StompClientError& error) {
-  os << ToStringView(error);
-  return os;
-}
+std::string_view ToStringView(StompClientError command);
+std::ostream& operator<<(std::ostream& os, StompClientError error);
 
 /*! \brief STOMP client implementing the subset of commands needed by the
  * network-events service.
@@ -187,7 +149,7 @@ class StompClient {
   void HandleStompReceipt(const StompFrame& frame);
   void HandleStompMessage(const StompFrame& frame);
 
-  void CallOnConnectedCallbackWithErrorIfValid(StompClientError error);
+  void OnConnected(StompClientError error);
 
   static std::string GenerateSubscriptionId();
 
@@ -286,8 +248,7 @@ void StompClient<WebSocketClient>::OnWebSocketConnected(
   if (result.failed()) {
     // TODO: put a log "StompClient: Could not connect to server:
     // {result.message()}"
-    CallOnConnectedCallbackWithErrorIfValid(
-        StompClientError::CouldNotConnectToWebSocketServer);
+    OnConnected(StompClientError::CouldNotConnectToWebSocketServer);
     return;
   }
 
@@ -312,8 +273,7 @@ void StompClient<WebSocketClient>::OnWebSocketConnectMessageSent(
     boost::system::error_code result) {
   if (result.failed()) {
     // add log StompClient: Could not send STOMP frame: {result.message()}
-    CallOnConnectedCallbackWithErrorIfValid(
-        StompClientError::CouldNotSendConnectFrame);
+    OnConnected(StompClientError::CouldNotSendConnectFrame);
   }
 }
 
@@ -329,8 +289,7 @@ void StompClient<WebSocketClient>::OnWebSocketMessageReceived(
   if (frame.GetStompError() != StompError::Ok) {
     // TODO: log StompClient: Could not parse message as STOMP frame:
     // {stomp_error}
-    CallOnConnectedCallbackWithErrorIfValid(
-        StompClientError::CouldNotParseMessageAsStompFrame);
+    OnConnected(StompClientError::CouldNotParseMessageAsStompFrame);
     return;
   }
 
@@ -380,9 +339,8 @@ void StompClient<WebSocketClient>::OnWebSocketClosed(
     auto error{result.failed()
                    ? StompClientError::CouldNotCloseWebSocketConnection
                    : StompClientError::Ok};
-    boost::asio::post(async_context_, [on_close_callback, error]() {
-      on_close_callback(error);
-    });
+    boost::asio::post(async_context_, [callback = std::move(on_close_callback),
+                                       error]() { callback(error); });
   }
 }
 
@@ -411,7 +369,7 @@ template <typename WebSocketClient>
 void StompClient<WebSocketClient>::HandleStompConnected(
     const StompFrame& frame) {
   // TODO: log StompClient: Successfully connected to STOMP server
-  CallOnConnectedCallbackWithErrorIfValid(StompClientError::Ok);
+  OnConnected(StompClientError::Ok);
 }
 
 template <typename WebSocketClient>
@@ -470,12 +428,10 @@ void StompClient<WebSocketClient>::HandleStompMessage(const StompFrame& frame) {
 }
 
 template <typename WebSocketClient>
-void StompClient<WebSocketClient>::CallOnConnectedCallbackWithErrorIfValid(
-    StompClientError error) {
+void StompClient<WebSocketClient>::OnConnected(StompClientError error) {
   if (on_connected_callback_) {
-    boost::asio::post(async_context_,
-                      [on_connected_callback = on_connected_callback_,
-                       error]() { on_connected_callback(error); });
+    boost::asio::post(async_context_, [callback = on_connected_callback_,
+                                       error]() { callback(error); });
   }
 }
 
