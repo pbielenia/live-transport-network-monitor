@@ -16,31 +16,39 @@ namespace network_monitor {
  */
 class WebSocketClientMock {
  public:
-  static boost::system::error_code connect_error_code;
-  static boost::system::error_code send_error_code;
-  static boost::system::error_code close_error_code;
-  static bool trigger_disconnection;
-  static std::function<void(const std::string&)> respond_to_send;
+  using kOnConnectedCallback = std::function<void(boost::system::error_code)>;
+  using kOnMessageReceivedCallback =
+      std::function<void(boost::system::error_code, std::string&&)>;
+  using kOnMessageSentCallback = std::function<void(boost::system::error_code)>;
+  using kOnDisconnectedCallback =
+      std::function<void(boost::system::error_code)>;
+  using kOnConnectionClosedCallback =
+      std::function<void(boost::system::error_code)>;
+
+  struct Config {
+    static boost::system::error_code connect_error_code_;
+    static boost::system::error_code send_error_code_;
+    static boost::system::error_code close_error_code_;
+    static bool trigger_disconnection_;
+    static std::function<void(const std::string&)> respond_to_send_;
+  };
 
   WebSocketClientMock(std::string url,
-                      const std::string& endpoint,
-                      const std::string& port,
+                      std::string endpoint,
+                      std::string port,
                       boost::asio::io_context& io_context,
                       boost::asio::ssl::context& tls_context);
 
   //   TODO: why is it static though?
   static std::queue<std::string>& GetMessageQueue();
 
-  void Connect(
-      std::function<void(boost::system::error_code)> on_connected_callback,
-      std::function<void(boost::system::error_code, std::string&&)>
-          on_message_callback,
-      std::function<void(boost::system::error_code)> on_disconnected_callback);
+  void Connect(kOnConnectedCallback on_connected_callback,
+               kOnMessageReceivedCallback on_message_received_callback,
+               kOnDisconnectedCallback on_disconnected_callback);
   void Send(const std::string& message,
-            std::function<void(boost::system::error_code)> on_sent_callback =
-                nullptr);
-  void Close(std::function<void(boost::system::error_code)> on_close_callback =
-                 nullptr);
+            kOnMessageSentCallback on_message_sent_callback = nullptr);
+  void Close(
+      kOnConnectionClosedCallback on_connection_closed_callback = nullptr);
   const std::string& GetServerUrl() const;
 
  private:
@@ -50,12 +58,11 @@ class WebSocketClientMock {
   static std::queue<std::string> message_queue;
 
   boost::asio::strand<boost::asio::io_context::executor_type> async_context_;
-  const std::string server_url_;
+  std::string server_url_;
 
   bool connected_{false};
-  std::function<void(boost::system::error_code, std::string&&)>
-      on_message_callback_;
-  std::function<void(boost::system::error_code)> on_disconnected_callback_;
+  kOnMessageReceivedCallback on_message_received_callback_;
+  kOnDisconnectedCallback on_disconnected_callback_;
 };
 
 /*! \brief Mocks the network_monitor::WebSocketClient talking to a STOMP server.
@@ -81,15 +88,15 @@ class WebSocketClientMockForStomp : public WebSocketClientMock {
                               boost::asio::io_context& io_context,
                               boost::asio::ssl::context& tls_context);
 
-  const std::string stomp_version{"1.4"};
+  std::string stomp_version{"1.4"};
 
  private:
   void OnMessage(const std::string& message);
-  void HandleConnectMessage(const network_monitor::StompFrame& frame);
-  void HandleSubscribeMessage(const network_monitor::StompFrame& frame);
+  void HandleConnectMessage(const network_monitor::StompFrame& frame) const;
+  static void HandleSubscribeMessage(const network_monitor::StompFrame& frame);
 
-  bool FrameIsValidConnect(const network_monitor::StompFrame& frame);
-  bool FrameIsValidSubscribe(const network_monitor::StompFrame& frame);
+  static bool FrameIsValidConnect(const network_monitor::StompFrame& frame);
+  static bool FrameIsValidSubscribe(const network_monitor::StompFrame& frame);
 };
 
 }  // namespace network_monitor

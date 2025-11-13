@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_CASE(fail_websocket_handshake, *timeout{1}) {
   BOOST_CHECK(called_on_connect);
 }
 
-BOOST_AUTO_TEST_CASE(successful_nothing_to_read, *timeout{1}) {
+BOOST_AUTO_TEST_CASE(successful_nothing_to_read, *timeout(1)) {
   const std::string url{"some.echo-server.com"};
   const std::string endpoint{"/"};
   const std::string port{"443"};
@@ -397,18 +397,19 @@ BOOST_AUTO_TEST_CASE(one_message, *timeout{1}) {
   bool called_on_connect{false};
   bool called_on_send{false};
 
-  auto on_send{[&called_on_send, &client](auto error_code) {
+  auto on_sent_callback{[&called_on_send, &client](auto error_code) {
     called_on_send = true;
     BOOST_CHECK(!error_code.failed());
     client.Close();
   }};
-  auto on_connect{[&called_on_connect, &client, &message_to_send,
-                   &on_send](auto error_code) {
-    called_on_connect = true;
-    BOOST_CHECK(!error_code.failed());
+  auto on_connect{
+      [&called_on_connect, &client, &message_to_send,
+       on_sent_callback = std::move(on_sent_callback)](auto error_code) {
+        called_on_connect = true;
+        BOOST_CHECK(!error_code.failed());
 
-    client.Send(message_to_send, on_send);
-  }};
+        client.Send(message_to_send, std::move(on_sent_callback));
+      }};
 
   client.Connect(on_connect);
   io_context.run();
@@ -432,12 +433,12 @@ BOOST_AUTO_TEST_CASE(send_before_connect, *timeout{1}) {
 
   bool called_on_send{false};
 
-  auto on_send{[&called_on_send, &client](auto error_code) {
+  auto on_sent_callback{[&called_on_send, &client](auto error_code) {
     called_on_send = true;
     BOOST_CHECK_EQUAL(error_code, boost::asio::error::operation_aborted);
   }};
 
-  client.Send(message_to_send, on_send);
+  client.Send(message_to_send, std::move(on_sent_callback));
   io_context.run();
 
   BOOST_CHECK(called_on_send);
@@ -465,17 +466,18 @@ BOOST_AUTO_TEST_CASE(fail, *timeout{1}) {
   bool called_on_connect{false};
   bool called_on_send{false};
 
-  auto on_send{[&called_on_send, &client](auto error_code) {
+  auto on_sent_callback{[&called_on_send, &client](auto error_code) {
     called_on_send = true;
     BOOST_CHECK(error_code == boost::beast::websocket::error::bad_data_frame);
     client.Close();
   }};
-  auto on_connect{[&called_on_connect, &client, &message_to_send,
-                   &on_send](auto error_code) {
-    called_on_connect = true;
-    BOOST_CHECK(!error_code.failed());
-    client.Send(message_to_send, on_send);
-  }};
+  auto on_connect{
+      [&called_on_connect, &client, &message_to_send,
+       on_sent_callback = std::move(on_sent_callback)](auto error_code) {
+        called_on_connect = true;
+        BOOST_CHECK(!error_code.failed());
+        client.Send(message_to_send, std::move(on_sent_callback));
+      }};
 
   client.Connect(on_connect);
   io_context.run();
@@ -599,13 +601,15 @@ BOOST_AUTO_TEST_CASE(echo, *timeout{20}) {
   bool disconnected{false};
   std::string echo{};
 
-  auto on_send{[&message_sent](auto error_code) {
+  auto on_sent_callback{[&message_sent](auto error_code) {
     message_sent = !error_code.failed();
   }};
-  auto on_connect{[&client, &connected, &on_send, &message](auto error_code) {
+  auto on_connect{[&client, &connected,
+                   on_sent_callback = std::move(on_sent_callback),
+                   &message](auto error_code) {
     connected = !error_code.failed();
     if (connected) {
-      client.Send(message, on_send);
+      client.Send(message, std::move(on_sent_callback));
     }
   }};
   auto on_close{[&disconnected](auto error_code) {
@@ -667,16 +671,17 @@ BOOST_AUTO_TEST_CASE(send_stomp_frame) {
   bool disconnected{false};
   std::string response{};
 
-  auto on_send_callback{
+  auto on_sent_callback{
       [&message_sent](auto error_code) { message_sent = !error_code; }};
 
-  auto on_connect_callback{
-      [&client, &connected, &on_send_callback, &message](auto error_code) {
-        connected = !error_code;
-        if (connected) {
-          client.Send(message, on_send_callback);
-        }
-      }};
+  auto on_connect_callback{[&client, &connected,
+                            on_sent_callback = std::move(on_sent_callback),
+                            &message](auto error_code) {
+    connected = !error_code;
+    if (connected) {
+      client.Send(message, std::move(on_sent_callback));
+    }
+  }};
 
   auto on_close_callback{
       [&disconnected](auto error_code) { disconnected = !error_code; }};

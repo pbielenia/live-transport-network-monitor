@@ -42,9 +42,9 @@ StompClientTestFixture::StompClientTestFixture()
       stomp_password{"correct_password"},
       stomp_endpoint{"correct_endpoint"},
       tls_context{boost::asio::ssl::context::tlsv12_client} {
-  WebSocketClientMock::connect_error_code = {};
-  WebSocketClientMock::send_error_code = {};
-  WebSocketClientMock::close_error_code = {};
+  WebSocketClientMock::Config::connect_error_code_ = {};
+  WebSocketClientMock::Config::send_error_code_ = {};
+  WebSocketClientMock::Config::close_error_code_ = {};
   WebSocketClientMockForStomp::username = stomp_username;
   WebSocketClientMockForStomp::password = stomp_password;
   WebSocketClientMockForStomp::endpoint = stomp_endpoint;
@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE(CallsOnConnectOnSuccess, *timeout(1)) {
 }
 
 BOOST_AUTO_TEST_CASE(CallsOnConnectOnWebSocketConnectionFailure, *timeout(1)) {
-  WebSocketClientMock::connect_error_code =
+  WebSocketClientMock::Config::connect_error_code_ =
       boost::asio::ssl::error::stream_truncated;
 
   bool on_connected_called{false};

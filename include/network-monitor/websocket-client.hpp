@@ -10,14 +10,24 @@ namespace network_monitor {
 
 /*! \brief Client to connect to a WebSocket server over plain TCP.
  *
- *  \tparam Resolver        The class to resolve the URL to an IP address. It
- * must support the same interface of boost::asio::ip::tcp::resolver. \tparam
- * WebSocketStream The WebSocket stream class. It must support the same
- * interface of boost::beast::websocket::stream.
+ *  \tparam Resolver          The class to resolve the URL to an IP address. It
+ *                            must support the same interface of
+ *                            boost::asio::ip::tcp::resolver.
+ *  \tparam WebSocketStream   The WebSocket stream class. It must support the
+ *                            same interface of boost::beast::websocket::stream.
  */
 template <typename Resolver, typename WebSocketStream>
 class WebSocketClient {
  public:
+  using kOnConnectedCallback = std::function<void(boost::system::error_code)>;
+  using kOnMessageReceivedCallback =
+      std::function<void(boost::system::error_code, std::string&&)>;
+  using kOnMessageSentCallback = std::function<void(boost::system::error_code)>;
+  using kOnDisconnectedCallback =
+      std::function<void(boost::system::error_code)>;
+  using kOnConnectionClosedCallback =
+      std::function<void(boost::system::error_code)>;
+
   /*! \brief Construct a WebSocket client.
    *
    *  \note This constructor does not initiate a connection.
@@ -30,9 +40,9 @@ class WebSocketClient {
    *                      ioc.run().
    *  \param tls_context  The TLS context to setup a TLS socket stream.
    */
-  WebSocketClient(const std::string& url,
-                  const std::string& endpoint,
-                  const std::string& port,
+  WebSocketClient(std::string url,
+                  std::string endpoint,
+                  std::string port,
                   boost::asio::io_context& io_context,
                   boost::asio::ssl::context& tls_context);
 
@@ -61,18 +71,20 @@ class WebSocketClient {
 
   /*! \brief Connect to the server.
    *
-   *  \param on_connect       Called when the connection fails or succeeds.
-   *  \param on_message       Called only when a message is successfully
-   *                          received. The message is an rvalue reference;
-   *                          ownership is passed to the receiver.
-   *  \param on_disconnect    Called when the connection is closed by the server
-   *                          or due to a connection error.
+   *  \param on_connected_callback          Called when the connection fails or
+   *                                        succeeds.
+   *  \param on_message_received_callback   Called only when a message is
+   *                                        successfully received. The message
+   *                                        is an rvalue reference; ownership
+   *                                        is passed to the receiver.
+   *  \param on_disconnected_callback       Called when the connection is closed
+   *                                        by the server or due to a connection
+   *                                        error.
    */
   void Connect(
-      std::function<void(boost::system::error_code)> on_connect = nullptr,
-      std::function<void(boost::system::error_code, std::string&&)> on_message =
-          nullptr,
-      std::function<void(boost::system::error_code)> on_disconnect = nullptr);
+      kOnConnectedCallback on_connected_callback = nullptr,
+      kOnMessageReceivedCallback on_message_received_callback = nullptr,
+      kOnDisconnectedCallback on_disconnected_callback = nullptr);
 
   /*! \brief Send a text message to the WebSocket server.
    *
@@ -82,47 +94,40 @@ class WebSocketClient {
    *                  failed to send.
    */
   void Send(const std::string& message,
-            std::function<void(boost::system::error_code)> on_send_callback =
-                nullptr);
+            kOnMessageSentCallback on_message_sent_callback = nullptr);
 
   /*! \brief Close the WebSocket connection.
    *
-   *  \param on_close Called when the connection is closed, successfully or not.
+   *  \param on_connection_closed_callback  Called when the connection is
+   *                                        closed, successfully or not.
    */
-  void Close(std::function<void(boost::system::error_code)> on_close = nullptr);
+  void Close(
+      kOnConnectionClosedCallback on_connection_closed_callback = nullptr);
 
-  // TODO: add brief
   const std::string& GetServerUrl() const;
-  // TODO: add brief
   const std::string& GetServerPort() const;
 
  private:
   static constexpr auto kConnectToServerTimeout = std::chrono::seconds(5);
 
-  void SaveProvidedCallbacks(
-      std::function<void(boost::system::error_code)> on_connect = nullptr,
-      std::function<void(boost::system::error_code, std::string&&)> on_message =
-          nullptr,
-      std::function<void(boost::system::error_code)> on_disconnect = nullptr);
   void ResolveServerUrl();
-  void ConnectToServer(boost::asio::ip::tcp::resolver::results_type endpoint);
-  void SetTcpStreamTimeoutToSuggested();
+  void ConnectToServer(
+      const boost::asio::ip::tcp::resolver::results_type& endpoint);
+  void SetSuggestedTcpStreamTimeout();
   void HandshakeTls();
   void HandshakeWebSocket();
-  void ListenToIncomingMessage(const boost::system::error_code& error);
-  std::string ReadMessage(const size_t received_bytes_count);
-
-  void CallOnConnectCallbackIfExists(const boost::system::error_code& error);
-  void CallOnMessageCallbackIfExists(const boost::system::error_code& error,
-                                     std::string&& message);
+  void ListenToIncomingMessage(boost::system::error_code error);
+  std::string ReadMessage(size_t received_bytes_count);
 
   void OnServerUrlResolved(
+      boost::system::error_code error,
       boost::asio::ip::tcp::resolver::results_type results);
-  void OnConnectedToServer(const boost::system::error_code& error);
-  void OnTlsHandshakeCompleted(const boost::system::error_code& error);
-  void OnWebSocketHandshakeCompleted(const boost::system::error_code& error);
-  void OnMessageReceived(const boost::system::error_code& error,
-                         const size_t received_bytes_count);
+  void OnConnectedToServer(boost::system::error_code error);
+  void OnConnectingToServerCompleted(boost::system::error_code error);
+  void OnTlsHandshakeCompleted(boost::system::error_code error);
+  void OnWebSocketHandshakeCompleted(boost::system::error_code error);
+  void OnMessageReceived(boost::system::error_code error,
+                         size_t received_bytes_count);
 
   const std::string server_url_;
   const std::string server_endpoint_;
@@ -132,24 +137,23 @@ class WebSocketClient {
   WebSocketStream websocket_stream_;
 
   boost::beast::flat_buffer response_buffer_;
-  bool closed_{true};
+  bool connection_is_open_{false};
 
-  std::function<void(boost::system::error_code)> on_connect_callback_;
-  std::function<void(boost::system::error_code, std::string&&)>
-      on_message_callback_;
-  std::function<void(boost::system::error_code)> on_disconnect_callback_;
+  kOnConnectedCallback on_connected_callback_;
+  kOnMessageReceivedCallback on_message_received_callback_;
+  kOnDisconnectedCallback on_disconnected_callback_;
 };
 
 template <typename Resolver, typename WebSocketStream>
 WebSocketClient<Resolver, WebSocketStream>::WebSocketClient(
-    const std::string& url,
-    const std::string& endpoint,
-    const std::string& port,
+    std::string url,
+    std::string endpoint,
+    std::string port,
     boost::asio::io_context& io_context,
     boost::asio::ssl::context& tls_context)
-    : server_url_{url},
-      server_endpoint_{endpoint},
-      server_port_{port},
+    : server_url_{std::move(url)},
+      server_endpoint_{std::move(endpoint)},
+      server_port_{std::move(port)},
       resolver_{boost::asio::make_strand(io_context)},
       websocket_stream_{boost::asio::make_strand(io_context), tls_context} {}
 
@@ -158,28 +162,14 @@ WebSocketClient<Resolver, WebSocketStream>::~WebSocketClient() = default;
 
 template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::Connect(
-    std::function<void(boost::system::error_code)> on_connect,
-    std::function<void(boost::system::error_code, std::string&&)> on_message,
-    std::function<void(boost::system::error_code)> on_disconnect) {
-  SaveProvidedCallbacks(std::move(on_connect), std::move(on_message),
-                        std::move(on_disconnect));
-  ResolveServerUrl();
-}
+    WebSocketClient::kOnConnectedCallback on_connected_callback,
+    WebSocketClient::kOnMessageReceivedCallback on_message_received_callback,
+    WebSocketClient::kOnDisconnectedCallback on_disconnected_callback) {
+  on_connected_callback_ = std::move(on_connected_callback);
+  on_message_received_callback_ = std::move(on_message_received_callback);
+  on_disconnected_callback_ = std::move(on_disconnected_callback);
 
-template <typename Resolver, typename WebSocketStream>
-void WebSocketClient<Resolver, WebSocketStream>::SaveProvidedCallbacks(
-    std::function<void(boost::system::error_code)> on_connect,
-    std::function<void(boost::system::error_code, std::string&&)> on_message,
-    std::function<void(boost::system::error_code)> on_disconnect) {
-  if (on_connect) {
-    on_connect_callback_ = std::move(on_connect);
-  }
-  if (on_message) {
-    on_message_callback_ = std::move(on_message);
-  }
-  if (on_disconnect) {
-    on_disconnect_callback_ = std::move(on_disconnect);
-  }
+  ResolveServerUrl();
 }
 
 template <typename Resolver, typename WebSocketStream>
@@ -190,23 +180,24 @@ void WebSocketClient<Resolver, WebSocketStream>::ResolveServerUrl() {
   //        https://www.boost.org/doc/libs/1_81_0/doc/html/boost_asio/reference/ip__basic_resolver/async_resolve.html
   resolver_.async_resolve(server_url_, server_port_,
                           [this](auto error, auto results) {
-                            if (error.failed()) {
-                              CallOnConnectCallbackIfExists(error);
-                              return;
-                            }
-                            OnServerUrlResolved(results);
+                            OnServerUrlResolved(error, results);
                           });
 }
 
 template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::OnServerUrlResolved(
+    boost::system::error_code error,
     boost::asio::ip::tcp::resolver::results_type results) {
+  if (error.failed()) {
+    OnConnectingToServerCompleted(error);
+    return;
+  }
   ConnectToServer(results);
 }
 
 template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::ConnectToServer(
-    boost::asio::ip::tcp::resolver::results_type endpoint) {
+    const boost::asio::ip::tcp::resolver::results_type& endpoint) {
   auto& tcp_stream = boost::beast::get_lowest_layer(websocket_stream_);
   tcp_stream.expires_after(kConnectToServerTimeout);
   tcp_stream.async_connect(*endpoint,
@@ -215,13 +206,13 @@ void WebSocketClient<Resolver, WebSocketStream>::ConnectToServer(
 
 template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::OnConnectedToServer(
-    const boost::system::error_code& error) {
+    boost::system::error_code error) {
   if (error.failed()) {
-    CallOnConnectCallbackIfExists(error);
+    OnConnectingToServerCompleted(error);
     return;
   }
 
-  SetTcpStreamTimeoutToSuggested();
+  SetSuggestedTcpStreamTimeout();
 
   // Set the host name before the TLS handshake or the connection will fail
   SSL_set_tlsext_host_name(websocket_stream_.next_layer().native_handle(),
@@ -231,8 +222,16 @@ void WebSocketClient<Resolver, WebSocketStream>::OnConnectedToServer(
 }
 
 template <typename Resolver, typename WebSocketStream>
+void WebSocketClient<Resolver, WebSocketStream>::OnConnectingToServerCompleted(
+    boost::system::error_code error) {
+  if (on_connected_callback_) {
+    on_connected_callback_(error);
+  }
+}
+
+template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver,
-                     WebSocketStream>::SetTcpStreamTimeoutToSuggested() {
+                     WebSocketStream>::SetSuggestedTcpStreamTimeout() {
   auto& tcp_stream = boost::beast::get_lowest_layer(websocket_stream_);
   tcp_stream.expires_never();
   websocket_stream_.set_option(
@@ -249,9 +248,9 @@ void WebSocketClient<Resolver, WebSocketStream>::HandshakeTls() {
 
 template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::OnTlsHandshakeCompleted(
-    const boost::system::error_code& error) {
+    boost::system::error_code error) {
   if (error.failed()) {
-    CallOnConnectCallbackIfExists(error);
+    OnConnectingToServerCompleted(error);
     return;
   }
   HandshakeWebSocket();
@@ -260,40 +259,32 @@ void WebSocketClient<Resolver, WebSocketStream>::OnTlsHandshakeCompleted(
 template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::HandshakeWebSocket() {
   const std::string connection_host{server_url_ + ':' + server_port_};
-  websocket_stream_.async_handshake(
-      connection_host, server_endpoint_,
-      [this](const boost::system::error_code& error) {
-        OnWebSocketHandshakeCompleted(error);
-      });
+  websocket_stream_.async_handshake(connection_host, server_endpoint_,
+                                    [this](boost::system::error_code error) {
+                                      OnWebSocketHandshakeCompleted(error);
+                                    });
 }
 
 template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::OnWebSocketHandshakeCompleted(
-    const boost::system::error_code& error) {
-  // FIXME: this return on error prevents calling the remaining stuff if there's
-  //        an error and even so wants to pass the error to them
-  CallOnConnectCallbackIfExists(error);
+    boost::system::error_code error) {
   if (error.failed()) {
+    OnConnectingToServerCompleted(error);
     return;
   }
-  ListenToIncomingMessage(error);
-  closed_ = false;
-}
 
-template <typename Resolver, typename WebSocketStream>
-void WebSocketClient<Resolver, WebSocketStream>::CallOnConnectCallbackIfExists(
-    const boost::system::error_code& error) {
-  if (on_connect_callback_) {
-    on_connect_callback_(error);
-  }
+  connection_is_open_ = true;
+  OnConnectingToServerCompleted(error);
+  ListenToIncomingMessage(error);
 }
 
 template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::ListenToIncomingMessage(
-    const boost::system::error_code& error) {
+    boost::system::error_code error) {
   if (error == boost::asio::error::operation_aborted) {
-    if (on_disconnect_callback_ && !closed_) {
-      on_disconnect_callback_(error);
+    if (on_disconnected_callback_ && connection_is_open_) {
+      connection_is_open_ = false;
+      on_disconnected_callback_(error);
     }
     return;
   }
@@ -305,13 +296,17 @@ void WebSocketClient<Resolver, WebSocketStream>::ListenToIncomingMessage(
 
 template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::OnMessageReceived(
-    const boost::system::error_code& error, const size_t received_bytes_count) {
+    boost::system::error_code error, const size_t received_bytes_count) {
   // FIXME: this return on error prevents calling the remaining stuff if there's
   //        an error and even so wants to pass the error to them
   if (error) {
     return;
   }
-  CallOnMessageCallbackIfExists(error, ReadMessage(received_bytes_count));
+
+  if (on_message_received_callback_) {
+    on_message_received_callback_(error, ReadMessage(received_bytes_count));
+  }
+
   ListenToIncomingMessage(error);
 }
 
@@ -324,35 +319,32 @@ std::string WebSocketClient<Resolver, WebSocketStream>::ReadMessage(
 }
 
 template <typename Resolver, typename WebSocketStream>
-void WebSocketClient<Resolver, WebSocketStream>::CallOnMessageCallbackIfExists(
-    const boost::system::error_code& error, std::string&& message) {
-  if (on_message_callback_) {
-    on_message_callback_(error, std::move(message));
-  }
-}
-
-template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::Send(
     const std::string& message,
-    std::function<void(boost::system::error_code)> on_send_callback) {
-  websocket_stream_.async_write(boost::asio::buffer(message),
-                                [this, on_send_callback](auto error, auto) {
-                                  if (on_send_callback) {
-                                    on_send_callback(error);
-                                  }
-                                });
+    WebSocketClient::kOnMessageSentCallback on_message_sent_callback) {
+  websocket_stream_.async_write(
+      boost::asio::buffer(message),
+      [this, on_message_sent_callback = std::move(on_message_sent_callback)](
+          auto error, auto) {
+        if (on_message_sent_callback) {
+          on_message_sent_callback(error);
+        }
+      });
 }
 
 template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::Close(
-    std::function<void(boost::system::error_code)> on_close_callback) {
-  websocket_stream_.async_close(boost::beast::websocket::close_code::none,
-                                [on_close_callback](auto error_code) {
-                                  if (on_close_callback) {
-                                    on_close_callback(error_code);
-                                  }
-                                });
-  closed_ = true;
+    WebSocketClient::kOnConnectionClosedCallback
+        on_connection_closed_callback) {
+  websocket_stream_.async_close(
+      boost::beast::websocket::close_code::none,
+      [on_connection_closed_callback =
+           std::move(on_connection_closed_callback)](auto error_code) {
+        if (on_connection_closed_callback) {
+          on_connection_closed_callback(error_code);
+        }
+      });
+  connection_is_open_ = false;
 }
 
 template <typename Resolver, typename WebSocketStream>

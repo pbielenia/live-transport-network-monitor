@@ -3,6 +3,7 @@
 #include <string>
 
 #include <boost/asio.hpp>
+#include <boost/beast.hpp>
 
 namespace network_monitor {
 
