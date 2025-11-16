@@ -39,7 +39,7 @@ struct Station {
  *
  *  A Route struct is well formed if:
  *  - `id` is unique across all lines and their routes in the network.
- *  - The `line_id` line exists and has this route among its routes.
+ *  - `line_id` line exists and has this route among its routes.
  *  - `stops` has at least 2 stops.
  *  - `start_station_id` is the first stop in `stops`.
  *  - `end_station_id` is the last stop in `stops`.
@@ -86,7 +86,7 @@ struct Line {
 /*! \brief Passenger event
  */
 struct PassengerEvent {
-  enum class Type {
+  enum class Type : std::uint8_t {
     In,
     Out
   };
@@ -147,7 +147,7 @@ class TransportNetwork {
    *
    *  The station cannot already be in the network.
    */
-  bool AddStation(const Station& station);
+  bool AddStation(Station station);
 
   /*! \brief Add a line to the network.
    *
@@ -201,7 +201,7 @@ class TransportNetwork {
    */
   bool SetTravelTime(const Id& station_a,
                      const Id& station_b,
-                     const unsigned int travel_time);
+                     unsigned travel_time);
 
   /*! \brief Get the travel time between 2 adjacent stations.
    *
@@ -240,7 +240,7 @@ class TransportNetwork {
   struct LineInternal;
 
   struct GraphNode {
-    GraphNode(const Station& station);
+    GraphNode(Station station);
 
     Id id;
     std::string name;
@@ -283,7 +283,7 @@ class TransportNetwork {
     std::vector<std::shared_ptr<RouteInternal>> routes;
   };
 
-  void AddStationInternal(const Station& station);
+  void AddStationInternal(Station station);
   std::shared_ptr<LineInternal> CreateLineInternal(const Id& id,
                                                    const std::string& name);
   bool StationExists(const Id& station_id) const;

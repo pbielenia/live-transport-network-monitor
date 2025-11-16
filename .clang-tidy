@@ -13,7 +13,7 @@ Checks:
   - readability-*
 CheckOptions:
   - key: readability-identifier-length.IgnoredVariableNames
-    value: '^(ok)$'
+    value: '^(ok|_)$'
   - key: readability-identifier-length.IgnoredParameterNames
     value: '^(id|os)$'
 WarningsAsErrors: true

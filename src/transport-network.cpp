@@ -34,54 +34,61 @@ TransportNetwork::TransportNetwork(TransportNetwork&& moved) noexcept
       lines_{std::move(moved.lines_)} {}
 
 bool TransportNetwork::FromJson(const nlohmann::json& source) {
-  for (const auto& station : source.at("stations")) {
-    Station new_station{};
-    new_station.id = station.at("station_id").get<Id>();
-    new_station.name = station.at("name").get<std::string>();
-    auto success = AddStation(new_station);
-    if (!success) {
-      throw std::runtime_error("Adding station failed [id: " + new_station.id +
-                               ", name: " + new_station.name + "]");
-    }
-  }
-
-  for (const auto& line : source.at("lines")) {
-    Line new_line{};
-    new_line.id = line.at("line_id").get<Id>();
-    new_line.name = line.at("name").get<std::string>();
-    for (const auto& route : line.at("routes")) {
-      Route new_route{};
-      new_route.id = route.at("route_id").get<Id>();
-      new_route.direction = route.at("direction").get<std::string>();
-      new_route.start_station_id = route.at("start_station_id").get<Id>();
-      new_route.end_station_id = route.at("end_station_id").get<Id>();
-      for (const auto& stop : route.at("route_stops")) {
-        new_route.stops.push_back(stop.get<Id>());
+  try {
+    for (const auto& station : source.at("stations")) {
+      if (!AddStation({
+              .id = station.at("station_id").get<Id>(),
+              .name = station.at("name").get<std::string>(),
+          })) {
+        // TODO: log and return instead of throwing
+        throw std::runtime_error("Adding station failed");
       }
-      new_line.routes.push_back(std::move(new_route));
     }
-    auto success = AddLine(new_line);
-    if (!success) {
-      throw std::runtime_error("Adding line failed [id: " + new_line.id +
-                               ", name: " + new_line.name + "]");
-    }
-  }
 
-  const auto& travel_times = source.at("travel_times");
-  return std::ranges::all_of(travel_times, [this](const auto& travel_time) {
-    return SetTravelTime(
-        travel_time.at("start_station_id").template get<Id>(),
-        travel_time.at("end_station_id").template get<Id>(),
-        travel_time.at("travel_time").template get<unsigned>());
-  });
+    for (const auto& line : source.at("lines")) {
+      Line new_line{};
+      new_line.id = line.at("line_id").get<Id>();
+      new_line.name = line.at("name").get<std::string>();
+      for (const auto& route : line.at("routes")) {
+        Route new_route{};
+        new_route.id = route.at("route_id").get<Id>();
+        new_route.direction = route.at("direction").get<std::string>();
+        new_route.start_station_id = route.at("start_station_id").get<Id>();
+        new_route.end_station_id = route.at("end_station_id").get<Id>();
+        for (const auto& stop : route.at("route_stops")) {
+          new_route.stops.push_back(stop.get<Id>());
+        }
+        new_line.routes.push_back(std::move(new_route));
+      }
+      auto success = AddLine(new_line);
+      if (!success) {
+        throw std::runtime_error("Adding line failed [id: " + new_line.id +
+                                 ", name: " + new_line.name + "]");
+      }
+    }
+
+    const auto& travel_times = source.at("travel_times");
+    return std::ranges::all_of(travel_times, [this](const auto& travel_time) {
+      return SetTravelTime(
+          travel_time.at("start_station_id").template get<Id>(),
+          travel_time.at("end_station_id").template get<Id>(),
+          travel_time.at("travel_time").template get<unsigned>());
+    });
+  } catch (const nlohmann::json::exception& exception) {
+    throw std::runtime_error(std::string("json parse error: ") +
+                             exception.what());
+  } catch (const std::runtime_error& exception) {
+    throw exception;
+  }
 }
 
-bool TransportNetwork::AddStation(const Station& station) {
+bool TransportNetwork::AddStation(Station station) {
   if (StationExists(station.id)) {
+    // TODO: log station.name and station.id
     return false;
   }
 
-  AddStationInternal(station);
+  AddStationInternal(std::move(station));
   return true;
 }
 
@@ -106,7 +113,7 @@ bool TransportNetwork::AddLine(const Line& line) {
     // FIXME: Can be written more clearly or moved to the separate function.
     //        It does "return false if the route already existis in the line".
     if (std::find_if(line_internal->routes.begin(), line_internal->routes.end(),
-                     [&route](auto line_route) {
+                     [&route](const auto& line_route) {
                        return route.id == line_route->id;
                      }) != line_internal->routes.end()) {
       return false;
@@ -117,7 +124,7 @@ bool TransportNetwork::AddLine(const Line& line) {
     stops.reserve(route.stops.size());
     for (const auto& stop_id : route.stops) {
       // FIXME: Create a separate function for getting a station. In purpose of
-      //       readability.
+      //        readability.
       if (!StationExists(stop_id)) {
         return false;
       }
@@ -198,7 +205,7 @@ std::vector<Id> TransportNetwork::GetRoutesServingStation(
 
 bool TransportNetwork::SetTravelTime(const Id& station_a,
                                      const Id& station_b,
-                                     const unsigned int travel_time) {
+                                     unsigned travel_time) {
   if (!StationExists(station_a) || !StationExists(station_b) ||
       station_a == station_b) {
     return false;
@@ -257,9 +264,9 @@ unsigned int TransportNetwork::GetTravelTime(const Id& line,
 
   // FIXME: Turn the below code into the new private method named FindRoute.
   const auto& line_routes = lines_.at(line)->routes;
-  const auto route_internal = std::find_if(
-      line_routes.begin(), line_routes.end(),
-      [route](auto line_route) { return line_route->id == route; });
+  const auto route_internal = std::ranges::find_if(
+      line_routes,
+      [route](const auto& line_route) { return line_route->id == route; });
   if (route_internal == line_routes.end()) {
     return total_travel_time;
   }
@@ -290,9 +297,9 @@ unsigned int TransportNetwork::GetTravelTime(const Id& line,
   return total_travel_time;
 }
 
-TransportNetwork::GraphNode::GraphNode(const Station& station)
-    : id{station.id},
-      name{station.name} {}
+TransportNetwork::GraphNode::GraphNode(Station station)
+    : id{std::move(station.id)},
+      name{std::move(station.name)} {}
 
 std::vector<std::shared_ptr<TransportNetwork::GraphEdge>>
 TransportNetwork::GraphNode::FindEdgesToNextStation(
@@ -323,9 +330,9 @@ TransportNetwork::GraphEdge::GraphEdge(
     : route{route},
       next_station{next_station} {}
 
-void TransportNetwork::AddStationInternal(const Station& station) {
-  auto node = std::make_shared<GraphNode>(station);
-  stations_.emplace(station.id, std::move(node));
+void TransportNetwork::AddStationInternal(Station station) {
+  auto node = std::make_shared<GraphNode>(std::move(station));
+  stations_.emplace(node->id, std::move(node));
 }
 
 std::shared_ptr<TransportNetwork::LineInternal>
@@ -355,8 +362,10 @@ bool TransportNetwork::LineExists(const Line& line) const {
 
 bool TransportNetwork::StationsAreAdjacend(const Id& station_a,
                                            const Id& station_b) const {
+  // NOLINTBEGIN(readability-suspicious-call-argument)
   return StationConnectsAnother(station_a, station_b) ||
          StationConnectsAnother(station_b, station_a);
+  // NOLINTEND(readability-suspicious-call-argument)
 }
 
 bool TransportNetwork::StationConnectsAnother(const Id& station_a,
