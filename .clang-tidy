@@ -1,5 +1,4 @@
 Checks:
-  - abseil-*
   - cert-*
   - clang-analyzer-*
   - cppcoreguidelines-*
