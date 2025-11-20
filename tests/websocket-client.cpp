@@ -11,12 +11,9 @@
 
 #include "boost-mock.hpp"
 
-using network_monitor::MockResolver;
-using network_monitor::MockSslStream;
-using network_monitor::MockTcpStream;
-using network_monitor::MockWebSocketStream;
-using network_monitor::TestWebSocketClient;
-using network_monitor::WebSocketClient;
+namespace network_monitor {
+
+namespace {
 
 // This fixture is used to re-initialize all mock properties before a test.
 struct WebSocketClientTestFixture {
@@ -38,6 +35,13 @@ struct WebSocketClientTestFixture {
 using timeout = boost::unit_test::timeout;
 
 constexpr auto kExpectedTimeout = std::chrono::milliseconds(250);
+
+bool CheckResponse(const std::string& response) {
+  bool ok{true};
+  ok &= response.find("ERROR") != std::string::npos;
+  ok &= response.find("ValidationInvalidAuth") != std::string::npos;
+  return ok;
+}
 
 BOOST_AUTO_TEST_SUITE(network_monitor);
 
@@ -594,8 +598,7 @@ BOOST_AUTO_TEST_CASE(echo, *timeout{20}) {
   tls_context.load_verify_file(TESTS_CACERT_PEM);
 
   boost::asio::io_context io_context{};
-  network_monitor::BoostWebSocketClient client{url, endpoint, port, io_context,
-                                               tls_context};
+  BoostWebSocketClient client{url, endpoint, port, io_context, tls_context};
 
   bool connected{false};
   bool message_sent{false};
@@ -634,13 +637,6 @@ BOOST_AUTO_TEST_CASE(echo, *timeout{20}) {
   BOOST_CHECK_EQUAL(message, echo);
 }
 
-bool CheckResponse(const std::string& response) {
-  bool ok{true};
-  ok &= response.find("ERROR") != std::string::npos;
-  ok &= response.find("ValidationInvalidAuth") != std::string::npos;
-  return ok;
-}
-
 BOOST_AUTO_TEST_CASE(send_stomp_frame) {
   const std::string url{"ltnm.learncppthroughprojects.com"};
   const std::string endpoint{"/network-events"};
@@ -664,8 +660,7 @@ BOOST_AUTO_TEST_CASE(send_stomp_frame) {
   tls_context.load_verify_file(TESTS_CACERT_PEM);
 
   boost::asio::io_context io_context{};
-  network_monitor::BoostWebSocketClient client{url, endpoint, port, io_context,
-                                               tls_context};
+  BoostWebSocketClient client{url, endpoint, port, io_context, tls_context};
 
   bool connected{false};
   bool message_sent{false};
@@ -710,3 +705,7 @@ BOOST_AUTO_TEST_SUITE_END();  // live
 BOOST_AUTO_TEST_SUITE_END();  // class_WebSocketClient
 
 BOOST_AUTO_TEST_SUITE_END();  // network_monitor
+
+}  // namespace
+
+}  // namespace network_monitor
