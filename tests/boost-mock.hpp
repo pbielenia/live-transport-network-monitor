@@ -306,23 +306,17 @@ inline std::string MockWebSocketStream<TlsStream>::read_buffer{};
 template <typename TeardownHandler>
 void async_teardown(boost::beast::role_type role,
                     MockTcpStream& socket,
-                    TeardownHandler&& handler) {
-  return;
-}
+                    TeardownHandler&& handler) {}
 
 template <typename TeardownHandler, typename TcpStream>
 void async_teardown(boost::beast::role_type role,
                     MockSslStream<TcpStream>& socket,
-                    TeardownHandler&& handler) {
-  return;
-}
+                    TeardownHandler&& handler) {}
 
 template <typename TeardownHandler, typename TlsStream>
 void async_teardown(boost::beast::role_type role,
                     MockWebSocketStream<TlsStream>& socket,
-                    TeardownHandler&& handler) {
-  return;
-}
+                    TeardownHandler&& handler) {}
 
 /*! \brief Type alias for the mocked WebSocketClient.
  *
