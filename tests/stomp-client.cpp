@@ -106,8 +106,10 @@ BOOST_AUTO_TEST_CASE(CallsOnDisconnectedAtStompAuthenticationFailure,
   StompClient<WebSocketClientMockForStomp> stomp_client{
       url, endpoint, port, io_context, tls_context};
 
-  auto on_connected_callback = [&on_connected_called, &stomp_client](
-                                   auto result) { on_connected_called = true; };
+  auto on_connected_callback = [&on_connected_called,
+                                &stomp_client](auto /*result*/) {
+    on_connected_called = true;
+  };
   auto on_disconnected_callback = [&on_disconnected_called,
                                    &stomp_client](auto result) {
     on_disconnected_called = true;

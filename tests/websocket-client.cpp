@@ -328,10 +328,11 @@ BOOST_AUTO_TEST_CASE(fail, *timeout{1}) {
     called_on_connect = true;
     BOOST_CHECK(!error_code);
   }};
-  auto on_message{[&called_on_message](auto error_code, auto received_message) {
-    called_on_message = true;
-    BOOST_CHECK(false);
-  }};
+  auto on_message{
+      [&called_on_message](auto /*error_code*/, auto /*received_message*/) {
+        called_on_message = true;
+        BOOST_CHECK(false);
+      }};
 
   client.Connect(on_connect, on_message);
   io_context.run();
@@ -567,7 +568,7 @@ BOOST_AUTO_TEST_CASE(close_no_disconnect, *timeout{1}) {
     BOOST_REQUIRE(!error_code.failed());
     client.Close(on_close);
   }};
-  auto on_disconnect{[&on_disconnect_called](auto error_code) {
+  auto on_disconnect{[&on_disconnect_called](auto /*error_code*/) {
     on_disconnect_called = true;
   }};
 
@@ -617,7 +618,7 @@ BOOST_AUTO_TEST_CASE(echo, *timeout{20}) {
     disconnected = !error_code.failed();
   }};
   auto on_receive{[&client, &on_close, &message_received, &message, &echo](
-                      auto error_code, auto received) {
+                      auto error_code, auto /*received*/) {
     message_received = !error_code.failed();
     echo = message;
     client.Close(on_close);
