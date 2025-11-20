@@ -961,9 +961,11 @@ BOOST_AUTO_TEST_CASE(move_assignment_operator) {
 
   VerifyFrame(parsed_frame, expected_frame);
 
-  // NOLINTBEGIN(performance-unnecessary-copy-initialization)
+  // NOLINTBEGIN(performance-unnecessary-copy-initialization,
+  //             performance-move-const-arg)
   const auto copied_frame = std::move(parsed_frame);
-  // NOLINTEND(performance-unnecessary-copy-initialization)
+  // NOLINTEND(performance-unnecessary-copy-initialization,
+  //           performance-move-const-arg)
   // TODO: verify copied_frame.body_ points at copied_frame.plain_content_
   VerifyFrame(copied_frame, expected_frame);
 }
