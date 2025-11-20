@@ -5,16 +5,11 @@
 #include <boost/asio.hpp>
 #include <boost/test/unit_test.hpp>
 
-#include "network-monitor/stomp-frame.hpp"
 #include "websocket-client-mock.hpp"
 
-using network_monitor::StompClientError;
-using network_monitor::StompCommand;
-using network_monitor::StompError;
-using network_monitor::StompFrame;
-using network_monitor::StompHeader;
-using network_monitor::WebSocketClientMock;
-using network_monitor::WebSocketClientMockForStomp;
+namespace network_monitor {
+
+namespace {
 
 using timeout = boost::unit_test::timeout;
 
@@ -59,7 +54,7 @@ BOOST_FIXTURE_TEST_SUITE(stomp_client, StompClientTestFixture);
 BOOST_AUTO_TEST_CASE(CallsOnConnectOnSuccess, *timeout(1)) {
   bool on_connected_called{false};
 
-  network_monitor::StompClient<WebSocketClientMockForStomp> stomp_client{
+  StompClient<WebSocketClientMockForStomp> stomp_client{
       url, endpoint, port, io_context, tls_context};
 
   auto on_connect_callback = [&on_connected_called,
@@ -80,7 +75,7 @@ BOOST_AUTO_TEST_CASE(CallsOnConnectOnWebSocketConnectionFailure, *timeout(1)) {
 
   bool on_connected_called{false};
 
-  network_monitor::StompClient<WebSocketClientMockForStomp> stomp_client{
+  StompClient<WebSocketClientMockForStomp> stomp_client{
       url, endpoint, port, io_context, tls_context};
 
   auto on_connect_callback = [&on_connected_called,
@@ -108,7 +103,7 @@ BOOST_AUTO_TEST_CASE(CallsOnDisconnectedAtStompAuthenticationFailure,
   bool on_connected_called{false};
   bool on_disconnected_called{false};
 
-  network_monitor::StompClient<WebSocketClientMockForStomp> stomp_client{
+  StompClient<WebSocketClientMockForStomp> stomp_client{
       url, endpoint, port, io_context, tls_context};
 
   auto on_connected_callback = [&on_connected_called, &stomp_client](
@@ -128,7 +123,7 @@ BOOST_AUTO_TEST_CASE(CallsOnDisconnectedAtStompAuthenticationFailure,
 }
 
 BOOST_AUTO_TEST_CASE(CallsOnCloseWhenClosed, *timeout(1)) {
-  network_monitor::StompClient<WebSocketClientMockForStomp> stomp_client{
+  StompClient<WebSocketClientMockForStomp> stomp_client{
       url, endpoint, port, io_context, tls_context};
 
   bool closed{false};
@@ -154,7 +149,7 @@ BOOST_AUTO_TEST_CASE(DoesNotNeedOnCloseCallbackToCloseConnection,
 
 BOOST_AUTO_TEST_CASE(CallsOnCloseWithErrorWhenCloseInvokedWhenNotConnected,
                      *timeout(1)) {
-  network_monitor::StompClient<WebSocketClientMockForStomp> stomp_client{
+  StompClient<WebSocketClientMockForStomp> stomp_client{
       url, endpoint, port, io_context, tls_context};
 
   bool closed{false};
@@ -171,7 +166,7 @@ BOOST_AUTO_TEST_CASE(CallsOnCloseWithErrorWhenCloseInvokedWhenNotConnected,
 }
 
 BOOST_AUTO_TEST_CASE(ReturnsSubscriptionIdAtSuccess, *timeout(1)) {
-  network_monitor::StompClient<WebSocketClientMockForStomp> stomp_client{
+  StompClient<WebSocketClientMockForStomp> stomp_client{
       url, endpoint, port, io_context, tls_context};
 
   bool on_subscribe_called{false};
@@ -221,3 +216,7 @@ BOOST_AUTO_TEST_CASE(ReturnsSubscriptionIdAtSuccess, *timeout(1)) {
 BOOST_AUTO_TEST_SUITE_END();  // stomp_client
 
 BOOST_AUTO_TEST_SUITE_END();  // network_monitor
+
+}  // namespace
+
+}  // namespace network_monitor
