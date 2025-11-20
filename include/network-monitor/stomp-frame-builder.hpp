@@ -16,7 +16,7 @@ class StompFrameBuilder {
   std::string BuildString();
 
  private:
-  StompCommand command_;
+  StompCommand command_{StompCommand::Invalid};
   StompFrame::Headers headers_;
   std::string body_;
 };
