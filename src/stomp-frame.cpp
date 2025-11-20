@@ -286,7 +286,7 @@ auto ParseHeaders(std::string_view content,
 
     // Find the value. It's known '\n' is in a further part, so no frame end
     // concerns. Also the value will be no empty.
-    std::string_view value{
+    const std::string_view value{
         content.substr(next_colon_position + 1,
                        next_newline_position - next_colon_position - 1)};
 
@@ -380,7 +380,7 @@ StompFrame& StompFrame::operator=(StompFrame&& other) noexcept {
 
 StompError StompFrame::ParseFrame() {
   // Run pre-checks
-  std::string_view plain_content = plain_content_;
+  const std::string_view plain_content = plain_content_;
 
   if (plain_content.empty()) {
     return StompError::NoData;

@@ -841,17 +841,18 @@ BOOST_AUTO_TEST_SUITE_END();  // parse
 BOOST_AUTO_TEST_SUITE(constructors_and_operators)
 
 BOOST_AUTO_TEST_CASE(copy_constructor) {
-  ExpectedFrame expected_frame{.error_ = StompError::Ok,
-                               .command_ = StompCommand::Connect,
-                               .headers_ =
-                                   {
-                                       {StompHeader::AcceptVersion, "42"},
-                                       {StompHeader::Host, "host.com"},
-                                       {StompHeader::ContentLength, "10"},
-                                   },
-                               .body_ = "Frame body"};
+  const auto expected_frame =
+      ExpectedFrame{.error_ = StompError::Ok,
+                    .command_ = StompCommand::Connect,
+                    .headers_ =
+                        {
+                            {StompHeader::AcceptVersion, "42"},
+                            {StompHeader::Host, "host.com"},
+                            {StompHeader::ContentLength, "10"},
+                        },
+                    .body_ = "Frame body"};
 
-  StompFrame parsed_frame{
+  const auto parsed_frame = StompFrame{
       "CONNECT\n"
       "accept-version:42\n"
       "host:host.com\n"
@@ -869,22 +870,23 @@ BOOST_AUTO_TEST_CASE(copy_constructor) {
 }
 
 BOOST_AUTO_TEST_CASE(move_constructor) {
-  ExpectedFrame expected_frame{.error_ = StompError::Ok,
-                               .command_ = StompCommand::Connect,
-                               .headers_ =
-                                   {
-                                       {StompHeader::AcceptVersion, "42"},
-                                       {StompHeader::Host, "host.com"},
-                                       {StompHeader::ContentLength, "10"},
-                                   },
-                               .body_ = "Frame body"};
+  const auto expected_frame =
+      ExpectedFrame{.error_ = StompError::Ok,
+                    .command_ = StompCommand::Connect,
+                    .headers_ =
+                        {
+                            {StompHeader::AcceptVersion, "42"},
+                            {StompHeader::Host, "host.com"},
+                            {StompHeader::ContentLength, "10"},
+                        },
+                    .body_ = "Frame body"};
   // TODO: moved-from std::string_view body_ should be reset
   // ExpectedFrame expected_from_move_frame{.error_ = StompError::Ok,
   //                                        .command_ = StompCommand::Connect,
   //                                        .headers_ = {},
   //                                        .body_ = ""};
 
-  StompFrame parsed_frame{
+  const auto parsed_frame = StompFrame{
       "CONNECT\n"
       "accept-version:42\n"
       "host:host.com\n"
@@ -903,22 +905,23 @@ BOOST_AUTO_TEST_CASE(move_constructor) {
 }
 
 BOOST_AUTO_TEST_CASE(copy_assignment_operator) {
-  ExpectedFrame expected_frame{.error_ = StompError::Ok,
-                               .command_ = StompCommand::Connect,
-                               .headers_ =
-                                   {
-                                       {StompHeader::AcceptVersion, "42"},
-                                       {StompHeader::Host, "host.com"},
-                                       {StompHeader::ContentLength, "10"},
-                                   },
-                               .body_ = "Frame body"};
+  const auto expected_frame =
+      ExpectedFrame{.error_ = StompError::Ok,
+                    .command_ = StompCommand::Connect,
+                    .headers_ =
+                        {
+                            {StompHeader::AcceptVersion, "42"},
+                            {StompHeader::Host, "host.com"},
+                            {StompHeader::ContentLength, "10"},
+                        },
+                    .body_ = "Frame body"};
   // TODO: moved-from std::string_view body_ should be reset
   // ExpectedFrame expected_from_move_frame{.error_ = StompError::Ok,
   //                                        .command_ = StompCommand::Connect,
   //                                        .headers_ = {},
   //                                        .body_ = ""};
 
-  StompFrame parsed_frame{
+  const auto parsed_frame = StompFrame{
       "CONNECT\n"
       "accept-version:42\n"
       "host:host.com\n"
@@ -937,17 +940,18 @@ BOOST_AUTO_TEST_CASE(copy_assignment_operator) {
 }
 
 BOOST_AUTO_TEST_CASE(move_assignment_operator) {
-  ExpectedFrame expected_frame{.error_ = StompError::Ok,
-                               .command_ = StompCommand::Connect,
-                               .headers_ =
-                                   {
-                                       {StompHeader::AcceptVersion, "42"},
-                                       {StompHeader::Host, "host.com"},
-                                       {StompHeader::ContentLength, "10"},
-                                   },
-                               .body_ = "Frame body"};
+  const auto expected_frame =
+      ExpectedFrame{.error_ = StompError::Ok,
+                    .command_ = StompCommand::Connect,
+                    .headers_ =
+                        {
+                            {StompHeader::AcceptVersion, "42"},
+                            {StompHeader::Host, "host.com"},
+                            {StompHeader::ContentLength, "10"},
+                        },
+                    .body_ = "Frame body"};
 
-  StompFrame parsed_frame{
+  const auto parsed_frame = StompFrame{
       "CONNECT\n"
       "accept-version:42\n"
       "host:host.com\n"
@@ -974,7 +978,7 @@ BOOST_AUTO_TEST_CASE(to_string_method) {
       "hello queue a\0"s};
   const auto& plain_size{plain.size()};
 
-  StompFrame frame{std::move(plain)};
+  const auto frame = StompFrame{std::move(plain)};
 
   BOOST_REQUIRE(frame.GetStompError() == StompError::Ok);
 

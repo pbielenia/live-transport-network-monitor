@@ -260,10 +260,11 @@ BOOST_AUTO_TEST_CASE(two_messages, *timeout{1}) {
   const std::string expected_message_1{"The first test message"};
   const std::string expected_message_2{"The second test message"};
 
-  boost::asio::ssl::context tls_context{
-      boost::asio::ssl::context::tlsv12_client};
+  auto tls_context =
+      boost::asio::ssl::context{boost::asio::ssl::context::tlsv12_client};
+  auto io_context = boost::asio::io_context{};
+
   tls_context.load_verify_file(TESTS_CACERT_PEM);
-  boost::asio::io_context io_context{};
 
   TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
 
@@ -275,7 +276,7 @@ BOOST_AUTO_TEST_CASE(two_messages, *timeout{1}) {
                    &client](auto error_code, auto received_message) {
     called_on_message_count++;
     BOOST_CHECK(!error_code);
-    std::string expected_message{};
+
     if (called_on_message_count == 1) {
       BOOST_CHECK_EQUAL(expected_message_1, received_message);
       WebsocketSocketStream::read_buffer = expected_message_2;

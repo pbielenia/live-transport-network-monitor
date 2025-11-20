@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(DoesNotNeedOnConnectedCallbackToMakeConnection,
 
 BOOST_AUTO_TEST_CASE(CallsOnDisconnectedAtStompAuthenticationFailure,
                      *timeout(1)) {
-  std::string invalid_password = "invalid_password";
+  const auto invalid_password = std::string{"invalid_password"};
 
   bool on_connected_called{false};
   bool on_disconnected_called{false};

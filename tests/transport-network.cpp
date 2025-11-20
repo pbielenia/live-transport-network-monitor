@@ -19,7 +19,7 @@ BOOST_AUTO_TEST_SUITE(class_TransportNetwork);
 BOOST_AUTO_TEST_SUITE(AddStation);
 
 BOOST_AUTO_TEST_CASE(basic) {
-  TransportNetwork network{};
+  auto network = TransportNetwork{};
   BOOST_CHECK_EQUAL(network.AddStation({
                         .id = "station_000",
                         .name = "Station Name",
@@ -28,7 +28,7 @@ BOOST_AUTO_TEST_CASE(basic) {
 }
 
 BOOST_AUTO_TEST_CASE(duplicated_id) {
-  TransportNetwork network{};
+  auto network = TransportNetwork{};
 
   // Can't add the same station twice.
   const auto station = Station{
@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE(duplicated_id) {
 }
 
 BOOST_AUTO_TEST_CASE(duplicate_name) {
-  TransportNetwork network{};
+  auto network = TransportNetwork{};
 
   // It's ok to add a station with the same name, but different ID.
   BOOST_CHECK_EQUAL(network.AddStation(Station{
@@ -60,8 +60,7 @@ BOOST_AUTO_TEST_SUITE_END();  // AddStation
 BOOST_AUTO_TEST_SUITE(AddLine);
 
 BOOST_AUTO_TEST_CASE(basic) {
-  TransportNetwork network{};
-  bool ok{false};
+  auto network = TransportNetwork{};
 
   // Add a line with 1 route.
   // route_0: 0 ---> 1
@@ -100,7 +99,7 @@ BOOST_AUTO_TEST_CASE(basic) {
 }
 
 BOOST_AUTO_TEST_CASE(shared_stations) {
-  TransportNetwork network{};
+  auto network = TransportNetwork{};
 
   network.AddStation(Station{
       .id = "station_000",
@@ -159,7 +158,7 @@ BOOST_AUTO_TEST_CASE(shared_stations) {
 }
 
 BOOST_AUTO_TEST_CASE(duplicated) {
-  TransportNetwork network{};
+  auto network = TransportNetwork{};
 
   network.AddStation(Station{
       .id = "station_000",
@@ -200,7 +199,7 @@ BOOST_AUTO_TEST_SUITE_END();  // AddLine
 BOOST_AUTO_TEST_SUITE(PassengerEvents);
 
 BOOST_AUTO_TEST_CASE(basic) {
-  TransportNetwork network{};
+  auto network = TransportNetwork{};
 
   // Add a line with 1 route.
   // route_0: 0 ---> 1 ---> 2
@@ -274,13 +273,13 @@ BOOST_AUTO_TEST_CASE(basic) {
 }
 
 BOOST_AUTO_TEST_CASE(GetPassengerCountThrowsErrorOnNonExistingStation) {
-  TransportNetwork network{};
+  const auto network = TransportNetwork{};
   BOOST_CHECK_THROW(network.GetPassengerCount("non_existing"),
                     std::runtime_error);
 }
 
 BOOST_AUTO_TEST_CASE(GetPassengerCountStartWithZero) {
-  TransportNetwork network{};
+  auto network = TransportNetwork{};
   network.AddStation(Station{
       .id = "station_000",
       .name = "Station Name 0",
@@ -289,7 +288,7 @@ BOOST_AUTO_TEST_CASE(GetPassengerCountStartWithZero) {
 }
 
 BOOST_AUTO_TEST_CASE(GetPassengerCountCanGoNegativeNumbers) {
-  TransportNetwork network{};
+  auto network = TransportNetwork{};
   network.AddStation(Station{
       .id = "station_000",
       .name = "Station Name 0",
@@ -306,8 +305,7 @@ BOOST_AUTO_TEST_SUITE_END();  // PassengerEvents
 BOOST_AUTO_TEST_SUITE(GetRoutesServingStation);
 
 BOOST_AUTO_TEST_CASE(basic) {
-  TransportNetwork network{};
-  bool ok{false};
+  auto network = TransportNetwork{};
 
   // Add a line with 1 route.
   // route_0: 0 ---> 1 ---> 2
@@ -369,7 +367,7 @@ BOOST_AUTO_TEST_SUITE_END();  // GetRoutesServingStation
 BOOST_AUTO_TEST_SUITE(TravelTime);
 
 BOOST_AUTO_TEST_CASE(basic) {
-  TransportNetwork network{};
+  auto network = TransportNetwork{};
 
   // Add a line with 1 route.
   // route_0: 0 ---> 1 ---> 2
@@ -406,8 +404,6 @@ BOOST_AUTO_TEST_CASE(basic) {
           },
   });
 
-  unsigned int travel_time{0};
-
   // Get travel time before setting it.
   BOOST_CHECK_EQUAL(network.GetTravelTime("station_000", "station_001"), 0);
 
@@ -428,8 +424,7 @@ BOOST_AUTO_TEST_CASE(basic) {
 }
 
 BOOST_AUTO_TEST_CASE(over_route) {
-  TransportNetwork network{};
-  bool ok{false};
+  auto network = TransportNetwork{};
 
   // Add a line with 3 routes.
   // route_0: 0 ---> 1 ---> 2 ---> 3
@@ -568,7 +563,7 @@ BOOST_AUTO_TEST_CASE(from_json_1line_1route) {
                               "from_json_1line_1route.json";
   auto json_source = ParseJsonFile(test_file_path);
 
-  TransportNetwork network{};
+  auto network = TransportNetwork{};
   BOOST_REQUIRE_EQUAL(network.FromJson(json_source), true);
 
   auto routes{network.GetRoutesServingStation("station_0")};
@@ -581,7 +576,7 @@ BOOST_AUTO_TEST_CASE(from_json_1line_2routes) {
                       "from_json_1line_2routes.json"};
   auto json_source = ParseJsonFile(test_file_path);
 
-  TransportNetwork network{};
+  auto network = TransportNetwork{};
   BOOST_REQUIRE_EQUAL(network.FromJson(json_source), true);
 
   std::vector<Id> routes{};
@@ -598,7 +593,7 @@ BOOST_AUTO_TEST_CASE(from_json_2lines_2routes) {
                       "from_json_2lines_2routes.json"};
   auto json_source = ParseJsonFile(test_file_path);
 
-  TransportNetwork network{};
+  auto network = TransportNetwork{};
   BOOST_REQUIRE_EQUAL(network.FromJson(json_source), true);
 
   std::vector<Id> routes{};
@@ -616,7 +611,7 @@ BOOST_AUTO_TEST_CASE(from_json_travel_times) {
                       "from_json_travel_times.json"};
   auto json_source = ParseJsonFile(test_file_path);
 
-  TransportNetwork network{};
+  auto network = TransportNetwork{};
   BOOST_REQUIRE_EQUAL(network.FromJson(json_source), true);
 
   BOOST_CHECK_EQUAL(network.GetTravelTime("station_0", "station_1"), 1);
@@ -628,7 +623,7 @@ BOOST_AUTO_TEST_CASE(from_json_travel_times) {
 }
 
 BOOST_AUTO_TEST_CASE(fail_on_good_json_bad_times) {
-  nlohmann::json source{R"JSON(
+  const auto source = nlohmann::json{R"JSON(
 {
     "stations": [
         {
@@ -644,15 +639,16 @@ BOOST_AUTO_TEST_CASE(fail_on_good_json_bad_times) {
     "travel_times": []
 })JSON"_json};
 
-  TransportNetwork network{};
+  auto network = TransportNetwork{};
   BOOST_CHECK_THROW(network.FromJson(source), std::runtime_error);
 }
+
 BOOST_AUTO_TEST_CASE(fail_on_bad_travel_times) {
   const auto test_file_path = std::filesystem::path(TESTS_RESOURCES_DIR) /
                               "from_json_bad_travel_times.json";
   auto json_source = ParseJsonFile(test_file_path);
 
-  TransportNetwork network{};
+  auto network = TransportNetwork{};
   BOOST_REQUIRE_EQUAL(network.FromJson(json_source), false);
 }
 

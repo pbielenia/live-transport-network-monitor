@@ -16,8 +16,7 @@ BOOST_AUTO_TEST_CASE(file_downloader) {
                          "network-layout.json"};
 
   // Download the file.
-  bool downloaded{DownloadFile(file_url, destination, TESTS_CACERT_PEM)};
-  BOOST_CHECK(downloaded);
+  BOOST_CHECK(DownloadFile(file_url, destination, TESTS_CACERT_PEM));
   BOOST_CHECK(std::filesystem::exists(destination));
 
   // Check the content of the file.
