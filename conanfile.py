@@ -11,6 +11,7 @@ class ConanPackage(ConanFile):
         "libcurl/7.85.0",
         "nlohmann_json/3.11.2",
         "openssl/3.6.0",
+        "spdlog/1.16.0",
     )
     tool_requires = "cmake/4.1.2"
     default_options = {"boost/*:shared": False}

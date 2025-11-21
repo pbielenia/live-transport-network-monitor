@@ -12,12 +12,14 @@ find_package(Boost REQUIRED COMPONENTS system unit_test_framework)
 find_package(CURL REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(nlohmann_json 3.11.2 REQUIRED)
+find_package(spdlog 1.16.0 REQUIRED)
 
 enable_testing()
 
 # Library
 add_library(${NETWORK_MONITOR_LIBRARY_NAME} STATIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src/file-downloader.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/logger.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/stomp-client.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/stomp-frame.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/stomp-frame-builder.cpp"
@@ -27,6 +29,10 @@ target_compile_features(${NETWORK_MONITOR_LIBRARY_NAME}
     PRIVATE
         cxx_std_23
 )
+target_compile_definitions(${NETWORK_MONITOR_LIBRARY_NAME}
+    PRIVATE
+        SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG
+)
 target_link_libraries(${NETWORK_MONITOR_LIBRARY_NAME}
     PUBLIC
         boost::boost
@@ -34,6 +40,7 @@ target_link_libraries(${NETWORK_MONITOR_LIBRARY_NAME}
         nlohmann_json::nlohmann_json
     PRIVATE
         CURL::libcurl
+        spdlog::spdlog
 )
 target_include_directories(${NETWORK_MONITOR_LIBRARY_NAME}
     PUBLIC
