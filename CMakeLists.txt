@@ -30,7 +30,7 @@ target_compile_features(${NETWORK_MONITOR_LIBRARY_NAME}
         cxx_std_23
 )
 target_compile_definitions(${NETWORK_MONITOR_LIBRARY_NAME}
-    PRIVATE
+    PUBLIC
         SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG
 )
 target_link_libraries(${NETWORK_MONITOR_LIBRARY_NAME}
@@ -38,9 +38,9 @@ target_link_libraries(${NETWORK_MONITOR_LIBRARY_NAME}
         boost::boost
         openssl::openssl
         nlohmann_json::nlohmann_json
+        spdlog::spdlog
     PRIVATE
         CURL::libcurl
-        spdlog::spdlog
 )
 target_include_directories(${NETWORK_MONITOR_LIBRARY_NAME}
     PUBLIC
