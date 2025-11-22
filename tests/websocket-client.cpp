@@ -554,7 +554,7 @@ BOOST_AUTO_TEST_CASE(close_before_connect, *timeout{1}) {
   bool on_close_called{false};
 
   auto on_close{[&on_close_called](auto error_code) {
-    BOOST_CHECK_EQUAL(error_code, boost::asio::error::operation_aborted);
+    BOOST_CHECK_EQUAL(error_code, boost::asio::error::not_connected);
     on_close_called = true;
   }};
 

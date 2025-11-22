@@ -128,6 +128,7 @@ class WebSocketClient {
   void OnWebSocketHandshakeCompleted(boost::system::error_code error);
   void OnMessageReceived(boost::system::error_code error,
                          size_t received_bytes_count);
+  void OnConnectionClosed(boost::system::error_code error);
 
   const std::string server_url_;
   const std::string server_endpoint_;
@@ -142,6 +143,7 @@ class WebSocketClient {
   kOnConnectedCallback on_connected_callback_;
   kOnMessageReceivedCallback on_message_received_callback_;
   kOnDisconnectedCallback on_disconnected_callback_;
+  kOnConnectionClosedCallback on_connection_closed_callback_;
 };
 
 template <typename Resolver, typename WebSocketStream>
@@ -330,15 +332,26 @@ template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::Close(
     WebSocketClient::kOnConnectionClosedCallback
         on_connection_closed_callback) {
+  on_connection_closed_callback_ = std::move(on_connection_closed_callback);
+
+  if (!connection_is_open_) {
+    OnConnectionClosed(boost::asio::error::not_connected);
+    return;
+  }
+  connection_is_open_ = false;
+
   websocket_stream_.async_close(
       boost::beast::websocket::close_code::none,
-      [on_connection_closed_callback =
-           std::move(on_connection_closed_callback)](auto error_code) {
-        if (on_connection_closed_callback) {
-          on_connection_closed_callback(error_code);
-        }
-      });
-  connection_is_open_ = false;
+      [this](auto error) { OnConnectionClosed(error); });
+}
+
+template <typename Resolver, typename WebSocketStream>
+void WebSocketClient<Resolver, WebSocketStream>::OnConnectionClosed(
+    boost::system::error_code error) {
+  if (on_connection_closed_callback_) {
+    on_connection_closed_callback_(error);
+    on_connection_closed_callback_ = nullptr;
+  }
 }
 
 template <typename Resolver, typename WebSocketStream>
