@@ -58,14 +58,15 @@ BOOST_AUTO_TEST_CASE(fail_resolve, *timeout{1}) {
   const std::string endpoint{"/"};
   const std::string port{"443"};
 
-  boost::asio::ssl::context tls_context{
-      boost::asio::ssl::context::tlsv12_client};
+  auto tls_context =
+      boost::asio::ssl::context{boost::asio::ssl::context::tlsv12_client};
   tls_context.load_verify_file(TESTS_CACERT_PEM);
-  boost::asio::io_context io_context{};
+  auto io_context = boost::asio::io_context{};
 
   MockResolver::resolve_error_code = boost::asio::error::host_not_found;
 
-  TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+  auto client =
+      TestWebSocketClient{url, endpoint, port, io_context, tls_context};
 
   bool called_on_connect{false};
   auto on_connect{[&called_on_connect](auto error_code) {
@@ -84,14 +85,15 @@ BOOST_AUTO_TEST_CASE(fail_socket_connection, *timeout{1}) {
   const std::string endpoint{"/"};
   const std::string port{"443"};
 
-  boost::asio::ssl::context tls_context{
-      boost::asio::ssl::context::tlsv12_client};
+  auto tls_context =
+      boost::asio::ssl::context{boost::asio::ssl::context::tlsv12_client};
   tls_context.load_verify_file(TESTS_CACERT_PEM);
-  boost::asio::io_context io_context{};
+  auto io_context = boost::asio::io_context{};
 
   MockTcpStream::connect_error_code = boost::asio::error::connection_refused;
 
-  TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+  auto client =
+      TestWebSocketClient{url, endpoint, port, io_context, tls_context};
 
   bool called_on_connect{false};
   auto on_connect{[&called_on_connect](auto error_code) {
@@ -110,15 +112,16 @@ BOOST_AUTO_TEST_CASE(fail_socket_handshake, *timeout{1}) {
   const std::string endpoint{"/"};
   const std::string port{"443"};
 
-  boost::asio::ssl::context tls_context{
-      boost::asio::ssl::context::tlsv12_client};
+  auto tls_context =
+      boost::asio::ssl::context{boost::asio::ssl::context::tlsv12_client};
   tls_context.load_verify_file(TESTS_CACERT_PEM);
-  boost::asio::io_context io_context{};
+  auto io_context = boost::asio::io_context{};
 
   MockSslStream<MockTcpStream>::handshake_error_code =
       boost::asio::ssl::error::stream_truncated;
 
-  TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+  auto client =
+      TestWebSocketClient{url, endpoint, port, io_context, tls_context};
 
   bool called_on_connect{false};
   auto on_connect{[&called_on_connect](auto error_code) {
@@ -140,15 +143,16 @@ BOOST_AUTO_TEST_CASE(fail_websocket_handshake, *timeout{1}) {
   const std::string endpoint{"/"};
   const std::string port{"443"};
 
-  boost::asio::ssl::context tls_context{
-      boost::asio::ssl::context::tlsv12_client};
+  auto tls_context =
+      boost::asio::ssl::context{boost::asio::ssl::context::tlsv12_client};
   tls_context.load_verify_file(TESTS_CACERT_PEM);
-  boost::asio::io_context io_context{};
+  auto io_context = boost::asio::io_context{};
 
   MockWebSocketStream<MockTlsStream>::handshake_error_code =
       boost::beast::websocket::error::no_host;
 
-  TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+  auto client =
+      TestWebSocketClient{url, endpoint, port, io_context, tls_context};
 
   bool called_on_connect{false};
   auto on_connect{[&called_on_connect](auto error_code) {
@@ -168,12 +172,13 @@ BOOST_AUTO_TEST_CASE(successful_nothing_to_read, *timeout(1)) {
   const std::string endpoint{"/"};
   const std::string port{"443"};
 
-  boost::asio::ssl::context tls_context{
-      boost::asio::ssl::context::tlsv12_client};
+  auto tls_context =
+      boost::asio::ssl::context{boost::asio::ssl::context::tlsv12_client};
   tls_context.load_verify_file(TESTS_CACERT_PEM);
-  boost::asio::io_context io_context{};
+  auto io_context = boost::asio::io_context{};
 
-  TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+  auto client =
+      TestWebSocketClient{url, endpoint, port, io_context, tls_context};
 
   bool called_on_connect{false};
   auto on_connect{[&called_on_connect, &client](auto error_code) {
@@ -193,12 +198,13 @@ BOOST_AUTO_TEST_CASE(successful_no_connecthandler, *timeout{1}) {
   const std::string endpoint{"/"};
   const std::string port{"443"};
 
-  boost::asio::ssl::context tls_context{
-      boost::asio::ssl::context::tlsv12_client};
+  auto tls_context =
+      boost::asio::ssl::context{boost::asio::ssl::context::tlsv12_client};
   tls_context.load_verify_file(TESTS_CACERT_PEM);
-  boost::asio::io_context io_context{};
+  auto io_context = boost::asio::io_context{};
 
-  TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+  auto client =
+      TestWebSocketClient{url, endpoint, port, io_context, tls_context};
 
   bool timeout_occured{false};
 
@@ -228,12 +234,13 @@ BOOST_AUTO_TEST_CASE(one_message, *timeout{1}) {
   const std::string port{"443"};
   const std::string expected_message{"Test message"};
 
-  boost::asio::ssl::context tls_context{
-      boost::asio::ssl::context::tlsv12_client};
+  auto tls_context =
+      boost::asio::ssl::context{boost::asio::ssl::context::tlsv12_client};
   tls_context.load_verify_file(TESTS_CACERT_PEM);
-  boost::asio::io_context io_context{};
+  auto io_context = boost::asio::io_context{};
 
-  TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+  auto client =
+      TestWebSocketClient{url, endpoint, port, io_context, tls_context};
 
   WebsocketSocketStream::read_buffer = expected_message;
 
@@ -270,7 +277,8 @@ BOOST_AUTO_TEST_CASE(two_messages, *timeout{1}) {
 
   tls_context.load_verify_file(TESTS_CACERT_PEM);
 
-  TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+  auto client =
+      TestWebSocketClient{url, endpoint, port, io_context, tls_context};
 
   unsigned called_on_message_count{};
 
@@ -306,12 +314,13 @@ BOOST_AUTO_TEST_CASE(fail, *timeout{1}) {
   const std::string port{"443"};
   const std::string expected_message{"Test message"};
 
-  boost::asio::ssl::context tls_context{
-      boost::asio::ssl::context::tlsv12_client};
+  auto tls_context =
+      boost::asio::ssl::context{boost::asio::ssl::context::tlsv12_client};
   tls_context.load_verify_file(TESTS_CACERT_PEM);
-  boost::asio::io_context io_context{};
+  auto io_context = boost::asio::io_context{};
 
-  TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+  auto client =
+      TestWebSocketClient{url, endpoint, port, io_context, tls_context};
 
   WebsocketSocketStream::read_error_code =
       boost::beast::websocket::error::bad_data_frame;
@@ -354,12 +363,13 @@ BOOST_AUTO_TEST_CASE(no_handler, *timeout{1}) {
   const std::string endpoint{"/"};
   const std::string port{"443"};
 
-  boost::asio::ssl::context tls_context{
-      boost::asio::ssl::context::tlsv12_client};
+  auto tls_context =
+      boost::asio::ssl::context{boost::asio::ssl::context::tlsv12_client};
   tls_context.load_verify_file(TESTS_CACERT_PEM);
-  boost::asio::io_context io_context{};
+  auto io_context = boost::asio::io_context{};
 
-  TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+  auto client =
+      TestWebSocketClient{url, endpoint, port, io_context, tls_context};
 
   bool called_on_connect{false};
   bool timeout_occured{false};
@@ -393,12 +403,13 @@ BOOST_AUTO_TEST_CASE(one_message, *timeout{1}) {
   const std::string port{"443"};
   const std::string message_to_send{"Test message"};
 
-  boost::asio::ssl::context tls_context{
-      boost::asio::ssl::context::tlsv12_client};
+  auto tls_context =
+      boost::asio::ssl::context{boost::asio::ssl::context::tlsv12_client};
   tls_context.load_verify_file(TESTS_CACERT_PEM);
-  boost::asio::io_context io_context{};
+  auto io_context = boost::asio::io_context{};
 
-  TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+  auto client =
+      TestWebSocketClient{url, endpoint, port, io_context, tls_context};
 
   bool called_on_connect{false};
   bool called_on_send{false};
@@ -430,12 +441,13 @@ BOOST_AUTO_TEST_CASE(send_before_connect, *timeout{1}) {
   const std::string port{"443"};
   const std::string message_to_send{"Test message"};
 
-  boost::asio::ssl::context tls_context{
-      boost::asio::ssl::context::tlsv12_client};
+  auto tls_context =
+      boost::asio::ssl::context{boost::asio::ssl::context::tlsv12_client};
   tls_context.load_verify_file(TESTS_CACERT_PEM);
-  boost::asio::io_context io_context{};
+  auto io_context = boost::asio::io_context{};
 
-  TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+  auto client =
+      TestWebSocketClient{url, endpoint, port, io_context, tls_context};
 
   bool called_on_send{false};
 
@@ -459,12 +471,13 @@ BOOST_AUTO_TEST_CASE(fail, *timeout{1}) {
   const std::string port{"443"};
   const std::string message_to_send{"Test message"};
 
-  boost::asio::ssl::context tls_context{
-      boost::asio::ssl::context::tlsv12_client};
+  auto tls_context =
+      boost::asio::ssl::context{boost::asio::ssl::context::tlsv12_client};
   tls_context.load_verify_file(TESTS_CACERT_PEM);
-  boost::asio::io_context io_context{};
+  auto io_context = boost::asio::io_context{};
 
-  TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+  auto client =
+      TestWebSocketClient{url, endpoint, port, io_context, tls_context};
 
   WebsocketSocketStream::write_error_code =
       boost::beast::websocket::error::bad_data_frame;
@@ -501,12 +514,13 @@ BOOST_AUTO_TEST_CASE(close, *timeout{1}) {
   const std::string endpoint{"/"};
   const std::string port{"443"};
 
-  boost::asio::ssl::context tls_context{
-      boost::asio::ssl::context::tlsv12_client};
+  auto tls_context =
+      boost::asio::ssl::context{boost::asio::ssl::context::tlsv12_client};
   tls_context.load_verify_file(TESTS_CACERT_PEM);
-  boost::asio::io_context io_context{};
+  auto io_context = boost::asio::io_context{};
 
-  TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+  auto client =
+      TestWebSocketClient{url, endpoint, port, io_context, tls_context};
 
   bool on_close_called{false};
   auto on_close{[&on_close_called](auto error_code) {
@@ -529,12 +543,13 @@ BOOST_AUTO_TEST_CASE(close_before_connect, *timeout{1}) {
   const std::string endpoint{"/"};
   const std::string port{"443"};
 
-  boost::asio::ssl::context tls_context{
-      boost::asio::ssl::context::tlsv12_client};
+  auto tls_context =
+      boost::asio::ssl::context{boost::asio::ssl::context::tlsv12_client};
   tls_context.load_verify_file(TESTS_CACERT_PEM);
-  boost::asio::io_context io_context{};
+  auto io_context = boost::asio::io_context{};
 
-  TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+  auto client =
+      TestWebSocketClient{url, endpoint, port, io_context, tls_context};
 
   bool on_close_called{false};
 
@@ -554,12 +569,13 @@ BOOST_AUTO_TEST_CASE(close_no_disconnect, *timeout{1}) {
   const std::string endpoint{"/"};
   const std::string port{"443"};
 
-  boost::asio::ssl::context tls_context{
-      boost::asio::ssl::context::tlsv12_client};
+  auto tls_context =
+      boost::asio::ssl::context{boost::asio::ssl::context::tlsv12_client};
   tls_context.load_verify_file(TESTS_CACERT_PEM);
-  boost::asio::io_context io_context{};
+  auto io_context = boost::asio::io_context{};
 
-  TestWebSocketClient client{url, endpoint, port, io_context, tls_context};
+  auto client =
+      TestWebSocketClient{url, endpoint, port, io_context, tls_context};
 
   bool on_close_called{false};
   bool on_disconnect_called{false};
@@ -593,11 +609,11 @@ BOOST_AUTO_TEST_CASE(echo, *timeout{20}) {
   const std::string port{"443"};
   const std::string message{"Hello WebSocket"};
 
-  boost::asio::ssl::context tls_context{
-      boost::asio::ssl::context::tlsv12_client};
+  auto tls_context =
+      boost::asio::ssl::context{boost::asio::ssl::context::tlsv12_client};
   tls_context.load_verify_file(TESTS_CACERT_PEM);
 
-  boost::asio::io_context io_context{};
+  auto io_context = boost::asio::io_context{};
   BoostWebSocketClient client{url, endpoint, port, io_context, tls_context};
 
   bool connected{false};
@@ -655,11 +671,11 @@ BOOST_AUTO_TEST_CASE(send_stomp_frame) {
 
   const std::string message{stream.str()};
 
-  boost::asio::ssl::context tls_context{
-      boost::asio::ssl::context::tlsv12_client};
+  auto tls_context =
+      boost::asio::ssl::context{boost::asio::ssl::context::tlsv12_client};
   tls_context.load_verify_file(TESTS_CACERT_PEM);
 
-  boost::asio::io_context io_context{};
+  auto io_context = boost::asio::io_context{};
   BoostWebSocketClient client{url, endpoint, port, io_context, tls_context};
 
   bool connected{false};
