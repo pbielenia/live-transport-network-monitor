@@ -18,7 +18,7 @@ size_t WriteFunctionCallback(void* data,
 // Returns true if `source_size` (aka unsigned long) is not greater than
 // `std::streamsize` (aka long) maximum value, and so casting it will not result
 // in overflow.
-bool StreamSizeIsSafe(size_t source_size);
+bool StreamSizeIsSafe(size_t stream_size);
 
 }  // namespace details
 

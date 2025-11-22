@@ -13,10 +13,10 @@
 
 namespace network_monitor {
 
-bool details::StreamSizeIsSafe(size_t source_size) {
+bool details::StreamSizeIsSafe(size_t stream_size) {
   constexpr auto streamsize_max =
       static_cast<size_t>(std::numeric_limits<std::streamsize>::max());
-  return (source_size <= streamsize_max);
+  return (stream_size <= streamsize_max);
 }
 
 size_t details::WriteFunctionCallback(void* data,
