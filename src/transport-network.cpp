@@ -13,7 +13,7 @@
 
 #include "network-monitor/logger.hpp"
 
-using namespace network_monitor;
+namespace network_monitor {
 
 namespace {
 
@@ -468,3 +468,5 @@ TransportNetwork::RouteInternal::RouteInternal(
 TransportNetwork::LineInternal::LineInternal(Id id, std::string name)
     : id{std::move(id)},
       name{std::move(name)} {}
+
+}  // namespace network_monitor
