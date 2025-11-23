@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string_view>
@@ -65,6 +66,72 @@ bool Line::operator==(const Line& other) const {
   return id == other.id;
 }
 
+std::optional<TransportNetwork> TransportNetwork::FromJson(
+    const nlohmann::json& source) {
+  LOG_DEBUG("");
+
+  auto network = TransportNetwork();
+
+  try {
+    for (const auto& station : source.at("stations")) {
+      if (!network.AddStation(Station{
+              .id = station.at("station_id").get<Id>(),
+              .name = station.at("name").get<std::string>(),
+          })) {
+        LOG_ERROR("Could not add the station");
+        return std::nullopt;
+      }
+    }
+
+    for (const auto& line : source.at("lines")) {
+      auto new_line = Line{
+          .id = line.at("line_id").get<Id>(),
+          .name = line.at("name").get<std::string>(),
+      };
+
+      for (const auto& route : line.at("routes")) {
+        auto new_route = Route{
+            .id = route.at("route_id").get<Id>(),
+            .direction = route.at("direction").get<std::string>(),
+            .start_station_id = route.at("start_station_id").get<Id>(),
+            .end_station_id = route.at("end_station_id").get<Id>(),
+
+        };
+
+        for (const auto& stop : route.at("route_stops")) {
+          new_route.stops.push_back(stop.get<Id>());
+        }
+
+        new_line.routes.push_back(std::move(new_route));
+      }
+
+      if (!network.AddLine(new_line)) {
+        LOG_ERROR("Could not add the line");
+        return std::nullopt;
+      }
+    }
+
+    const auto& travel_times = source.at("travel_times");
+    if (!std::ranges::all_of(travel_times, [&network](const auto& travel_time) {
+          return network.SetTravelTime(
+              travel_time.at("start_station_id").template get<Id>(),
+              travel_time.at("end_station_id").template get<Id>(),
+              travel_time.at("travel_time").template get<unsigned>());
+        })) {
+      LOG_ERROR("Could not add the travel times");
+      return std::nullopt;
+    }
+
+    return network;
+
+  } catch (const nlohmann::json::exception& exception) {
+    LOG_ERROR("Could not parse the json file");
+    return std::nullopt;
+  } catch (const std::runtime_error& exception) {
+    return std::nullopt;
+  }
+}
+
 TransportNetwork::TransportNetwork() = default;
 
 TransportNetwork::~TransportNetwork() = default;
@@ -74,59 +141,6 @@ TransportNetwork::TransportNetwork(const TransportNetwork& copied) = default;
 TransportNetwork::TransportNetwork(TransportNetwork&& moved) noexcept
     : stations_{std::move(moved.stations_)},
       lines_{std::move(moved.lines_)} {}
-
-bool TransportNetwork::FromJson(const nlohmann::json& source) {
-  LOG_DEBUG("");
-
-  try {
-    for (const auto& station : source.at("stations")) {
-      if (!AddStation({
-              .id = station.at("station_id").get<Id>(),
-              .name = station.at("name").get<std::string>(),
-          })) {
-        LOG_ERROR("Could not add the station");
-        throw std::runtime_error("Adding station failed");
-      }
-    }
-
-    for (const auto& line : source.at("lines")) {
-      Line new_line{};
-      new_line.id = line.at("line_id").get<Id>();
-      new_line.name = line.at("name").get<std::string>();
-      for (const auto& route : line.at("routes")) {
-        Route new_route{};
-        new_route.id = route.at("route_id").get<Id>();
-        new_route.direction = route.at("direction").get<std::string>();
-        new_route.start_station_id = route.at("start_station_id").get<Id>();
-        new_route.end_station_id = route.at("end_station_id").get<Id>();
-        for (const auto& stop : route.at("route_stops")) {
-          new_route.stops.push_back(stop.get<Id>());
-        }
-        new_line.routes.push_back(std::move(new_route));
-      }
-      auto success = AddLine(new_line);
-      if (!success) {
-        LOG_ERROR("Could not add the line");
-        throw std::runtime_error("Adding line failed [id: " + new_line.id +
-                                 ", name: " + new_line.name + "]");
-      }
-    }
-
-    const auto& travel_times = source.at("travel_times");
-    return std::ranges::all_of(travel_times, [this](const auto& travel_time) {
-      return SetTravelTime(
-          travel_time.at("start_station_id").template get<Id>(),
-          travel_time.at("end_station_id").template get<Id>(),
-          travel_time.at("travel_time").template get<unsigned>());
-    });
-  } catch (const nlohmann::json::exception& exception) {
-    LOG_ERROR("Could not parse the json file");
-    throw std::runtime_error(std::string("json parse error: ") +
-                             exception.what());
-  } catch (const std::runtime_error& exception) {
-    throw exception;
-  }
-}
 
 bool TransportNetwork::AddStation(Station station) {
   LOG_DEBUG("name: '{}', id: '{}'", station.name, station.id);

@@ -563,11 +563,11 @@ BOOST_AUTO_TEST_CASE(from_json_1line_1route) {
                               "from_json_1line_1route.json";
   auto json_source = ParseJsonFile(test_file_path);
 
-  auto network = TransportNetwork{};
-  BOOST_REQUIRE_EQUAL(network.FromJson(json_source), true);
+  auto network = TransportNetwork::FromJson(json_source);
+  BOOST_REQUIRE(network.has_value());
 
-  auto routes{network.GetRoutesServingStation("station_0")};
-  BOOST_TEST(network.GetRoutesServingStation("station_0") ==
+  auto routes{network.value().GetRoutesServingStation("station_0")};
+  BOOST_TEST(network.value().GetRoutesServingStation("station_0") ==
              std::vector<Id>{"route_0"});
 }
 
@@ -576,14 +576,14 @@ BOOST_AUTO_TEST_CASE(from_json_1line_2routes) {
                       "from_json_1line_2routes.json"};
   auto json_source = ParseJsonFile(test_file_path);
 
-  auto network = TransportNetwork{};
-  BOOST_REQUIRE_EQUAL(network.FromJson(json_source), true);
+  auto network = TransportNetwork::FromJson(json_source);
+  BOOST_REQUIRE(network.has_value());
 
   std::vector<Id> routes{};
-  routes = network.GetRoutesServingStation("station_0");
+  routes = network.value().GetRoutesServingStation("station_0");
   BOOST_REQUIRE_EQUAL(routes.size(), 1);
   BOOST_CHECK_EQUAL(routes[0], "route_0");
-  routes = network.GetRoutesServingStation("station_1");
+  routes = network.value().GetRoutesServingStation("station_1");
   BOOST_REQUIRE_EQUAL(routes.size(), 2);
   BOOST_CHECK(SortIds(routes) == std::vector<Id>({"route_0", "route_1"}));
 }
@@ -593,15 +593,15 @@ BOOST_AUTO_TEST_CASE(from_json_2lines_2routes) {
                       "from_json_2lines_2routes.json"};
   auto json_source = ParseJsonFile(test_file_path);
 
-  auto network = TransportNetwork{};
-  BOOST_REQUIRE_EQUAL(network.FromJson(json_source), true);
+  auto network = TransportNetwork::FromJson(json_source);
+  BOOST_REQUIRE(network.has_value());
 
   std::vector<Id> routes{};
-  routes = network.GetRoutesServingStation("station_0");
+  routes = network.value().GetRoutesServingStation("station_0");
   BOOST_REQUIRE_EQUAL(routes.size(), 2);
   BOOST_CHECK_EQUAL(routes[0], "route_0");
   BOOST_CHECK_EQUAL(routes[1], "route_1");
-  routes = network.GetRoutesServingStation("station_1");
+  routes = network.value().GetRoutesServingStation("station_1");
   BOOST_REQUIRE_EQUAL(routes.size(), 2);
   BOOST_CHECK(SortIds(routes) == std::vector<Id>({"route_0", "route_1"}));
 }
@@ -611,19 +611,19 @@ BOOST_AUTO_TEST_CASE(from_json_travel_times) {
                       "from_json_travel_times.json"};
   auto json_source = ParseJsonFile(test_file_path);
 
-  auto network = TransportNetwork{};
-  BOOST_REQUIRE_EQUAL(network.FromJson(json_source), true);
+  auto network = TransportNetwork::FromJson(json_source);
+  BOOST_REQUIRE(network.has_value());
 
-  BOOST_CHECK_EQUAL(network.GetTravelTime("station_0", "station_1"), 1);
-  BOOST_CHECK_EQUAL(network.GetTravelTime("station_1", "station_0"), 1);
-  BOOST_CHECK_EQUAL(network.GetTravelTime("station_1", "station_2"), 2);
-  BOOST_CHECK_EQUAL(
-      network.GetTravelTime("line_0", "route_0", "station_0", "station_2"),
-      1 + 2);
+  BOOST_CHECK_EQUAL(network.value().GetTravelTime("station_0", "station_1"), 1);
+  BOOST_CHECK_EQUAL(network.value().GetTravelTime("station_1", "station_0"), 1);
+  BOOST_CHECK_EQUAL(network.value().GetTravelTime("station_1", "station_2"), 2);
+  BOOST_CHECK_EQUAL(network.value().GetTravelTime("line_0", "route_0",
+                                                  "station_0", "station_2"),
+                    1 + 2);
 }
 
 BOOST_AUTO_TEST_CASE(fail_on_good_json_bad_times) {
-  const auto source = nlohmann::json{R"JSON(
+  const auto json_source = nlohmann::json{R"JSON(
 {
     "stations": [
         {
@@ -639,8 +639,8 @@ BOOST_AUTO_TEST_CASE(fail_on_good_json_bad_times) {
     "travel_times": []
 })JSON"_json};
 
-  auto network = TransportNetwork{};
-  BOOST_CHECK_THROW(network.FromJson(source), std::runtime_error);
+  auto network = TransportNetwork::FromJson(json_source);
+  BOOST_REQUIRE(!network.has_value());
 }
 
 BOOST_AUTO_TEST_CASE(fail_on_bad_travel_times) {
@@ -648,8 +648,8 @@ BOOST_AUTO_TEST_CASE(fail_on_bad_travel_times) {
                               "from_json_bad_travel_times.json";
   auto json_source = ParseJsonFile(test_file_path);
 
-  auto network = TransportNetwork{};
-  BOOST_REQUIRE_EQUAL(network.FromJson(json_source), false);
+  auto network = TransportNetwork::FromJson(json_source);
+  BOOST_REQUIRE(!network.has_value());
 }
 
 BOOST_AUTO_TEST_SUITE_END();  // FromJson

@@ -2,6 +2,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -99,6 +100,14 @@ struct PassengerEvent {
  */
 class TransportNetwork {
  public:
+  /*! \brief Create a network populated from a JSON object.
+   *
+   *  \param source Source JSON object.
+   *
+   *  \returns std::nullopt if stations and lines were not parsed successfully
+   */
+  static std::optional<TransportNetwork> FromJson(const nlohmann::json& source);
+
   /*! \brief Default constructor
    */
   TransportNetwork();
@@ -122,21 +131,6 @@ class TransportNetwork {
   /*! \brief Move assignment operator
    */
   TransportNetwork& operator=(TransportNetwork&& moved) = default;
-
-  /*! \brief Populate the network from a JSON object.
-   *
-   *  \param source Source JSON object.
-   *
-   *  \returns false if stations and lines where parsed successfully, but not
-   *           the travel times.
-   *
-   *  \throws std::runtime_error This method throws if the JSON items were
-   *                             parsed correctly but there was an issue
-   *                             adding new stations or lines to the network.
-   *  \throws nlohmann::json::exception If there was a problem parsing the
-   *                                    JSON object.
-   */
-  bool FromJson(const nlohmann::json& source);
 
   /*! \brief Add a station to the network.
    *
