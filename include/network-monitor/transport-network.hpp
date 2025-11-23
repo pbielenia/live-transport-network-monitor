@@ -239,6 +239,9 @@ class TransportNetwork {
   struct RouteInternal;
   struct LineInternal;
 
+  static std::vector<std::string_view> GetStationIds(
+      std::vector<std::shared_ptr<GraphNode>> stations);
+
   struct GraphNode {
     GraphNode(Station station);
 
