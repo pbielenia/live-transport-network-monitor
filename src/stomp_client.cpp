@@ -6,29 +6,29 @@
 
 namespace network_monitor {
 
-constexpr auto kStompClientErrorStrings =
-    std::array<std::pair<StompClientError, std::string_view>, 9>{{
-        {StompClientError::Ok, "Ok"},
-        {StompClientError::CouldNotConnectToWebSocketServer,
+constexpr auto kStompClientResultStrings =
+    std::array<std::pair<StompClientResult, std::string_view>, 9>{{
+        {StompClientResult::Ok, "Ok"},
+        {StompClientResult::CouldNotConnectToWebSocketServer,
          "CouldNotConnectToWebSocketServer"},
-        {StompClientError::UnexpectedCouldNotCreateValidFrame,
+        {StompClientResult::UnexpectedCouldNotCreateValidFrame,
          "UnexpectedCouldNotCreateValidFrame"},
-        {StompClientError::CouldNotSendConnectFrame,
+        {StompClientResult::CouldNotSendConnectFrame,
          "CouldNotSendConnectFrame"},
-        {StompClientError::CouldNotParseMessageAsStompFrame,
+        {StompClientResult::CouldNotParseMessageAsStompFrame,
          "CouldNotParseMessageAsStompFrame"},
-        {StompClientError::CouldNotCloseWebSocketConnection,
+        {StompClientResult::CouldNotCloseWebSocketConnection,
          "CouldNotCloseWebSocketConnection"},
-        {StompClientError::WebSocketServerDisconnected,
+        {StompClientResult::WebSocketServerDisconnected,
          "WebSocketServerDisconnected"},
-        {StompClientError::CouldNotSendSubscribeFrame,
+        {StompClientResult::CouldNotSendSubscribeFrame,
          "CouldNotSendSubscribeFrame"},
-        {StompClientError::UndefinedError, "UndefinedError"},
+        {StompClientResult::UndefinedError, "UndefinedError"},
     }};
 
-std::string_view ToStringView(StompClientError command) {
-  for (auto [key, value] : kStompClientErrorStrings) {
-    if (key == command) {
+std::string_view ToStringView(StompClientResult result) {
+  for (auto [key, value] : kStompClientResultStrings) {
+    if (key == result) {
       return value;
     }
   }
@@ -36,8 +36,8 @@ std::string_view ToStringView(StompClientError command) {
   std::unreachable();
 }
 
-std::ostream& operator<<(std::ostream& os, StompClientError error) {
-  os << ToStringView(error);
+std::ostream& operator<<(std::ostream& os, StompClientResult result) {
+  os << ToStringView(result);
   return os;
 }
 

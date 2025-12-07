@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(CallsOnConnectOnSuccess, *timeout(1)) {
   auto on_connect_callback = [&on_connected_called,
                               &stomp_client](auto result) {
     on_connected_called = true;
-    BOOST_CHECK_EQUAL(result, StompClientError::Ok);
+    BOOST_CHECK_EQUAL(result, StompClientResult::Ok);
     stomp_client.Close();
   };
   stomp_client.Connect(stomp_username, stomp_password, on_connect_callback);
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(CallsOnConnectOnWebSocketConnectionFailure, *timeout(1)) {
                               &stomp_client](auto result) {
     on_connected_called = true;
     BOOST_CHECK_EQUAL(result,
-                      StompClientError::CouldNotConnectToWebSocketServer);
+                      StompClientResult::CouldNotConnectToWebSocketServer);
     stomp_client.Close();
   };
   stomp_client.Connect(stomp_username, stomp_password, on_connect_callback);
@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE(CallsOnDisconnectedAtStompAuthenticationFailure,
   auto on_disconnected_callback = [&on_disconnected_called,
                                    &stomp_client](auto result) {
     on_disconnected_called = true;
-    BOOST_CHECK_EQUAL(result, StompClientError::WebSocketServerDisconnected);
+    BOOST_CHECK_EQUAL(result, StompClientResult::WebSocketServerDisconnected);
   };
 
   stomp_client.Connect(stomp_username, invalid_password, on_connected_callback,
@@ -132,10 +132,10 @@ BOOST_AUTO_TEST_CASE(CallsOnCloseWhenClosed, *timeout(1)) {
 
   auto on_close_callback{[&closed](auto result) {
     closed = true;
-    BOOST_CHECK_EQUAL(result, StompClientError::Ok);
+    BOOST_CHECK_EQUAL(result, StompClientResult::Ok);
   }};
   auto on_connect_callback{[&stomp_client, &on_close_callback](auto result) {
-    BOOST_REQUIRE_EQUAL(result, StompClientError::Ok);
+    BOOST_REQUIRE_EQUAL(result, StompClientResult::Ok);
     stomp_client.Close(on_close_callback);
   }};
 
@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_CASE(CallsOnCloseWithErrorWhenCloseInvokedWhenNotConnected,
   auto on_close_callback{[&closed](auto result) {
     closed = true;
     BOOST_CHECK_EQUAL(result,
-                      StompClientError::CouldNotCloseWebSocketConnection);
+                      StompClientResult::CouldNotCloseWebSocketConnection);
   }};
 
   stomp_client.Close(on_close_callback);
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(ReturnsSubscriptionIdAtSuccess, *timeout(1)) {
   auto on_subscribe_callback{[&stomp_client, &on_subscribe_called](
                                  auto result, auto&& subscription_id) {
     on_subscribe_called = true;
-    BOOST_CHECK_EQUAL(result, StompClientError::Ok);
+    BOOST_CHECK_EQUAL(result, StompClientResult::Ok);
     BOOST_CHECK(!subscription_id.empty());
     stomp_client.Close();
   }};
@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE(ReturnsSubscriptionIdAtSuccess, *timeout(1)) {
   auto on_message_callback{[](auto, auto&&) {}};
   auto on_connect_callback{[this, &stomp_client, &on_subscribe_callback,
                             &on_message_callback](auto result) {
-    BOOST_CHECK_EQUAL(result, StompClientError::Ok);
+    BOOST_CHECK_EQUAL(result, StompClientResult::Ok);
     auto subscription_id{stomp_client.Subscribe(
         stomp_endpoint, on_subscribe_callback, on_message_callback)};
     BOOST_REQUIRE(!subscription_id.empty());

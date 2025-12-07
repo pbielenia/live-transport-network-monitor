@@ -18,9 +18,9 @@
 
 namespace network_monitor {
 
-/*! \brief Error codes for the STOMP client.
+/*! \brief Result codes for the STOMP client.
  */
-enum class StompClientError : std::uint8_t {
+enum class StompClientResult : std::uint8_t {
   Ok = 0,
   CouldNotConnectToWebSocketServer,
   UnexpectedCouldNotCreateValidFrame,
@@ -33,8 +33,8 @@ enum class StompClientError : std::uint8_t {
   // TODO
 };
 
-std::string_view ToStringView(StompClientError command);
-std::ostream& operator<<(std::ostream& os, StompClientError error);
+std::string_view ToStringView(StompClientResult result);
+std::ostream& operator<<(std::ostream& os, StompClientResult result);
 
 /*! \brief STOMP client implementing the subset of commands needed by the
  *         network-events service.
@@ -86,8 +86,9 @@ class StompClient {
   void Connect(
       const std::string& user_name,
       const std::string& user_password,
-      std::function<void(StompClientError)> on_connected_callback = nullptr,
-      std::function<void(StompClientError)> on_disconnected_callback = nullptr);
+      std::function<void(StompClientResult)> on_connected_callback = nullptr,
+      std::function<void(StompClientResult)> on_disconnected_callback =
+          nullptr);
 
   /*! \brief Close the STOMP and WebSocket connection.
    *
@@ -97,7 +98,7 @@ class StompClient {
    *  All handlers run in a separate I/O execution context from the WebSocket
    *  one.
    */
-  void Close(std::function<void(StompClientError)> on_close = nullptr);
+  void Close(std::function<void(StompClientResult)> on_close = nullptr);
 
   /*! \brief Subscribe to a STOMP endpoint.
    *
@@ -122,17 +123,17 @@ class StompClient {
    *  All handlers run in a separate I/O execution context from the WebSocket
    *  one.
    */
-  std::string Subscribe(
-      const std::string& destination,
-      std::function<void(StompClientError, std::string&&)>
-          on_subscribed_callback,
-      std::function<void(StompClientError, std::string&&)> on_message_callback);
+  std::string Subscribe(const std::string& destination,
+                        std::function<void(StompClientResult, std::string&&)>
+                            on_subscribed_callback,
+                        std::function<void(StompClientResult, std::string&&)>
+                            on_message_callback);
 
  private:
   using OnSubscribeCallback =
-      std::function<void(StompClientError, std::string&&)>;
+      std::function<void(StompClientResult, std::string&&)>;
   using OnMessageCallback =
-      std::function<void(StompClientError, std::string&&)>;
+      std::function<void(StompClientResult, std::string&&)>;
 
   struct Subscription {
     std::string destination;
@@ -148,7 +149,7 @@ class StompClient {
   void OnWebSocketDisconnected(boost::system::error_code result);
   void OnWebSocketClosed(
       boost::system::error_code result,
-      std::function<void(StompClientError)> on_close_callback = nullptr);
+      std::function<void(StompClientResult)> on_close_callback = nullptr);
   void OnWebSocketSentSubscribe(boost::system::error_code result,
                                 std::string& subscription_id,
                                 Subscription&& subscription);
@@ -157,14 +158,14 @@ class StompClient {
   void HandleStompReceipt(const StompFrame& frame);
   void HandleStompMessage(const StompFrame& frame);
 
-  void OnConnected(StompClientError error);
+  void OnConnected(StompClientResult result);
 
   static std::string GenerateSubscriptionId();
 
-  std::function<void(StompClientError)> on_connected_callback_;
-  std::function<void(StompClientError, StompFrame&&)> on_message_callback_;
-  std::function<void(StompClientError)> on_disconnected_callback_;
-  std::function<void(StompClientError)> on_closed_callback_;
+  std::function<void(StompClientResult)> on_connected_callback_;
+  std::function<void(StompClientResult, StompFrame&&)> on_message_callback_;
+  std::function<void(StompClientResult)> on_disconnected_callback_;
+  std::function<void(StompClientResult)> on_closed_callback_;
 
   std::string user_name_;
   std::string user_password_;
@@ -191,8 +192,8 @@ template <typename WebSocketClient>
 void StompClient<WebSocketClient>::Connect(
     const std::string& user_name,
     const std::string& user_password,
-    std::function<void(StompClientError)> on_connected_callback,
-    std::function<void(StompClientError)> on_disconnected_callback) {
+    std::function<void(StompClientResult)> on_connected_callback,
+    std::function<void(StompClientResult)> on_disconnected_callback) {
   LOG_INFO("Connecting to STOMP server");
 
   user_name_ = user_name;
@@ -210,7 +211,7 @@ void StompClient<WebSocketClient>::Connect(
 
 template <typename WebSocketClient>
 void StompClient<WebSocketClient>::Close(
-    std::function<void(StompClientError)> on_closed) {
+    std::function<void(StompClientResult)> on_closed) {
   LOG_INFO("Closing connection");
   // TODO: clear subscriptions
   websocket_client_.Close(
@@ -220,8 +221,9 @@ void StompClient<WebSocketClient>::Close(
 template <typename WebSocketClient>
 std::string StompClient<WebSocketClient>::Subscribe(
     const std::string& destination,
-    std::function<void(StompClientError, std::string&&)> on_subscribed_callback,
-    std::function<void(StompClientError, std::string&&)> on_message_callback) {
+    std::function<void(StompClientResult, std::string&&)>
+        on_subscribed_callback,
+    std::function<void(StompClientResult, std::string&&)> on_message_callback) {
   LOG_INFO("Starting subscription to '{}'", destination);
 
   auto subscription_id{GenerateSubscriptionId()};
@@ -257,7 +259,7 @@ void StompClient<WebSocketClient>::OnWebSocketConnected(
     boost::system::error_code result) {
   if (result.failed()) {
     LOG_ERROR("Could not connect to STOMP server: {}", result.message());
-    OnConnected(StompClientError::CouldNotConnectToWebSocketServer);
+    OnConnected(StompClientResult::CouldNotConnectToWebSocketServer);
     return;
   }
 
@@ -283,7 +285,7 @@ void StompClient<WebSocketClient>::OnWebSocketConnectMessageSent(
   if (result.failed()) {
     // add log StompClient: Could not send STOMP frame: {result.message()}
     LOG_ERROR("Could not send STOMP frame: {}", result.message());
-    OnConnected(StompClientError::CouldNotSendConnectFrame);
+    OnConnected(StompClientResult::CouldNotSendConnectFrame);
   }
 }
 
@@ -300,7 +302,7 @@ void StompClient<WebSocketClient>::OnWebSocketMessageReceived(
   if (frame.GetStompError() != StompError::Ok) {
     LOG_WARN("Could not parse the message to STOMP frame: {}",
              ToString(frame.GetStompError()));
-    OnConnected(StompClientError::CouldNotParseMessageAsStompFrame);
+    OnConnected(StompClientResult::CouldNotParseMessageAsStompFrame);
     return;
   }
 
@@ -336,8 +338,8 @@ void StompClient<WebSocketClient>::OnWebSocketDisconnected(
   websocket_connected_ = false;
 
   if (on_disconnected_callback_) {
-    auto error{result ? StompClientError::WebSocketServerDisconnected
-                      : StompClientError::Ok};
+    auto error{result ? StompClientResult::WebSocketServerDisconnected
+                      : StompClientResult::Ok};
     boost::asio::post(async_context_,
                       [this, error]() { on_disconnected_callback_(error); });
   }
@@ -346,13 +348,13 @@ void StompClient<WebSocketClient>::OnWebSocketDisconnected(
 template <typename WebSocketClient>
 void StompClient<WebSocketClient>::OnWebSocketClosed(
     boost::system::error_code result,
-    std::function<void(StompClientError)> on_close_callback) {
+    std::function<void(StompClientResult)> on_close_callback) {
   LOG_INFO("Connection closed");
 
   if (on_close_callback) {
     auto error{result.failed()
-                   ? StompClientError::CouldNotCloseWebSocketConnection
-                   : StompClientError::Ok};
+                   ? StompClientResult::CouldNotCloseWebSocketConnection
+                   : StompClientResult::Ok};
     boost::asio::post(async_context_, [callback = std::move(on_close_callback),
                                        error]() { callback(error); });
   }
@@ -367,11 +369,11 @@ void StompClient<WebSocketClient>::OnWebSocketSentSubscribe(
     LOG_WARN("Could not subscribe to '{}': ", subscription.destination,
              result.message());
     if (subscription.on_subscribe_callback) {
-      boost::asio::post(async_context_,
-                        [on_subscribe = subscription.on_subscribe_callback]() {
-                          on_subscribe(
-                              StompClientError::CouldNotSendSubscribeFrame, {});
-                        });
+      boost::asio::post(
+          async_context_,
+          [on_subscribe = subscription.on_subscribe_callback]() {
+            on_subscribe(StompClientResult::CouldNotSendSubscribeFrame, {});
+          });
     }
     return;
   }
@@ -383,7 +385,7 @@ template <typename WebSocketClient>
 void StompClient<WebSocketClient>::HandleStompConnected(
     const StompFrame& frame) {
   LOG_INFO("Connected to STOMP server");
-  OnConnected(StompClientError::Ok);
+  OnConnected(StompClientResult::Ok);
 }
 
 template <typename WebSocketClient>
@@ -403,7 +405,7 @@ void StompClient<WebSocketClient>::HandleStompReceipt(const StompFrame& frame) {
         async_context_,
         [on_subscribe = subscription.on_subscribe_callback,
          subscription_id = std::string(subscription_id)]() mutable {
-          on_subscribe(StompClientError::Ok, std::move(subscription_id));
+          on_subscribe(StompClientResult::Ok, std::move(subscription_id));
         });
   }
 }
@@ -439,16 +441,16 @@ void StompClient<WebSocketClient>::HandleStompMessage(const StompFrame& frame) {
     boost::asio::post(
         async_context_, [on_message = subscription.on_message_callback,
                          message_body = std::string(frame.GetBody())]() {
-          on_message(StompClientError::Ok, std::string(message_body));
+          on_message(StompClientResult::Ok, std::string(message_body));
         });
   }
 }
 
 template <typename WebSocketClient>
-void StompClient<WebSocketClient>::OnConnected(StompClientError error) {
+void StompClient<WebSocketClient>::OnConnected(StompClientResult result) {
   if (on_connected_callback_) {
     boost::asio::post(async_context_, [callback = on_connected_callback_,
-                                       error]() { callback(error); });
+                                       result]() { callback(result); });
   }
 }
 
