@@ -23,8 +23,9 @@ constexpr char kNullCharacter{'\0'};
 template <typename Enum, size_t N>
 class EnumBimap {
  public:
-  constexpr EnumBimap(std::array<std::pair<Enum, std::string_view>, N> entries)
-      : entries_{std::move(entries)} {}
+  using EntriesType = std::array<std::pair<Enum, std::string_view>, N>;
+
+  constexpr EnumBimap(EntriesType entries) : entries_{std::move(entries)} {}
 
   constexpr std::optional<std::string_view> ToStringView(
       Enum entry) const noexcept {
