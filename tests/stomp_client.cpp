@@ -13,6 +13,8 @@ namespace {
 
 using timeout = boost::unit_test::timeout;
 
+constexpr unsigned kDefaultTestTimeoutInSeconds = 1;
+
 struct StompClientTestFixture {
   StompClientTestFixture();
 
@@ -51,7 +53,8 @@ BOOST_AUTO_TEST_SUITE(network_monitor);
 
 BOOST_FIXTURE_TEST_SUITE(stomp_client, StompClientTestFixture);
 
-BOOST_AUTO_TEST_CASE(CallsOnConnectOnSuccess, *timeout(1)) {
+BOOST_AUTO_TEST_CASE(CallsOnConnectOnSuccess,
+                     *timeout(kDefaultTestTimeoutInSeconds)) {
   bool on_connected_called{false};
 
   StompClient<WebSocketClientMockForStomp> stomp_client{
@@ -69,7 +72,8 @@ BOOST_AUTO_TEST_CASE(CallsOnConnectOnSuccess, *timeout(1)) {
   BOOST_CHECK(on_connected_called);
 }
 
-BOOST_AUTO_TEST_CASE(CallsOnConnectOnWebSocketConnectionFailure, *timeout(1)) {
+BOOST_AUTO_TEST_CASE(CallsOnConnectOnWebSocketConnectionFailure,
+                     *timeout(kDefaultTestTimeoutInSeconds)) {
   WebSocketClientMock::Config::connect_error_code_ =
       boost::asio::ssl::error::stream_truncated;
 
@@ -97,7 +101,7 @@ BOOST_AUTO_TEST_CASE(DoesNotNeedOnConnectedCallbackToMakeConnection,
 }
 
 BOOST_AUTO_TEST_CASE(CallsOnDisconnectedAtStompAuthenticationFailure,
-                     *timeout(1)) {
+                     *timeout(kDefaultTestTimeoutInSeconds)) {
   const auto invalid_password = std::string{"invalid_password"};
 
   bool on_connected_called{false};
@@ -124,7 +128,8 @@ BOOST_AUTO_TEST_CASE(CallsOnDisconnectedAtStompAuthenticationFailure,
   BOOST_CHECK(on_disconnected_called);
 }
 
-BOOST_AUTO_TEST_CASE(CallsOnCloseWhenClosed, *timeout(1)) {
+BOOST_AUTO_TEST_CASE(CallsOnCloseWhenClosed,
+                     *timeout(kDefaultTestTimeoutInSeconds)) {
   StompClient<WebSocketClientMockForStomp> stomp_client{
       url, endpoint, port, io_context, tls_context};
 
@@ -150,7 +155,7 @@ BOOST_AUTO_TEST_CASE(DoesNotNeedOnCloseCallbackToCloseConnection,
 }
 
 BOOST_AUTO_TEST_CASE(CallsOnCloseWithErrorWhenCloseInvokedWhenNotConnected,
-                     *timeout(1)) {
+                     *timeout(kDefaultTestTimeoutInSeconds)) {
   StompClient<WebSocketClientMockForStomp> stomp_client{
       url, endpoint, port, io_context, tls_context};
 
@@ -167,7 +172,8 @@ BOOST_AUTO_TEST_CASE(CallsOnCloseWithErrorWhenCloseInvokedWhenNotConnected,
   BOOST_CHECK(closed);
 }
 
-BOOST_AUTO_TEST_CASE(ReturnsSubscriptionIdAtSuccess, *timeout(1)) {
+BOOST_AUTO_TEST_CASE(ReturnsSubscriptionIdAtSuccess,
+                     *timeout(kDefaultTestTimeoutInSeconds)) {
   StompClient<WebSocketClientMockForStomp> stomp_client{
       url, endpoint, port, io_context, tls_context};
 
