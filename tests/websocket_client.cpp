@@ -49,11 +49,9 @@ using timeout = boost::unit_test::timeout;
 
 constexpr auto kExpectedTimeout = std::chrono::milliseconds(250);
 
-bool CheckResponse(const std::string& response) {
-  bool ok = true;
-  ok &= response.find("ERROR") != std::string::npos;
-  ok &= response.find("ValidationInvalidAuth") != std::string::npos;
-  return ok;
+void VerifyResponseHasNoError(const std::string& response) {
+  BOOST_CHECK(response.find("ERROR") != std::string::npos);
+  BOOST_CHECK(response.find("ValidationInvalidAuth") != std::string::npos);
 }
 
 BOOST_AUTO_TEST_SUITE(network_monitor);
@@ -594,7 +592,7 @@ BOOST_AUTO_TEST_CASE(send_stomp_frame) {
   BOOST_CHECK(message_sent);
   BOOST_CHECK(message_received);
   BOOST_CHECK(disconnected);
-  BOOST_CHECK(CheckResponse(response));
+  VerifyResponseHasNoError(response);
 }
 
 BOOST_AUTO_TEST_SUITE_END();  // live
