@@ -96,25 +96,25 @@ constexpr auto kStompHeaders = EnumBimap<StompHeader, 20>{{{
     // clang-format on
 }}};
 
-constexpr auto kStompErrors = EnumBimap<StompError, 17>{{{
+constexpr auto kParseResultCodes = EnumBimap<ParseResultCode, 17>{{{
     // clang-format off
-    {StompError::Ok,                            "Ok"                            },
-    {StompError::UndefinedError,                "UndefinedError"                },
-    {StompError::InvalidCommand,                "InvalidCommand"                },
-    {StompError::InvalidHeader,                 "InvalidHeader"                 },
-    {StompError::InvalidHeaderValue,            "InvalidHeaderValue"            },
-    {StompError::NoHeaderValue,                 "NoHeaderValue"                 },
-    {StompError::EmptyHeaderValue,              "EmptyHeaderValue"              },
-    {StompError::NoNewlineCharacters,           "NoNewlineCharacters"           },
-    {StompError::MissingLastHeaderNewline,      "MissingLastHeaderNewline"      },
-    {StompError::MissingBodyNewline,            "MissingBodyNewline"            },
-    {StompError::MissingClosingNullCharacter,   "MissingClosingNullCharacter"   },
-    {StompError::JunkAfterBody,                 "JunkAfterBody"                 },
-    {StompError::ContentLengthsDontMatch,       "ContentLengthsDontMatch"       },
-    {StompError::MissingRequiredHeader,         "MissingRequiredHeader"         },
-    {StompError::NoData,                        "NoData"                        },
-    {StompError::MissingCommand,                "MissingCommand"                },
-    {StompError::NoHeaderName,                  "NoHeaderName"                  },
+    {ParseResultCode::Ok,                            "Ok"                            },
+    {ParseResultCode::UndefinedError,                "UndefinedError"                },
+    {ParseResultCode::InvalidCommand,                "InvalidCommand"                },
+    {ParseResultCode::InvalidHeader,                 "InvalidHeader"                 },
+    {ParseResultCode::InvalidHeaderValue,            "InvalidHeaderValue"            },
+    {ParseResultCode::NoHeaderValue,                 "NoHeaderValue"                 },
+    {ParseResultCode::EmptyHeaderValue,              "EmptyHeaderValue"              },
+    {ParseResultCode::NoNewlineCharacters,           "NoNewlineCharacters"           },
+    {ParseResultCode::MissingLastHeaderNewline,      "MissingLastHeaderNewline"      },
+    {ParseResultCode::MissingBodyNewline,            "MissingBodyNewline"            },
+    {ParseResultCode::MissingClosingNullCharacter,   "MissingClosingNullCharacter"   },
+    {ParseResultCode::JunkAfterBody,                 "JunkAfterBody"                 },
+    {ParseResultCode::ContentLengthsDontMatch,       "ContentLengthsDontMatch"       },
+    {ParseResultCode::MissingRequiredHeader,         "MissingRequiredHeader"         },
+    {ParseResultCode::NoData,                        "NoData"                        },
+    {ParseResultCode::MissingCommand,                "MissingCommand"                },
+    {ParseResultCode::NoHeaderName,                  "NoHeaderName"                  },
     // clang-format on
 }}};
 
@@ -209,8 +209,8 @@ std::string_view ToStringView(const StompHeader& header) {
   std::unreachable();
 }
 
-std::string_view ToStringView(const StompError& error) {
-  const auto result = kStompErrors.ToStringView(error);
+std::string_view ToStringView(const ParseResultCode& result_code) {
+  const auto result = kParseResultCodes.ToStringView(result_code);
   if (result.has_value()) {
     return result.value();
   }
@@ -226,14 +226,14 @@ auto ParseHeaders(std::string_view content,
                   std::string_view::size_type current_line)
     -> std::expected<
         std::pair<StompFrame::Headers, std::string_view::size_type>,
-        StompError> {
+        ParseResultCode> {
   // Headers are optional.
   StompFrame::Headers headers;
 
   while (true) {
     // Check if there's something more in the frame.
     if (current_line >= content.size()) {
-      return std::unexpected(StompError::MissingBodyNewline);
+      return std::unexpected(ParseResultCode::MissingBodyNewline);
     }
 
     if (content.at(current_line) == kNewlineCharacter) {
@@ -246,12 +246,12 @@ auto ParseHeaders(std::string_view content,
     if (content.at(current_line) == kColonCharacter) {
       // CONNECT\n
       // :
-      return std::unexpected(StompError::NoHeaderName);
+      return std::unexpected(ParseResultCode::NoHeaderName);
     }
     if (content.at(current_line) == kNullCharacter) {
       // CONNECT\n
       // \0
-      return std::unexpected(StompError::MissingBodyNewline);
+      return std::unexpected(ParseResultCode::MissingBodyNewline);
     }
 
     const auto next_colon_position{content.find(kColonCharacter, current_line)};
@@ -263,14 +263,14 @@ auto ParseHeaders(std::string_view content,
       // header-1:value\n
       // header-2\n
       //       ^ no header value
-      return std::unexpected(StompError::NoHeaderValue);
+      return std::unexpected(ParseResultCode::NoHeaderValue);
     }
     if (next_newline_position == std::string::npos) {
       // CONNECT\n
       // header:value
       //     <-- missing newline
       // \0
-      return std::unexpected(StompError::MissingLastHeaderNewline);
+      return std::unexpected(ParseResultCode::MissingLastHeaderNewline);
     }
     if (next_newline_position < next_colon_position) {
       // CONNECT\n
@@ -278,14 +278,14 @@ auto ParseHeaders(std::string_view content,
       //         ^ missing colon
       // header-2:value\n
       // \0
-      return std::unexpected(StompError::NoHeaderValue);
+      return std::unexpected(ParseResultCode::NoHeaderValue);
     }
     if (content.at(next_colon_position + 1) ==
         content.at(next_newline_position)) {
       // CONNECT\n
       // header:\n
       //       ^ ^ missing header value
-      return std::unexpected(StompError::EmptyHeaderValue);
+      return std::unexpected(ParseResultCode::EmptyHeaderValue);
     }
 
     // CONNECT\n
@@ -296,7 +296,7 @@ auto ParseHeaders(std::string_view content,
         content.substr(current_line, next_colon_position - current_line)};
     const auto header{kStompHeaders.ToEnum(header_text)};
     if (!header.has_value()) {
-      return std::unexpected(StompError::InvalidHeader);
+      return std::unexpected(ParseResultCode::InvalidHeader);
     }
 
     // Find the value. It's known '\n' is in a further part, so no frame end
@@ -327,8 +327,8 @@ std::ostream& network_monitor::operator<<(std::ostream& os,
 }
 
 std::ostream& network_monitor::operator<<(std::ostream& os,
-                                          const StompError& error) {
-  os << ToStringView(error);
+                                          const ParseResultCode& result_code) {
+  os << ToStringView(result_code);
   return os;
 }
 
@@ -340,34 +340,34 @@ std::string network_monitor::ToString(const StompHeader& header) {
   return std::string(ToStringView(header));
 }
 
-std::string network_monitor::ToString(const StompError& error) {
-  return std::string(ToStringView(error));
+std::string network_monitor::ToString(const ParseResultCode& result_code) {
+  return std::string(ToStringView(result_code));
 }
 
-StompFrame::StompFrame() : stomp_error_{StompError::Ok} {}
+StompFrame::StompFrame() : parse_result_code_{ParseResultCode::Ok} {}
 
 StompFrame::StompFrame(const std::string& content)
     : plain_content_{content},
-      stomp_error_{ParseFrame()} {
-  if (stomp_error_ != StompError::Ok) {
+      parse_result_code_{ParseFrame()} {
+  if (parse_result_code_ != ParseResultCode::Ok) {
     return;
   }
-  stomp_error_ = ValidateFrame();
+  parse_result_code_ = ValidateFrame();
 }
 
 StompFrame::StompFrame(std::string&& content)
     : plain_content_{std::move(content)},
-      stomp_error_{ParseFrame()} {
-  if (stomp_error_ != StompError::Ok) {
+      parse_result_code_{ParseFrame()} {
+  if (parse_result_code_ != ParseResultCode::Ok) {
     return;
   }
-  stomp_error_ = ValidateFrame();
+  parse_result_code_ = ValidateFrame();
 }
 
 StompFrame::StompFrame(const StompFrame& other) = default;
 
 StompFrame::StompFrame(StompFrame&& other) noexcept
-    : stomp_error_{other.stomp_error_},
+    : parse_result_code_{other.parse_result_code_},
       plain_content_{std::move(other.plain_content_)},
       command_{other.command_},
       headers_{std::move(other.headers_)},
@@ -393,25 +393,25 @@ StompFrame& StompFrame::operator=(StompFrame&& other) noexcept {
   return *this;
 }
 
-StompError StompFrame::ParseFrame() {
+ParseResultCode StompFrame::ParseFrame() {
   // Run pre-checks
   const std::string_view plain_content = plain_content_;
 
   if (plain_content.empty()) {
-    return StompError::NoData;
+    return ParseResultCode::NoData;
   }
 
   if (plain_content.at(0) == kNewlineCharacter) {
-    return StompError::MissingCommand;
+    return ParseResultCode::MissingCommand;
   }
 
   if (plain_content.back() != kNullCharacter) {
-    return StompError::MissingClosingNullCharacter;
+    return ParseResultCode::MissingClosingNullCharacter;
   }
 
   const auto command_end{plain_content.find(kNewlineCharacter)};
   if (command_end == std::string::npos) {
-    return StompError::NoNewlineCharacters;
+    return ParseResultCode::NoNewlineCharacters;
   }
 
   // If no "\n\n" pattern, then the body's newline is missing.
@@ -420,14 +420,14 @@ StompError StompFrame::ParseFrame() {
         return lhs == rhs && lhs == '\n';
       });
   if (double_newline_pointer == plain_content.end()) {
-    return StompError::MissingBodyNewline;
+    return ParseResultCode::MissingBodyNewline;
   }
 
   // Parse command
   auto command_text{plain_content.substr(0, command_end)};
   auto command{kStompCommands.ToEnum(command_text)};
   if (!command.has_value()) {
-    return StompError::InvalidCommand;
+    return ParseResultCode::InvalidCommand;
   }
   command_ = command.value();
 
@@ -445,7 +445,7 @@ StompError StompFrame::ParseFrame() {
   // header-1:value\n
   // \n <-- check if the newline is present (empty line before the body)
   if (plain_content.at(current_line_position) != kNewlineCharacter) {
-    return StompError::MissingBodyNewline;
+    return ParseResultCode::MissingBodyNewline;
   }
   current_line_position++;
 
@@ -453,7 +453,7 @@ StompError StompFrame::ParseFrame() {
     // CONNECT\n
     // \n
     //     <-- missing null
-    return StompError::MissingClosingNullCharacter;
+    return ParseResultCode::MissingClosingNullCharacter;
   }
   const auto null_position{plain_content.find(kNullCharacter)};
   if (null_position == std::string::npos) {
@@ -461,7 +461,7 @@ StompError StompFrame::ParseFrame() {
     // \n
     // Frame body
     //            ^ missing null
-    return StompError::MissingClosingNullCharacter;
+    return ParseResultCode::MissingClosingNullCharacter;
   }
 
   if (HasHeader(StompHeader::ContentLength)) {
@@ -475,16 +475,16 @@ StompError StompFrame::ParseFrame() {
       // \n
       // Frame body\0junk
       //             ^ unexpected characters
-      return StompError::JunkAfterBody;
+      return ParseResultCode::JunkAfterBody;
     }
     body_ = plain_content.substr(current_line_position,
                                  null_position - current_line_position);
   }
 
-  return StompError::Ok;
+  return ParseResultCode::Ok;
 }
 
-StompError StompFrame::ValidateFrame() {
+ParseResultCode StompFrame::ValidateFrame() {
   // Check if content-length match body_'s length.
   if (HasHeader(StompHeader::ContentLength)) {
     int expected_content_length{};
@@ -492,10 +492,10 @@ StompError StompFrame::ValidateFrame() {
       expected_content_length =
           std::stoi(GetHeaderValue(StompHeader::ContentLength).data());
     } catch (const std::exception& exception) {
-      return StompError::InvalidHeaderValue;
+      return ParseResultCode::InvalidHeaderValue;
     }
     if (expected_content_length != body_.length()) {
-      return StompError::ContentLengthsDontMatch;
+      return ParseResultCode::ContentLengthsDontMatch;
     }
   }
 
@@ -503,15 +503,15 @@ StompError StompFrame::ValidateFrame() {
   const auto& required_headers = GetHeadersRequiresByCommand(command_);
   for (const auto required_header : required_headers) {
     if (!HasHeader(required_header)) {
-      return StompError::MissingRequiredHeader;
+      return ParseResultCode::MissingRequiredHeader;
     }
   }
 
-  return StompError::Ok;
+  return ParseResultCode::Ok;
 }
 
-StompError StompFrame::GetStompError() const {
-  return stomp_error_;
+ParseResultCode StompFrame::GetParseResultCode() const {
+  return parse_result_code_;
 }
 
 StompCommand StompFrame::GetCommand() const {

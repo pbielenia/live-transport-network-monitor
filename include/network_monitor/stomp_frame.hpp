@@ -69,9 +69,9 @@ std::ostream& operator<<(std::ostream& os, const StompHeader& header);
  */
 std::string ToString(const StompHeader& header);
 
-/*! \brief Error codes for the STOMP protocol
+/*! \brief Result codes for parsing STOMP frame
  */
-enum class StompError : std::uint8_t {
+enum class ParseResultCode : std::uint8_t {
   Ok = 0,
   UndefinedError,
   InvalidCommand,
@@ -91,13 +91,13 @@ enum class StompError : std::uint8_t {
   NoHeaderName
 };
 
-/*! \brief Print operator for the `StompError` class.
+/*! \brief Print operator for the `ParseResultCode` class.
  */
-std::ostream& operator<<(std::ostream& os, const StompError& error);
+std::ostream& operator<<(std::ostream& os, const ParseResultCode& result_code);
 
-/*! \brief Convert `StompError` to string.
+/*! \brief Convert `ParseResultCode` to string.
  */
-std::string ToString(const StompError& error);
+std::string ToString(const ParseResultCode& result_code);
 
 /* \brief STOMP frame representation, supporting STOMP v1.2.
  */
@@ -112,7 +112,7 @@ class StompFrame {
   /*! \brief Construct the STOMP frame from a string. The string is copied.
    *
    *  The result of the operation is stored internally and can be read using
-   *  `GetStompError()` method.
+   *  `GetParseResultCode()` method.
    */
   StompFrame(const std::string& content);
 
@@ -145,10 +145,10 @@ class StompFrame {
 
   /*! \brief Returns result of the parsing.
    *
-   *  If any error code other than `StompError:Ok` is set, none of the frame
-   * lookup methods should be used as they may store invalid values.
+   *  If any result code other than `ParseResultCode:Ok` is set, none of the
+   *  frame lookup methods should be used as they may store invalid values.
    */
-  StompError GetStompError() const;
+  ParseResultCode GetParseResultCode() const;
 
   /*! \brief Get the STOMP command.
    */
@@ -177,14 +177,14 @@ class StompFrame {
   std::string ToString() const;
 
  private:
-  StompError ParseFrame();
-  StompError ValidateFrame();
+  ParseResultCode ParseFrame();
+  ParseResultCode ValidateFrame();
 
   std::string plain_content_;
   StompCommand command_{StompCommand::Invalid};
   Headers headers_;
   std::string_view body_;
-  StompError stomp_error_;
+  ParseResultCode parse_result_code_;
 };
 
 }  // namespace network_monitor

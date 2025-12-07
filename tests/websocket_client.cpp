@@ -46,7 +46,7 @@ struct WebSocketClientTestFixture {
 // Used to set a timeout on tests that may hang or suffer from a slow
 // connection.
 using timeout = boost::unit_test::timeout;
-constexpr unsigned kDefaultTestTimeoutInSeconds = 1;
+constexpr auto kDefaultTestTimeoutInSeconds = 1;
 
 void VerifyResponseHasNoError(const std::string& response) {
   BOOST_CHECK(response.find("ERROR") != std::string::npos);

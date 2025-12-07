@@ -313,9 +313,9 @@ void StompClient<WebSocketClient>::OnWebSocketMessageReceived(
   }
 
   const auto frame = StompFrame(std::move(message));
-  if (frame.GetStompError() != StompError::Ok) {
+  if (frame.GetParseResultCode() != ParseResultCode::Ok) {
     LOG_WARN("Could not parse the message to STOMP frame: {}",
-             ToString(frame.GetStompError()));
+             ToString(frame.GetParseResultCode()));
     // TODO: remove, OnConnectingDone is not appriopriate here
     OnConnectingDone(StompClientResult::CouldNotParseMessageAsStompFrame);
     return;
