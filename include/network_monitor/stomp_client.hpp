@@ -37,16 +37,16 @@ std::string_view ToStringView(StompClientError command);
 std::ostream& operator<<(std::ostream& os, StompClientError error);
 
 /*! \brief STOMP client implementing the subset of commands needed by the
- * network-events service.
+ *         network-events service.
  *
  *  \param WebSocketClient      WebSocket client class. This type must have the
- * same interface of WebSocketClient.
+ *                              same interface of WebSocketClient.
  */
 template <typename WebSocketClient>
 class StompClient {
  public:
   /*! \brief Construct a STOMP client connecting to a remote URL/port through a
-   * secure WebSocket connection.
+   *         secure WebSocket connection.
    *
    *  \note This constructor does not initiate a connection.
    *
@@ -67,19 +67,21 @@ class StompClient {
   /*! \brief Connect to the STOMP server.
    *
    *  This method first connects to the WebSocket server, then tries to
-   * establish a STOMP connection with the user credentials.
+   *  establish a STOMP connection with the user credentials.
    *
    *  \param user_name        User name.
    *  \param user_password    User password.
    *  \param on_connect       This handler is called when the STOMP connection
-   * is setup correctly. It will also be called with an error if there is any
-   * failure before a successful connection. \param on_disconnect    This
-   * handler is called when the STOMP or the WebSocket connection is suddenly
-   * closed. In the STOMP protocol, this may happen also in response to bad
-   * inputs (authentication, subscription).
+   *                          is setup correctly. It will also be called with an
+   *                          error if there is any failure before a successful
+   *                          connection.
+   *  \param on_disconnect    This handler is called when the STOMP or the
+   *                          WebSocket connection is suddenly closed. In the
+   *                          STOMP protocol, this may happen also in response
+   *                          to bad inputs (authentication, subscription).
    *
    *  All handlers run in a separate I/O execution context from the WebSocket
-   * one.
+   *  one.
    */
   void Connect(
       const std::string& user_name,
@@ -90,30 +92,35 @@ class StompClient {
   /*! \brief Close the STOMP and WebSocket connection.
    *
    *  \param on_close  Called when the connection has been closed, successfully
-   * or not.
+   *                   or not.
    *
    *  All handlers run in a separate I/O execution context from the WebSocket
-   * one.
+   *  one.
    */
   void Close(std::function<void(StompClientError)> on_close = nullptr);
 
   /*! \brief Subscribe to a STOMP endpoint.
    *
    *  \returns The subscripton ID, if the subscription process was started
-   * successfully; otherwise, an empty string.
+   *           successfully; otherwise, an empty string.
    *
    *  \param destination              The subscription topic.
    *  \param on_subscribed_callback   Called when the subscription is setup
-   * correctly. The handler receives an error code and the subscription ID.
-   * Note: On failure, this callback is only called if the failure happened at
-   * the WebSocket level, not at the STOMP level. This is due to the fact that
-   * the STOMP server automatically closes the WebSocket connection on a STOMP
-   * protocol failure. \param on_message_callback      Called on every new
-   * message from the subscription destination. It is assumed that the message
-   * is received with application/json content type.
+   *                                  correctly. The handler receives an error
+   *                                  code and the subscription ID. Note: On
+   *                                  failure, this callback is only called if
+   *                                  the failure happened at the WebSocket
+   *                                  level, not at the STOMP level. This is due
+   *                                  to the fact that the STOMP server
+   *                                  automatically closes the WebSocket
+   *                                  connection on a STOMP protocol failure.
+   * \param on_message_callback       Called on every new
+   *                                  message from the subscription destination.
+   *                                  It is assumed that the message is received
+   *                                  with application/json content type.
    *
    *  All handlers run in a separate I/O execution context from the WebSocket
-   * one.
+   *  one.
    */
   std::string Subscribe(
       const std::string& destination,
