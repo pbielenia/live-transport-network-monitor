@@ -46,10 +46,10 @@ class EnumBimap {
   }
 
  private:
-  std::array<std::pair<Enum, std::string_view>, N> entries_;
+  EntriesType entries_;
 };
 
-constexpr EnumBimap<StompCommand, 16> kStompCommands = {{{
+constexpr auto kStompCommands = EnumBimap<StompCommand, 16>{{{
     // clang-format off
     {StompCommand::Abort,           "ABORT"             },
     {StompCommand::Ack,             "ACK"               },
@@ -70,7 +70,7 @@ constexpr EnumBimap<StompCommand, 16> kStompCommands = {{{
     // clang-format on
 }}};
 
-constexpr EnumBimap<StompHeader, 20> kStompHeaders{{{
+constexpr auto kStompHeaders = EnumBimap<StompHeader, 20>{{{
     // clang-format off
     {StompHeader::AcceptVersion,    "accept-version"    },
     {StompHeader::Ack,              "ack"               },
@@ -95,7 +95,7 @@ constexpr EnumBimap<StompHeader, 20> kStompHeaders{{{
     // clang-format on
 }}};
 
-constexpr EnumBimap<StompError, 17> kStompErrors{{{
+constexpr auto kStompErrors = EnumBimap<StompError, 17>{{{
     // clang-format off
     {StompError::Ok,                            "Ok"                            },
     {StompError::UndefinedError,                "UndefinedError"                },
@@ -118,21 +118,36 @@ constexpr EnumBimap<StompError, 17> kStompErrors{{{
 }}};
 
 namespace required_headers {
-constexpr std::array<StompHeader, 2> kForConnect = {StompHeader::AcceptVersion,
-                                                    StompHeader::Host};
-constexpr std::array<StompHeader, 1> kForConnected = {StompHeader::Version};
-constexpr std::array<StompHeader, 1> kForSend = {StompHeader::Destination};
-constexpr std::array<StompHeader, 2> kForSubscribe = {StompHeader::Destination,
-                                                      StompHeader::Id};
-constexpr std::array<StompHeader, 3> kForMessage = {StompHeader::Destination,
-                                                    StompHeader::MessageId,
-                                                    StompHeader::Subscription};
-constexpr std::array<StompHeader, 1> kForReceipt = {StompHeader::ReceiptId};
+constexpr auto kForConnect = std::array<StompHeader, 2>{
+    StompHeader::AcceptVersion,
+    StompHeader::Host,
+};
+constexpr auto kForConnected = std::array<StompHeader, 1>{
+    StompHeader::Version,
+};
+constexpr auto kForSend = std::array<StompHeader, 1>{
+    StompHeader::Destination,
+};
+constexpr auto kForSubscribe = std::array<StompHeader, 2>{
+    StompHeader::Destination,
+    StompHeader::Id,
+};
+constexpr auto kForMessage = std::array<StompHeader, 3>{
+    StompHeader::Destination,
+    StompHeader::MessageId,
+    StompHeader::Subscription,
+};
+constexpr auto kForReceipt = std::array<StompHeader, 1>{
+    StompHeader::ReceiptId,
+};
 
-constexpr std::array<StompHeader, 1> kOnlyId = {StompHeader::Id};
-constexpr std::array<StompHeader, 1> kOnlyTransaction = {
-    StompHeader::Transaction};
-constexpr std::array<StompHeader, 0> kNone = {};
+constexpr auto kOnlyId = std::array<StompHeader, 1>{
+    StompHeader::Id,
+};
+constexpr auto kOnlyTransaction = std::array<StompHeader, 1>{
+    StompHeader::Transaction,
+};
+constexpr auto kNone = std::array<StompHeader, 0>{};
 }  // namespace required_headers
 
 constexpr std::span<const StompHeader> GetHeadersRequiresByCommand(

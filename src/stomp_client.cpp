@@ -6,8 +6,8 @@
 
 namespace network_monitor {
 
-constexpr std::array<std::pair<StompClientError, std::string_view>, 9>
-    kStompClientErrorStrings{{
+constexpr auto kStompClientErrorStrings =
+    std::array<std::pair<StompClientError, std::string_view>, 9>{{
         {StompClientError::Ok, "Ok"},
         {StompClientError::CouldNotConnectToWebSocketServer,
          "CouldNotConnectToWebSocketServer"},
