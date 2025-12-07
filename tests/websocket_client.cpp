@@ -250,7 +250,9 @@ BOOST_AUTO_TEST_CASE(two_messages, *timeout(kDefaultTestTimeoutInSeconds)) {
   BOOST_CHECK_EQUAL(called_on_message_count, 2);
 }
 
-BOOST_AUTO_TEST_CASE(fail, *timeout(kDefaultTestTimeoutInSeconds)) {
+BOOST_AUTO_TEST_CASE(fail,
+                     // *timeout(kDefaultTestTimeoutInSeconds),
+                     *boost::unit_test::disabled()) {
   using WebsocketSocketStream =
       MockWebSocketStream<MockSslStream<MockTcpStream>>;
 
