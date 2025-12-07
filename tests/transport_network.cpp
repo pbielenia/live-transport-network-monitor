@@ -1,4 +1,4 @@
-#include "network-monitor/transport-network.hpp"
+#include "network_monitor/transport_network.hpp"
 
 #include <algorithm>
 #include <filesystem>
@@ -8,7 +8,7 @@
 #include <boost/test/unit_test.hpp>
 #include <nlohmann/json.hpp>
 
-#include "network-monitor/file-downloader.hpp"
+#include "network_monitor/file_downloader.hpp"
 
 namespace network_monitor {
 

@@ -1,4 +1,4 @@
-#include "network-monitor/websocket-client.hpp"
+#include "network_monitor/websocket_client.hpp"
 
 #include <chrono>
 #include <filesystem>
@@ -9,7 +9,7 @@
 #include <boost/beast.hpp>
 #include <boost/test/unit_test.hpp>
 
-#include "boost-mock.hpp"
+#include "boost_mock.hpp"
 
 namespace network_monitor {
 

@@ -2,7 +2,7 @@
 
 #include <ostream>
 
-#include "network-monitor/stomp-frame.hpp"
+#include "network_monitor/stomp_frame.hpp"
 
 namespace network_monitor {
 

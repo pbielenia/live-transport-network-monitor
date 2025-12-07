@@ -1,4 +1,4 @@
-#include "network-monitor/stomp-client.hpp"
+#include "network_monitor/stomp_client.hpp"
 
 #include <array>
 #include <ostream>

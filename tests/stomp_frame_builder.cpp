@@ -1,4 +1,4 @@
-#include "network-monitor/stomp-frame-builder.hpp"
+#include "network_monitor/stomp_frame_builder.hpp"
 
 #include <iomanip>
 #include <vector>
@@ -7,7 +7,7 @@
 #include <boost/test/tools/old/interface.hpp>
 #include <boost/test/unit_test.hpp>
 
-#include "network-monitor/stomp-frame.hpp"
+#include "network_monitor/stomp_frame.hpp"
 #include "utils/formatters.hpp"
 
 using namespace network_monitor;

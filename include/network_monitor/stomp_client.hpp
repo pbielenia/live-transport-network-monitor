@@ -12,9 +12,9 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
-#include "network-monitor/logger.hpp"
-#include "network-monitor/stomp-frame-builder.hpp"
-#include "network-monitor/stomp-frame.hpp"
+#include "network_monitor/logger.hpp"
+#include "network_monitor/stomp_frame.hpp"
+#include "network_monitor/stomp_frame_builder.hpp"
 
 namespace network_monitor {
 

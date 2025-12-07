@@ -1,4 +1,4 @@
-#include "network-monitor/transport-network.hpp"
+#include "network_monitor/transport_network.hpp"
 
 #include <algorithm>
 #include <iterator>
@@ -12,7 +12,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "network-monitor/logger.hpp"
+#include "network_monitor/logger.hpp"
 
 namespace network_monitor {
 

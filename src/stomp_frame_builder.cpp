@@ -1,9 +1,9 @@
-#include "network-monitor/stomp-frame-builder.hpp"
+#include "network_monitor/stomp_frame_builder.hpp"
 
 #include <string>
 #include <utility>
 
-#include "network-monitor/stomp-frame.hpp"
+#include "network_monitor/stomp_frame.hpp"
 
 namespace network_monitor {
 namespace {

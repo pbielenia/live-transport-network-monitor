@@ -18,12 +18,12 @@ enable_testing()
 
 # Library
 add_library(${NETWORK_MONITOR_LIBRARY_NAME} STATIC
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/file-downloader.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/file_downloader.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/logger.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/stomp-client.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/stomp-frame.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/stomp-frame-builder.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/transport-network.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/stomp_client.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/stomp_frame.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/stomp_frame_builder.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/transport_network.cpp"
 )
 target_compile_features(${NETWORK_MONITOR_LIBRARY_NAME}
     PRIVATE
@@ -49,14 +49,14 @@ target_include_directories(${NETWORK_MONITOR_LIBRARY_NAME}
 
 # Tests
 add_executable(${NETWORK_MONITOR_TESTS_EXE_NAME}
-    "${CMAKE_CURRENT_SOURCE_DIR}/tests/file-downloader.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/file_downloader.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/main.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/tests/stomp-client.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/tests/stomp-frame.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/tests/stomp-frame-builder.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/tests/transport-network.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/tests/websocket-client.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/tests/websocket-client-mock.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/stomp_client.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/stomp_frame.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/stomp_frame_builder.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/transport_network.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/websocket_client.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tests/websocket_client_mock.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/utils/formatters.cpp"
 )
 target_compile_features(${NETWORK_MONITOR_TESTS_EXE_NAME}
@@ -66,7 +66,7 @@ target_compile_features(${NETWORK_MONITOR_TESTS_EXE_NAME}
 target_compile_definitions(${NETWORK_MONITOR_TESTS_EXE_NAME}
     PRIVATE
         TESTS_CACERT_PEM="${CMAKE_CURRENT_SOURCE_DIR}/tests/cacert.pem"
-        TESTS_NETWORK_LAYOUT_JSON="${CMAKE_CURRENT_SOURCE_DIR}/tests/network-layout.json"
+        TESTS_NETWORK_LAYOUT_JSON="${CMAKE_CURRENT_SOURCE_DIR}/tests/network_layout.json"
         TESTS_RESOURCES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/resources"
 )
 target_link_libraries(${NETWORK_MONITOR_TESTS_EXE_NAME}

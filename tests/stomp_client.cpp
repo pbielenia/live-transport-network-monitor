@@ -1,11 +1,11 @@
-#include "network-monitor/stomp-client.hpp"
+#include "network_monitor/stomp_client.hpp"
 
 #include <string>
 
 #include <boost/asio.hpp>
 #include <boost/test/unit_test.hpp>
 
-#include "websocket-client-mock.hpp"
+#include "websocket_client_mock.hpp"
 
 namespace network_monitor {
 

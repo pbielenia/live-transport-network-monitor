@@ -1,4 +1,4 @@
-#include "network-monitor/stomp-frame.hpp"
+#include "network_monitor/stomp_frame.hpp"
 
 #include <optional>
 #include <ostream>

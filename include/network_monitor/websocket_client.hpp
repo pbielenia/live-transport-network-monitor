@@ -8,7 +8,7 @@
 #include <boost/beast.hpp>
 #include <boost/beast/ssl.hpp>
 
-#include "network-monitor/logger.hpp"
+#include "network_monitor/logger.hpp"
 
 namespace network_monitor {
 
