@@ -46,6 +46,7 @@ struct WebSocketClientTestFixture {
 // Used to set a timeout on tests that may hang or suffer from a slow
 // connection.
 using timeout = boost::unit_test::timeout;
+constexpr unsigned kDefaultTestTimeoutInSeconds = 1;
 
 void VerifyResponseHasNoError(const std::string& response) {
   BOOST_CHECK(response.find("ERROR") != std::string::npos);
@@ -62,7 +63,7 @@ BOOST_AUTO_TEST_CASE(cacert_pem) {
 
 BOOST_FIXTURE_TEST_SUITE(Connect, WebSocketClientTestFixture);
 
-BOOST_AUTO_TEST_CASE(fail_resolve, *timeout{1}) {
+BOOST_AUTO_TEST_CASE(fail_resolve, *timeout(kDefaultTestTimeoutInSeconds)) {
   MockResolver::resolve_error_code = boost::asio::error::host_not_found;
 
   auto client =
@@ -80,7 +81,8 @@ BOOST_AUTO_TEST_CASE(fail_resolve, *timeout{1}) {
   BOOST_CHECK(called_on_connect);
 }
 
-BOOST_AUTO_TEST_CASE(fail_socket_connection, *timeout{1}) {
+BOOST_AUTO_TEST_CASE(fail_socket_connection,
+                     *timeout(kDefaultTestTimeoutInSeconds)) {
   MockTcpStream::connect_error_code = boost::asio::error::connection_refused;
 
   auto client =
@@ -98,7 +100,8 @@ BOOST_AUTO_TEST_CASE(fail_socket_connection, *timeout{1}) {
   BOOST_CHECK(called_on_connect);
 }
 
-BOOST_AUTO_TEST_CASE(fail_socket_handshake, *timeout{1}) {
+BOOST_AUTO_TEST_CASE(fail_socket_handshake,
+                     *timeout(kDefaultTestTimeoutInSeconds)) {
   MockSslStream<MockTcpStream>::handshake_error_code =
       boost::asio::ssl::error::stream_truncated;
 
@@ -118,7 +121,8 @@ BOOST_AUTO_TEST_CASE(fail_socket_handshake, *timeout{1}) {
   BOOST_CHECK(called_on_connect);
 }
 
-BOOST_AUTO_TEST_CASE(fail_websocket_handshake, *timeout{1}) {
+BOOST_AUTO_TEST_CASE(fail_websocket_handshake,
+                     *timeout(kDefaultTestTimeoutInSeconds)) {
   using MockTlsStream = MockSslStream<MockTcpStream>;
 
   MockWebSocketStream<MockTlsStream>::handshake_error_code =
@@ -157,7 +161,8 @@ BOOST_AUTO_TEST_CASE(successful_nothing_to_read, *timeout(1)) {
   BOOST_CHECK(called_on_connect);
 }
 
-BOOST_AUTO_TEST_CASE(successful_no_connecthandler, *timeout{1}) {
+BOOST_AUTO_TEST_CASE(successful_no_connecthandler,
+                     *timeout(kDefaultTestTimeoutInSeconds)) {
   constexpr auto kCallCloseDelay = std::chrono::milliseconds(250);
 
   bool timeout_occured = false;
@@ -182,7 +187,7 @@ BOOST_AUTO_TEST_SUITE_END();  // Connect
 
 BOOST_FIXTURE_TEST_SUITE(onMessage, WebSocketClientTestFixture);
 
-BOOST_AUTO_TEST_CASE(one_message, *timeout{1}) {
+BOOST_AUTO_TEST_CASE(one_message, *timeout(kDefaultTestTimeoutInSeconds)) {
   using WebsocketSocketStream =
       MockWebSocketStream<MockSslStream<MockTcpStream>>;
 
@@ -210,7 +215,7 @@ BOOST_AUTO_TEST_CASE(one_message, *timeout{1}) {
   BOOST_CHECK(called_on_message);
 }
 
-BOOST_AUTO_TEST_CASE(two_messages, *timeout{1}) {
+BOOST_AUTO_TEST_CASE(two_messages, *timeout(kDefaultTestTimeoutInSeconds)) {
   using WebsocketSocketStream =
       MockWebSocketStream<MockSslStream<MockTcpStream>>;
 
@@ -245,7 +250,7 @@ BOOST_AUTO_TEST_CASE(two_messages, *timeout{1}) {
   BOOST_CHECK_EQUAL(called_on_message_count, 2);
 }
 
-BOOST_AUTO_TEST_CASE(fail, *timeout{1}) {
+BOOST_AUTO_TEST_CASE(fail, *timeout(kDefaultTestTimeoutInSeconds)) {
   using WebsocketSocketStream =
       MockWebSocketStream<MockSslStream<MockTcpStream>>;
 
@@ -289,7 +294,7 @@ BOOST_AUTO_TEST_CASE(fail, *timeout{1}) {
   BOOST_CHECK(timeout_occured);
 }
 
-BOOST_AUTO_TEST_CASE(no_handler, *timeout{1}) {
+BOOST_AUTO_TEST_CASE(no_handler, *timeout(kDefaultTestTimeoutInSeconds)) {
   using WebsocketSocketStream =
       MockWebSocketStream<MockSslStream<MockTcpStream>>;
   constexpr auto kCallCloseDelay = std::chrono::milliseconds(250);
@@ -323,7 +328,7 @@ BOOST_AUTO_TEST_SUITE_END();  // onMessage
 
 BOOST_FIXTURE_TEST_SUITE(Send, WebSocketClientTestFixture);
 
-BOOST_AUTO_TEST_CASE(one_message, *timeout{1}) {
+BOOST_AUTO_TEST_CASE(one_message, *timeout(kDefaultTestTimeoutInSeconds)) {
   const std::string message_to_send = "Test message";
 
   auto client =
@@ -353,7 +358,8 @@ BOOST_AUTO_TEST_CASE(one_message, *timeout{1}) {
   BOOST_CHECK(called_on_send);
 }
 
-BOOST_AUTO_TEST_CASE(send_before_connect, *timeout{1}) {
+BOOST_AUTO_TEST_CASE(send_before_connect,
+                     *timeout(kDefaultTestTimeoutInSeconds)) {
   const std::string message_to_send = "Test message";
 
   auto client =
@@ -372,7 +378,7 @@ BOOST_AUTO_TEST_CASE(send_before_connect, *timeout{1}) {
   BOOST_CHECK(called_on_send);
 }
 
-BOOST_AUTO_TEST_CASE(fail, *timeout{1}) {
+BOOST_AUTO_TEST_CASE(fail, *timeout(kDefaultTestTimeoutInSeconds)) {
   using WebsocketSocketStream =
       MockWebSocketStream<MockSslStream<MockTcpStream>>;
 
@@ -411,7 +417,7 @@ BOOST_AUTO_TEST_SUITE_END();  // Send
 
 BOOST_FIXTURE_TEST_SUITE(Close, WebSocketClientTestFixture);
 
-BOOST_AUTO_TEST_CASE(close, *timeout{1}) {
+BOOST_AUTO_TEST_CASE(close, *timeout(kDefaultTestTimeoutInSeconds)) {
   auto client =
       TestWebSocketClient(url_, endpoint_, port_, io_context_, tls_context_);
 
@@ -431,7 +437,8 @@ BOOST_AUTO_TEST_CASE(close, *timeout{1}) {
   BOOST_CHECK(on_close_called);
 }
 
-BOOST_AUTO_TEST_CASE(close_before_connect, *timeout{1}) {
+BOOST_AUTO_TEST_CASE(close_before_connect,
+                     *timeout(kDefaultTestTimeoutInSeconds)) {
   auto client =
       TestWebSocketClient(url_, endpoint_, port_, io_context_, tls_context_);
 
@@ -448,7 +455,8 @@ BOOST_AUTO_TEST_CASE(close_before_connect, *timeout{1}) {
   BOOST_CHECK(on_close_called);
 }
 
-BOOST_AUTO_TEST_CASE(close_no_disconnect, *timeout{1}) {
+BOOST_AUTO_TEST_CASE(close_no_disconnect,
+                     *timeout(kDefaultTestTimeoutInSeconds)) {
   auto client =
       TestWebSocketClient(url_, endpoint_, port_, io_context_, tls_context_);
 
