@@ -47,8 +47,6 @@ struct WebSocketClientTestFixture {
 // connection.
 using timeout = boost::unit_test::timeout;
 
-constexpr auto kExpectedTimeout = std::chrono::milliseconds(250);
-
 void VerifyResponseHasNoError(const std::string& response) {
   BOOST_CHECK(response.find("ERROR") != std::string::npos);
   BOOST_CHECK(response.find("ValidationInvalidAuth") != std::string::npos);
@@ -160,13 +158,14 @@ BOOST_AUTO_TEST_CASE(successful_nothing_to_read, *timeout(1)) {
 }
 
 BOOST_AUTO_TEST_CASE(successful_no_connecthandler, *timeout{1}) {
-  auto client =
-      TestWebSocketClient(url_, endpoint_, port_, io_context_, tls_context_);
+  constexpr auto kCallCloseDelay = std::chrono::milliseconds(250);
 
   bool timeout_occured = false;
 
-  auto timer =
-      boost::asio::high_resolution_timer(io_context_, kExpectedTimeout);
+  auto client =
+      TestWebSocketClient(url_, endpoint_, port_, io_context_, tls_context_);
+
+  auto timer = boost::asio::high_resolution_timer(io_context_, kCallCloseDelay);
   timer.async_wait([&timeout_occured, &client](auto error_code) {
     timeout_occured = true;
     BOOST_CHECK(!error_code);
@@ -250,6 +249,8 @@ BOOST_AUTO_TEST_CASE(fail, *timeout{1}) {
   using WebsocketSocketStream =
       MockWebSocketStream<MockSslStream<MockTcpStream>>;
 
+  constexpr auto kCallCloseDelay = std::chrono::milliseconds(250);
+
   const std::string expected_message = "Test message";
 
   auto client =
@@ -263,8 +264,7 @@ BOOST_AUTO_TEST_CASE(fail, *timeout{1}) {
   bool called_on_message = false;
   bool timeout_occured = false;
 
-  auto timer =
-      boost::asio::high_resolution_timer(io_context_, kExpectedTimeout);
+  auto timer = boost::asio::high_resolution_timer(io_context_, kCallCloseDelay);
   timer.async_wait([&timeout_occured, &client](auto error_code) {
     timeout_occured = true;
     BOOST_CHECK(!error_code);
@@ -292,6 +292,7 @@ BOOST_AUTO_TEST_CASE(fail, *timeout{1}) {
 BOOST_AUTO_TEST_CASE(no_handler, *timeout{1}) {
   using WebsocketSocketStream =
       MockWebSocketStream<MockSslStream<MockTcpStream>>;
+  constexpr auto kCallCloseDelay = std::chrono::milliseconds(250);
 
   auto client =
       TestWebSocketClient(url_, endpoint_, port_, io_context_, tls_context_);
@@ -299,8 +300,7 @@ BOOST_AUTO_TEST_CASE(no_handler, *timeout{1}) {
   bool called_on_connect = false;
   bool timeout_occured = false;
 
-  auto timer =
-      boost::asio::high_resolution_timer(io_context_, kExpectedTimeout);
+  auto timer = boost::asio::high_resolution_timer(io_context_, kCallCloseDelay);
   timer.async_wait([&timeout_occured, &client](auto error_code) {
     timeout_occured = true;
     BOOST_CHECK(!error_code);
