@@ -33,7 +33,7 @@ std::string_view ToStringView(StompClientError command) {
     }
   }
 
-  return "UndefinedError";
+  std::unreachable();
 }
 
 std::ostream& operator<<(std::ostream& os, StompClientError error) {

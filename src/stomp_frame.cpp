@@ -188,8 +188,7 @@ constexpr std::span<const StompHeader> GetHeadersRequiresByCommand(
       return required_headers::kNone;
 
     default:
-      // TODO: notreached
-      return required_headers::kNone;
+      std::unreachable();
   }
 }
 
@@ -198,7 +197,7 @@ std::string_view ToStringView(const StompCommand& command) {
   if (result.has_value()) {
     return result.value();
   }
-  return kStompCommands.ToStringView(StompCommand::Invalid).value();
+  std::unreachable();
 }
 
 std::string_view ToStringView(const StompHeader& header) {
@@ -206,7 +205,7 @@ std::string_view ToStringView(const StompHeader& header) {
   if (result.has_value()) {
     return result.value();
   }
-  return kStompHeaders.ToStringView(StompHeader::Invalid).value();
+  std::unreachable();
 }
 
 std::string_view ToStringView(const StompError& error) {
@@ -214,7 +213,7 @@ std::string_view ToStringView(const StompError& error) {
   if (result.has_value()) {
     return result.value();
   }
-  return kStompErrors.ToStringView(StompError::UndefinedError).value();
+  std::unreachable();
 }
 
 // `current_line` - parsing start point
