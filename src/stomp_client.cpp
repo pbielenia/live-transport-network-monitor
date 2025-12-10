@@ -12,8 +12,6 @@ constexpr auto kStompClientResultStrings =
         {StompClientResult::ErrorConnectingWebSocket,
          "ErrorConnectingWebSocket"},
         {StompClientResult::ErrorConnectingStomp, "ErrorConnectingStomp"},
-        {StompClientResult::CouldNotParseMessageAsStompFrame,
-         "CouldNotParseMessageAsStompFrame"},
         {StompClientResult::WebSocketServerDisconnected,
          "WebSocketServerDisconnected"},
         {StompClientResult::CouldNotSendSubscribeFrame,

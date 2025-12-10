@@ -24,7 +24,6 @@ enum class StompClientResult : std::uint8_t {
   Ok = 0,
   ErrorConnectingWebSocket,
   ErrorConnectingStomp,
-  CouldNotParseMessageAsStompFrame,
   WebSocketServerDisconnected,
   CouldNotSendSubscribeFrame,
   ErrorNotConnected,
@@ -316,8 +315,6 @@ void StompClient<WebSocketClient>::OnWebSocketMessageReceived(
   if (frame.GetParseResultCode() != ParseResultCode::Ok) {
     LOG_WARN("Could not parse the message to STOMP frame: {}",
              ToString(frame.GetParseResultCode()));
-    // TODO: remove, OnConnectingDone is not appriopriate here
-    OnConnectingDone(StompClientResult::CouldNotParseMessageAsStompFrame);
     return;
   }
 
