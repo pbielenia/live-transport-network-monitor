@@ -522,8 +522,7 @@ bool StompFrame::HasHeader(const StompHeader& header) const {
   return headers_.contains(header);
 }
 
-const std::string_view& StompFrame::GetHeaderValue(
-    const StompHeader& header) const {
+std::string_view StompFrame::GetHeaderValue(const StompHeader& header) const {
   static const std::string_view empty_header_value{};
   if (HasHeader(header)) {
     return headers_.at(header);
@@ -535,7 +534,7 @@ const StompFrame::Headers& StompFrame::GetAllHeaders() const {
   return headers_;
 }
 
-const std::string_view& StompFrame::GetBody() const {
+std::string_view StompFrame::GetBody() const {
   return body_;
 }
 

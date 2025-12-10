@@ -162,7 +162,7 @@ class StompFrame {
    *
    *  \returns An empty std::string_view if the header is not in the frame.
    */
-  const std::string_view& GetHeaderValue(const StompHeader& header) const;
+  std::string_view GetHeaderValue(const StompHeader& header) const;
 
   /*! \brief Get the values of all contained headers.
    */
@@ -170,7 +170,7 @@ class StompFrame {
 
   /*! \brief Get the frame body.
    */
-  const std::string_view& GetBody() const;
+  std::string_view GetBody() const;
 
   /*! \brief Get a text representation of the frame.
    */
