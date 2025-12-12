@@ -47,9 +47,9 @@ class StompClient {
   using OnDisconnectedCallback = std::function<void(StompClientResult)>;
   using OnClosedCallback = std::function<void(StompClientResult)>;
   using OnSubscribedCallback =
-      std::function<void(StompClientResult, std::string&&)>;
+      std::function<void(StompClientResult, std::string)>;
   using OnReceivedCallback =
-      std::function<void(StompClientResult, std::string&&)>;
+      std::function<void(StompClientResult, std::string)>;
 
   /*! \brief Construct a STOMP client connecting to a remote URL/port through a
    *         secure WebSocket connection.
@@ -144,14 +144,14 @@ class StompClient {
   void OnStompConnectionInitStarted(boost::system::error_code result);
   void HandleStompFrame(StompFrame frame);
   void OnWebSocketReceived(boost::system::error_code result,
-                           std::string&& message);
+                           std::string message);
   void OnWebSocketSent(boost::system::error_code result);
   void OnWebSocketDisconnected(boost::system::error_code result);
   void OnWebSocketClosed(boost::system::error_code result,
                          OnClosedCallback on_closed_callback = nullptr);
   void OnWebSocketSentSubscribe(boost::system::error_code result,
                                 std::string& subscription_id,
-                                Subscription&& subscription);
+                                Subscription subscription);
 
   void HandleStompConnected(const StompFrame& frame);
   void HandleStompReceipt(const StompFrame& frame);
@@ -203,7 +203,7 @@ void StompClient<WebSocketClient>::Connect(
 
   websocket_client_.Connect(
       [this](auto result) { OnWebSocketConnected(result); },
-      [this](auto result, auto&& message) {
+      [this](auto result, auto message) {
         OnWebSocketReceived(result, std::move(message));
       },
       [this](auto result) { OnWebSocketDisconnected(result); });
@@ -301,7 +301,7 @@ void StompClient<WebSocketClient>::OnStompConnectionInitStarted(
 
 template <typename WebSocketClient>
 void StompClient<WebSocketClient>::OnWebSocketReceived(
-    boost::system::error_code result, std::string&& message) {
+    boost::system::error_code result, std::string message) {
   if (result.failed()) {
     LOG_WARN("Receiving message failed");
     // TODO: handle
@@ -378,7 +378,7 @@ template <typename WebSocketClient>
 void StompClient<WebSocketClient>::OnWebSocketSentSubscribe(
     boost::system::error_code result,
     std::string& subscription_id,
-    Subscription&& subscription) {
+    Subscription subscription) {
   if (result.failed()) {
     LOG_WARN("Could not subscribe to '{}': ", subscription.destination,
              result.message());

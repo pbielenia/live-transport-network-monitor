@@ -25,7 +25,7 @@ class WebSocketClient {
  public:
   using kOnConnectedCallback = std::function<void(boost::system::error_code)>;
   using kOnMessageReceivedCallback =
-      std::function<void(boost::system::error_code, std::string&&)>;
+      std::function<void(boost::system::error_code, std::string)>;
   using kOnMessageSentCallback = std::function<void(boost::system::error_code)>;
   using kOnDisconnectedCallback =
       std::function<void(boost::system::error_code)>;
