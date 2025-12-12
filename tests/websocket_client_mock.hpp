@@ -1,7 +1,6 @@
 #pragma once
 
 #include <functional>
-#include <queue>
 #include <string>
 
 #include <boost/asio.hpp>
@@ -30,7 +29,7 @@ class WebSocketClientMock {
     static boost::system::error_code send_error_code_;
     static boost::system::error_code close_error_code_;
     static bool trigger_disconnection_;
-    static std::function<void(const std::string&)> respond_to_send_;
+    static std::function<void(const std::string&)> on_message_sent_;
   };
 
   WebSocketClientMock(std::string url,
@@ -38,9 +37,6 @@ class WebSocketClientMock {
                       std::string port,
                       boost::asio::io_context& io_context,
                       boost::asio::ssl::context& tls_context);
-
-  //   TODO: why is it static though?
-  static std::queue<std::string>& GetMessageQueue();
 
   void Connect(kOnConnectedCallback on_connected_callback,
                kOnMessageReceivedCallback on_message_received_callback,
@@ -51,12 +47,11 @@ class WebSocketClientMock {
       kOnConnectionClosedCallback on_connection_closed_callback = nullptr);
   const std::string& GetServerUrl() const;
 
+ protected:
+  void Disconnect();
+  void SendToWebSocketClient(std::string message);
+
  private:
-  void MockIncomingMessages();
-
-  //   TODO: why is it static though?
-  static std::queue<std::string> message_queue;
-
   boost::asio::strand<boost::asio::io_context::executor_type> async_context_;
   std::string server_url_;
 
@@ -91,9 +86,10 @@ class WebSocketClientMockForStomp : public WebSocketClientMock {
   std::string stomp_version{"1.4"};
 
  private:
-  void OnMessage(const std::string& message);
-  void HandleConnectMessage(const network_monitor::StompFrame& frame) const;
-  static void HandleSubscribeMessage(const network_monitor::StompFrame& frame);
+  void OnMessageSentToStompServer(const std::string& message);
+
+  void HandleConnectMessage(const network_monitor::StompFrame& frame);
+  void HandleSubscribeMessage(const network_monitor::StompFrame& frame);
 
   static bool FrameIsValidConnect(const network_monitor::StompFrame& frame);
   static bool FrameIsValidSubscribe(const network_monitor::StompFrame& frame);

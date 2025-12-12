@@ -1,11 +1,11 @@
 #include "websocket_client_mock.hpp"
 
 #include <functional>
-#include <queue>
 #include <string>
 #include <utility>
 
 #include <boost/asio.hpp>
+#include <boost/system/errc.hpp>
 #include <boost/system/error_code.hpp>
 
 #include "network_monitor/stomp_frame.hpp"
@@ -21,7 +21,7 @@ inline boost::system::error_code
     WebSocketClientMock::Config::close_error_code_{};
 inline bool WebSocketClientMock::Config::trigger_disconnection_{false};
 inline std::function<void(const std::string&)>
-    WebSocketClientMock::Config::respond_to_send_{
+    WebSocketClientMock::Config::on_message_sent_{
         [](auto /*message*/) { return; }};
 inline std::string WebSocketClientMockForStomp::username{};
 inline std::string WebSocketClientMockForStomp::password{};
@@ -36,33 +36,20 @@ WebSocketClientMock::WebSocketClientMock(
     : async_context_{boost::asio::make_strand(io_context)},
       server_url_{std::move(url)} {}
 
-std::queue<std::string>& WebSocketClientMock::GetMessageQueue() {
-  static std::queue<std::string> message_queue;
-  return message_queue;
-}
-
 void WebSocketClientMock::Connect(
     WebSocketClientMock::kOnConnectedCallback on_connected_callback,
     WebSocketClientMock::kOnMessageReceivedCallback
         on_message_received_callback,
     kOnDisconnectedCallback on_disconnected_callback) {
-  if (Config::connect_error_code_.failed()) {
-    connected_ = false;
-  } else {
-    connected_ = true;
-    on_message_received_callback_ = std::move(on_message_received_callback);
-    on_disconnected_callback_ = std::move(on_disconnected_callback);
-  }
+  connected_ = !Config::connect_error_code_.failed();
+  on_message_received_callback_ = std::move(on_message_received_callback);
+  on_disconnected_callback_ = std::move(on_disconnected_callback);
 
-  boost::asio::post(async_context_,
-                    [this, callback = std::move(on_connected_callback)]() {
-                      if (callback) {
+  if (on_connected_callback) {
+    boost::asio::post(async_context_,
+                      [this, callback = std::move(on_connected_callback)]() {
                         callback(Config::connect_error_code_);
-                      }
-                    });
-
-  if (connected_) {
-    boost::asio::post(async_context_, [this]() { MockIncomingMessages(); });
+                      });
   }
 }
 
@@ -70,12 +57,12 @@ void WebSocketClientMock::Send(
     const std::string& message,
     kOnMessageSentCallback on_message_sent_callback) {
   if (!connected_) {
-    boost::asio::post(async_context_,
-                      [callback = std::move(on_message_sent_callback)]() {
-                        if (callback) {
+    if (on_message_sent_callback) {
+      boost::asio::post(async_context_,
+                        [callback = std::move(on_message_sent_callback)]() {
                           callback(boost::asio::error::operation_aborted);
-                        }
-                      });
+                        });
+    }
     return;
   }
 
@@ -84,60 +71,54 @@ void WebSocketClientMock::Send(
       [this, callback = std::move(on_message_sent_callback), message]() {
         if (callback) {
           callback(Config::send_error_code_);
-          Config::respond_to_send_(message);
         }
+        Config::on_message_sent_(message);
       });
 }
 
 void WebSocketClientMock::Close(
     kOnConnectionClosedCallback on_connection_closed_callback) {
-  if (connected_) {
-    connected_ = false;
-    // TODO: closed_ = true;
-    Config::trigger_disconnection_ = true;
-    boost::asio::post(
-        async_context_,
-        [this, callback = std::move(on_connection_closed_callback)]() {
-          if (callback) {
-            callback(Config::close_error_code_);
-          }
-        });
-  } else {
-    boost::asio::post(
-        async_context_,
-        [this, callback = std::move(on_connection_closed_callback)]() {
-          if (callback) {
-            callback(boost::asio::error::operation_aborted);
-          }
-        });
+  connected_ = false;
+
+  if (!on_connection_closed_callback) {
+    return;
   }
+
+  const auto result = connected_ ? Config::close_error_code_
+                                 : boost::asio::error::operation_aborted;
+  boost::asio::post(
+      async_context_,
+      [this, result, callback = std::move(on_connection_closed_callback)]() {
+        callback(result);
+      });
 }
 
 const std::string& WebSocketClientMock::GetServerUrl() const {
   return server_url_;
 }
 
-void WebSocketClientMock::MockIncomingMessages() {
-  if (!connected_ || Config::trigger_disconnection_) {
-    Config::trigger_disconnection_ = false;
-    boost::asio::post(async_context_, [this]() {
-      if (on_disconnected_callback_) {
-        on_disconnected_callback_(boost::asio::error::operation_aborted);
-      }
-    });
+void WebSocketClientMock::Disconnect() {
+  connected_ = false;
+
+  boost::asio::post(async_context_, [this]() {
+    if (on_disconnected_callback_) {
+      on_disconnected_callback_(boost::asio::error::operation_aborted);
+    }
+  });
+}
+
+void WebSocketClientMock::SendToWebSocketClient(std::string message) {
+  if (!on_message_received_callback_) {
     return;
   }
 
-  boost::asio::post(async_context_, [this]() {
-    if (!GetMessageQueue().empty()) {
-      auto message{GetMessageQueue().front()};
-      GetMessageQueue().pop();
-      if (on_message_received_callback_) {
-        on_message_received_callback_({}, std::move((message)));
-      }
-    }
-    MockIncomingMessages();
-  });
+  boost::asio::post(
+      async_context_, [this, message = std::move(message),
+                       callback = on_message_received_callback_]() mutable {
+        callback(
+            boost::system::errc::make_error_code(boost::system::errc::success),
+            std::move((message)));
+      });
 }
 
 WebSocketClientMockForStomp::WebSocketClientMockForStomp(
@@ -147,16 +128,18 @@ WebSocketClientMockForStomp::WebSocketClientMockForStomp(
     boost::asio::io_context& io_context,
     boost::asio::ssl::context& tls_context)
     : WebSocketClientMock(url, endpoint, port, io_context, tls_context) {
-  Config::respond_to_send_ = [this](const auto& message) {
-    OnMessage(message);
+  Config::on_message_sent_ = [this](const auto& message) {
+    OnMessageSentToStompServer(message);
   };
 }
 
-void WebSocketClientMockForStomp::OnMessage(const std::string& message) {
+void WebSocketClientMockForStomp::OnMessageSentToStompServer(
+    const std::string& message) {
   const auto frame = StompFrame{message};
   if (frame.GetParseResultCode() != ParseResultCode::Ok) {
     // TODO: log
-    Config::trigger_disconnection_ = true;
+    // TODO: send error message?
+    Disconnect();
     return;
   }
 
@@ -178,39 +161,41 @@ void WebSocketClientMockForStomp::OnMessage(const std::string& message) {
 }
 
 void WebSocketClientMockForStomp::HandleConnectMessage(
-    const network_monitor::StompFrame& frame) const {
-  if (FrameIsValidConnect(frame)) {
-    GetMessageQueue().push(StompFrameBuilder()
-                               .SetCommand(StompCommand::Connected)
-                               .AddHeader(StompHeader::Version, stomp_version)
-                               .BuildString());
-  } else {
-    GetMessageQueue().push(StompFrameBuilder()
-                               .SetCommand(StompCommand::Error)
-                               .SetBody("Authentication failure")
-                               .BuildString());
-    Config::trigger_disconnection_ = true;
+    const network_monitor::StompFrame& frame) {
+  if (!FrameIsValidConnect(frame)) {
+    SendToWebSocketClient(StompFrameBuilder()
+                              .SetCommand(StompCommand::Error)
+                              .SetBody("Authentication failure")
+                              .BuildString());
+    Disconnect();
+    return;
   }
+
+  SendToWebSocketClient(StompFrameBuilder()
+                            .SetCommand(StompCommand::Connected)
+                            .AddHeader(StompHeader::Version, stomp_version)
+                            .BuildString());
 }
 
 void WebSocketClientMockForStomp::HandleSubscribeMessage(
     const network_monitor::StompFrame& frame) {
-  if (FrameIsValidSubscribe(frame)) {
-    auto receipt_id = frame.GetHeaderValue(StompHeader::Receipt);
-    auto subscription_id = frame.GetHeaderValue(StompHeader::Id);
-    // TODO: add log MockStompServer: __func__: Sending receipt
-    GetMessageQueue().push(StompFrameBuilder()
-                               .SetCommand(StompCommand::Receipt)
-                               .AddHeader(StompHeader::ReceiptId, receipt_id)
-                               .BuildString());
-  } else {
+  if (!FrameIsValidSubscribe(frame)) {
     // TODO: add log MockStompServer: __func__: Subscribe
-    GetMessageQueue().push(StompFrameBuilder()
-                               .SetCommand(StompCommand::Error)
-                               .SetBody("Subscribe")
-                               .BuildString());
-    Config::trigger_disconnection_ = true;
+    SendToWebSocketClient(StompFrameBuilder()
+                              .SetCommand(StompCommand::Error)
+                              .SetBody("Subscribe")
+                              .BuildString());
+    Disconnect();
+    return;
   }
+
+  auto receipt_id = frame.GetHeaderValue(StompHeader::Receipt);
+  auto subscription_id = frame.GetHeaderValue(StompHeader::Id);
+  // TODO: add log MockStompServer: __func__: Sending receipt
+  SendToWebSocketClient(StompFrameBuilder()
+                            .SetCommand(StompCommand::Receipt)
+                            .AddHeader(StompHeader::ReceiptId, receipt_id)
+                            .BuildString());
 }
 
 bool WebSocketClientMockForStomp::FrameIsValidConnect(
