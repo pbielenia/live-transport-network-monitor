@@ -43,9 +43,11 @@ StompClientTestFixture::StompClientTestFixture() {
 
 BOOST_AUTO_TEST_SUITE(network_monitor);
 
-BOOST_FIXTURE_TEST_SUITE(stomp_client, StompClientTestFixture);
+BOOST_AUTO_TEST_SUITE(stomp_client);
 
 using StompClientWithMock = StompClient<WebSocketClientMockForStomp>;
+
+BOOST_FIXTURE_TEST_SUITE(Connect, StompClientTestFixture);
 
 BOOST_AUTO_TEST_CASE(CallsOnConnectOnSuccess,
                      *timeout(kDefaultTestTimeoutInSeconds)) {
@@ -116,6 +118,10 @@ BOOST_AUTO_TEST_CASE(CallsOnDisconnectedAtStompAuthenticationFailure,
   BOOST_CHECK(on_disconnected_called);
 }
 
+BOOST_AUTO_TEST_SUITE_END();  // Connect
+
+BOOST_FIXTURE_TEST_SUITE(Close, StompClientTestFixture);
+
 BOOST_AUTO_TEST_CASE(CallsOnCloseWhenClosed,
                      *timeout(kDefaultTestTimeoutInSeconds)) {
   StompClientWithMock stomp_client{url_, endpoint_, port_, io_context_,
@@ -159,6 +165,10 @@ BOOST_AUTO_TEST_CASE(CallsOnCloseWithErrorWhenCloseInvokedWhenNotConnected,
   BOOST_CHECK(on_closed_called);
 }
 
+BOOST_AUTO_TEST_SUITE_END();  // Close
+
+BOOST_FIXTURE_TEST_SUITE(Subscribe, StompClientTestFixture);
+
 BOOST_AUTO_TEST_CASE(ReturnsSubscriptionIdOnSuccess,
                      *timeout(kDefaultTestTimeoutInSeconds)) {
   StompClientWithMock stomp_client{url_, endpoint_, port_, io_context_,
@@ -187,6 +197,8 @@ BOOST_AUTO_TEST_CASE(ReturnsSubscriptionIdOnSuccess,
   io_context_.run();
   BOOST_CHECK(on_subscribe_called);
 }
+
+BOOST_AUTO_TEST_SUITE_END();  // Subscribe
 
 /* StompClient::Connect()
  * - on_connected invoked with success
