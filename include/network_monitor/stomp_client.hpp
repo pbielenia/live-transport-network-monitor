@@ -48,7 +48,7 @@ class StompClient {
   using OnClosedCallback = std::function<void(StompClientResult)>;
   using OnSubscribedCallback =
       std::function<void(StompClientResult, std::string&&)>;
-  using OnMessageCallback =
+  using OnReceivedCallback =
       std::function<void(StompClientResult, std::string&&)>;
 
   /*! \brief Construct a STOMP client connecting to a remote URL/port through a
@@ -120,32 +120,32 @@ class StompClient {
    *                                  to the fact that the STOMP server
    *                                  automatically closes the WebSocket
    *                                  connection on a STOMP protocol failure.
-   * \param on_message_callback       Called on every new
-   *                                  message from the subscription destination.
-   *                                  It is assumed that the message is received
-   *                                  with application/json content type.
+   * \param on_received_callback      Called on every new message from the
+   *                                  subscription destination. It is assumed
+   *                                  that the message is received with
+   *                                  application/json content type.
    *
    *  All handlers run in a separate I/O execution context from the WebSocket
    *  one.
    */
   std::string Subscribe(const std::string& destination,
                         OnSubscribedCallback on_subscribed_callback,
-                        OnMessageCallback on_message_callback);
+                        OnReceivedCallback on_received_callback);
 
  private:
   struct Subscription {
     std::string destination;
     OnSubscribedCallback on_subscribed_callback{nullptr};
-    OnMessageCallback on_message_callback{nullptr};
+    OnReceivedCallback on_received_callback{nullptr};
   };
 
   void OnWebSocketConnected(boost::system::error_code result);
   void ConnectToStompServer();
   void OnStompConnectionInitStarted(boost::system::error_code result);
   void HandleStompFrame(StompFrame frame);
-  void OnWebSocketMessageReceived(boost::system::error_code result,
-                                  std::string&& message);
-  void OnWebSocketMessageSent(boost::system::error_code result);
+  void OnWebSocketReceived(boost::system::error_code result,
+                           std::string&& message);
+  void OnWebSocketSent(boost::system::error_code result);
   void OnWebSocketDisconnected(boost::system::error_code result);
   void OnWebSocketClosed(boost::system::error_code result,
                          OnClosedCallback on_closed_callback = nullptr);
@@ -164,7 +164,7 @@ class StompClient {
   OnConnectedCallback on_connected_callback_;
   OnDisconnectedCallback on_disconnected_callback_;
   OnClosedCallback on_closed_callback_;
-  OnMessageCallback on_message_callback_;
+  OnReceivedCallback on_received_callback_;
 
   std::string user_name_;
   std::string user_password_;
@@ -204,7 +204,7 @@ void StompClient<WebSocketClient>::Connect(
   websocket_client_.Connect(
       [this](auto result) { OnWebSocketConnected(result); },
       [this](auto result, auto&& message) {
-        OnWebSocketMessageReceived(result, std::move(message));
+        OnWebSocketReceived(result, std::move(message));
       },
       [this](auto result) { OnWebSocketDisconnected(result); });
 }
@@ -230,7 +230,7 @@ template <typename WebSocketClient>
 std::string StompClient<WebSocketClient>::Subscribe(
     const std::string& destination,
     OnSubscribedCallback on_subscribed_callback,
-    OnMessageCallback on_message_callback) {
+    OnReceivedCallback on_received_callback) {
   LOG_INFO("Starting subscription to '{}'", destination);
 
   auto subscription_id{GenerateSubscriptionId()};
@@ -247,7 +247,7 @@ std::string StompClient<WebSocketClient>::Subscribe(
                        .BuildString()};
 
   Subscription subscription{destination, on_subscribed_callback,
-                            on_message_callback};
+                            on_received_callback};
 
   // TODO: why mutable? why assign operator instead of just std::move?
   auto on_websocket_sent_callback = [this, subscription_id,
@@ -300,7 +300,7 @@ void StompClient<WebSocketClient>::OnStompConnectionInitStarted(
 }
 
 template <typename WebSocketClient>
-void StompClient<WebSocketClient>::OnWebSocketMessageReceived(
+void StompClient<WebSocketClient>::OnWebSocketReceived(
     boost::system::error_code result, std::string&& message) {
   if (result.failed()) {
     LOG_WARN("Receiving message failed");
@@ -340,7 +340,7 @@ void StompClient<WebSocketClient>::HandleStompFrame(StompFrame frame) {
 }
 
 template <typename WebSocketClient>
-void StompClient<WebSocketClient>::OnWebSocketMessageSent(
+void StompClient<WebSocketClient>::OnWebSocketSent(
     boost::system::error_code result) {
   //
 }
@@ -454,12 +454,12 @@ void StompClient<WebSocketClient>::HandleStompMessage(const StompFrame& frame) {
 
   // TODO: extract body from StompFrame
 
-  if (subscription.on_message_callback) {
+  if (subscription.on_received_callback) {
     boost::asio::post(
         async_context_,
         [&subscription, message_body = std::string(frame.GetBody())]() {
-          subscription.on_message_callback(StompClientResult::Ok,
-                                           std::string(message_body));
+          subscription.on_received_callback(StompClientResult::Ok,
+                                            std::string(message_body));
         });
   }
 }
