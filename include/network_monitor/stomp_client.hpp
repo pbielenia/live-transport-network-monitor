@@ -1,6 +1,8 @@
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -113,13 +115,14 @@ class StompClient {
    *  \param destination              The subscription topic.
    *  \param on_subscribed_callback   Called when the subscription is setup
    *                                  correctly. The handler receives an error
-   *                                  code and the subscription ID. Note: On
-   *                                  failure, this callback is only called if
-   *                                  the failure happened at the WebSocket
-   *                                  level, not at the STOMP level. This is due
-   *                                  to the fact that the STOMP server
-   *                                  automatically closes the WebSocket
-   *                                  connection on a STOMP protocol failure.
+   *                                  code and the subscription ID.
+   *                                  Note: On failure, this callback is only
+   *                                        called if the failure happened at
+   *                                        the WebSocket level, not at the
+   *                                        STOMP level. This is due to the fact
+   *                                        that the STOMP server automatically
+   *                                        closes the WebSocket connection on a
+   *                                        STOMP protocol failure.
    * \param on_received_callback      Called on every new message from the
    *                                  subscription destination. It is assumed
    *                                  that the message is received with
@@ -128,16 +131,19 @@ class StompClient {
    *  All handlers run in a separate I/O execution context from the WebSocket
    *  one.
    */
-  std::string Subscribe(const std::string& destination,
+  std::string Subscribe(std::string_view destination,
                         OnSubscribedCallback on_subscribed_callback,
                         OnReceivedCallback on_received_callback);
 
  private:
   struct Subscription {
+    std::string id;
     std::string destination;
-    OnSubscribedCallback on_subscribed_callback{nullptr};
-    OnReceivedCallback on_received_callback{nullptr};
+    OnSubscribedCallback on_subscribed_callback;
+    OnReceivedCallback on_received_callback;
   };
+
+  static std::string GenerateSubscriptionId();
 
   void OnWebSocketConnected(boost::system::error_code result);
   void ConnectToStompServer();
@@ -150,7 +156,6 @@ class StompClient {
   void OnWebSocketClosed(boost::system::error_code result,
                          OnClosedCallback on_closed_callback = nullptr);
   void OnWebSocketSentSubscribe(boost::system::error_code result,
-                                std::string& subscription_id,
                                 Subscription subscription);
 
   void HandleStompConnected(const StompFrame& frame);
@@ -159,7 +164,8 @@ class StompClient {
 
   void OnConnectingDone(StompClientResult result);
 
-  static std::string GenerateSubscriptionId();
+  std::optional<std::reference_wrapper<Subscription>> FindSubscription(
+      std::string_view subscription_id);
 
   OnConnectedCallback on_connected_callback_;
   OnDisconnectedCallback on_disconnected_callback_;
@@ -169,8 +175,7 @@ class StompClient {
   std::string user_name_;
   std::string user_password_;
 
-  // TODO: rework to not use std::string as a key
-  std::unordered_map<std::string, Subscription> subscriptions_{};
+  std::vector<Subscription> subscriptions_;
 
   WebSocketClient websocket_client_;
   boost::asio::strand<boost::asio::io_context::executor_type> async_context_;
@@ -228,33 +233,36 @@ void StompClient<WebSocketClient>::Close(OnClosedCallback callback) {
 
 template <typename WebSocketClient>
 std::string StompClient<WebSocketClient>::Subscribe(
-    const std::string& destination,
+    std::string_view destination,
     OnSubscribedCallback on_subscribed_callback,
     OnReceivedCallback on_received_callback) {
   LOG_INFO("Starting subscription to '{}'", destination);
 
-  auto subscription_id{GenerateSubscriptionId()};
-  LOG_DEBUG("subscription_id: '{}'", subscription_id);
+  auto subscription =
+      Subscription{.id = GenerateSubscriptionId(),
+                   .destination = std::string{destination},
+                   .on_subscribed_callback = on_subscribed_callback,
+                   .on_received_callback = on_received_callback};
+
+  LOG_DEBUG("subscription_id: '{}'", subscription.id);
 
   // TODO: handle error ocurred when creating a frame
   // TODO: setting subscription_id to Id and Receipt is misleading
   auto stomp_frame{StompFrameBuilder()
                        .SetCommand(StompCommand::Subscribe)
                        .AddHeader(StompHeader::Destination, destination)
-                       .AddHeader(StompHeader::Id, subscription_id)
+                       .AddHeader(StompHeader::Id, subscription.id)
                        .AddHeader(StompHeader::Ack, "auto")
-                       .AddHeader(StompHeader::Receipt, subscription_id)
+                       .AddHeader(StompHeader::Receipt, subscription.id)
                        .BuildString()};
 
-  Subscription subscription{destination, on_subscribed_callback,
-                            on_received_callback};
+  std::string subscription_id{subscription.id};
 
   // TODO: why mutable? why assign operator instead of just std::move?
-  auto on_websocket_sent_callback = [this, subscription_id,
-                                     subscription = std::move(subscription)](
-                                        auto result) mutable {
-    OnWebSocketSentSubscribe(result, subscription_id, std::move(subscription));
-  };
+  auto on_websocket_sent_callback =
+      [this, subscription = std::move(subscription)](auto result) mutable {
+        OnWebSocketSentSubscribe(result, std::move(subscription));
+      };
 
   websocket_client_.Send(stomp_frame, on_websocket_sent_callback);
 
@@ -376,23 +384,21 @@ void StompClient<WebSocketClient>::OnWebSocketClosed(
 
 template <typename WebSocketClient>
 void StompClient<WebSocketClient>::OnWebSocketSentSubscribe(
-    boost::system::error_code result,
-    std::string& subscription_id,
-    Subscription subscription) {
+    boost::system::error_code result, Subscription subscription) {
   if (result.failed()) {
     LOG_WARN("Could not subscribe to '{}': ", subscription.destination,
              result.message());
     if (subscription.on_subscribed_callback) {
       boost::asio::post(
           async_context_,
-          [on_subscribe = subscription.on_subscribed_callback]() {
-            on_subscribe(StompClientResult::CouldNotSendSubscribeFrame, {});
+          [on_subscribed = subscription.on_subscribed_callback]() {
+            on_subscribed(StompClientResult::CouldNotSendSubscribeFrame, {});
           });
     }
     return;
   }
 
-  subscriptions_.emplace(subscription_id, std::move(subscription));
+  subscriptions_.push_back(std::move(subscription));
 }
 
 template <typename WebSocketClient>
@@ -405,23 +411,21 @@ void StompClient<WebSocketClient>::HandleStompConnected(
 template <typename WebSocketClient>
 void StompClient<WebSocketClient>::HandleStompReceipt(const StompFrame& frame) {
   // Supports only SUBSCRIBE frame.
-  auto subscription_id =
-      std::string(frame.GetHeaderValue(StompHeader::ReceiptId));
-  if (!subscriptions_.contains(subscription_id)) {
+  const auto subscription_id = frame.GetHeaderValue(StompHeader::ReceiptId);
+
+  auto subscription = FindSubscription(subscription_id);
+  if (!subscription.has_value()) {
     LOG_WARN("Unknown subscription id: '{}'", subscription_id);
     return;
   }
 
-  const auto& subscription = subscriptions_.at(subscription_id);
-  LOG_INFO("Subscribed to '{}'", subscription_id);
+  LOG_INFO("Subscribed to '{}'", subscription.value().get().id);
 
-  if (subscription.on_subscribed_callback) {
-    boost::asio::post(async_context_,
-                      [&subscription,
-                       subscription_id = std::move(subscription_id)]() mutable {
-                        subscription.on_subscribed_callback(
-                            StompClientResult::Ok, std::move(subscription_id));
-                      });
+  if (subscription.value().get().on_subscribed_callback) {
+    boost::asio::post(async_context_, [subscription]() mutable {
+      subscription.value().get().on_subscribed_callback(
+          StompClientResult::Ok, subscription.value().get().id);
+    });
   }
 }
 
@@ -438,29 +442,28 @@ void StompClient<WebSocketClient>::HandleStompMessage(const StompFrame& frame) {
     return;
   }
 
-  if (!subscriptions_.contains(subscription_id)) {
+  auto subscription = FindSubscription(subscription_id);
+  if (!subscription.has_value()) {
     LOG_WARN("Unknown subscription id: '{}'", subscription_id);
     return;
   }
-  auto& subscription = subscriptions_.at(subscription_id);
 
-  if (subscription.destination != destination) {
+  if (subscription.value().get().destination != destination) {
     LOG_WARN(
-        "message.destination does no match subscription.destination: '{}' and "
+        "message destination does no match subscription destination: '{}' and "
         "'{}'",
-        subscription.destination, destination);
+        subscription.value().get().destination, destination);
     return;
   }
 
   // TODO: extract body from StompFrame
 
-  if (subscription.on_received_callback) {
-    boost::asio::post(
-        async_context_,
-        [&subscription, message_body = std::string(frame.GetBody())]() {
-          subscription.on_received_callback(StompClientResult::Ok,
-                                            std::string(message_body));
-        });
+  if (subscription.value().get().on_received_callback) {
+    boost::asio::post(async_context_,
+                      [&subscription, message_body = frame.GetBody()]() {
+                        subscription.value().get().on_received_callback(
+                            StompClientResult::Ok, std::string(message_body));
+                      });
   }
 }
 
@@ -470,6 +473,21 @@ void StompClient<WebSocketClient>::OnConnectingDone(StompClientResult result) {
     boost::asio::post(async_context_, [callback = on_connected_callback_,
                                        result]() { callback(result); });
   }
+}
+
+template <typename WebSocketClient>
+std::optional<
+    std::reference_wrapper<typename StompClient<WebSocketClient>::Subscription>>
+StompClient<WebSocketClient>::FindSubscription(
+    std::string_view subscription_id) {
+  auto find_result = std::ranges::find_if(
+      subscriptions_, [&subscription_id](const auto& subscription) {
+        return subscription_id == subscription.id;
+      });
+
+  return find_result != subscriptions_.end()
+             ? std::make_optional(std::reference_wrapper(*find_result))
+             : std::nullopt;
 }
 
 template <typename WebSocketClient>
