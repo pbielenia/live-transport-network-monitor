@@ -246,25 +246,20 @@ std::string StompClient<WebSocketClient>::Subscribe(
 
   LOG_DEBUG("subscription_id: '{}'", subscription.id);
 
-  // TODO: handle error ocurred when creating a frame
-  // TODO: setting subscription_id to Id and Receipt is misleading
-  auto stomp_frame{StompFrameBuilder()
-                       .SetCommand(StompCommand::Subscribe)
-                       .AddHeader(StompHeader::Destination, destination)
-                       .AddHeader(StompHeader::Id, subscription.id)
-                       .AddHeader(StompHeader::Ack, "auto")
-                       .AddHeader(StompHeader::Receipt, subscription.id)
-                       .BuildString()};
+  std::string stomp_frame{StompFrameBuilder()
+                              .SetCommand(StompCommand::Subscribe)
+                              .AddHeader(StompHeader::Destination, destination)
+                              .AddHeader(StompHeader::Id, subscription.id)
+                              .AddHeader(StompHeader::Ack, "auto")
+                              .AddHeader(StompHeader::Receipt, subscription.id)
+                              .BuildString()};
 
   std::string subscription_id{subscription.id};
 
-  // TODO: why mutable? why assign operator instead of just std::move?
-  auto on_websocket_sent_callback =
-      [this, subscription = std::move(subscription)](auto result) mutable {
+  websocket_client_.Send(
+      stomp_frame, [this, subscription = std::move(subscription)](auto result) {
         OnWebSocketSentSubscribe(result, std::move(subscription));
-      };
-
-  websocket_client_.Send(stomp_frame, on_websocket_sent_callback);
+      });
 
   return subscription_id;
 }
@@ -312,7 +307,6 @@ void StompClient<WebSocketClient>::OnWebSocketReceived(
     boost::system::error_code result, std::string message) {
   if (result.failed()) {
     LOG_WARN("Receiving message failed");
-    // TODO: handle
     return;
   }
 
@@ -455,8 +449,6 @@ void StompClient<WebSocketClient>::HandleStompMessage(const StompFrame& frame) {
         subscription.value().get().destination, destination);
     return;
   }
-
-  // TODO: extract body from StompFrame
 
   if (subscription.value().get().on_received_callback) {
     boost::asio::post(async_context_,
