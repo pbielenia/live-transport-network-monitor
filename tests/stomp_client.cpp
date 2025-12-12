@@ -51,8 +51,8 @@ BOOST_AUTO_TEST_CASE(CallsOnConnectOnSuccess,
                      *timeout(kDefaultTestTimeoutInSeconds)) {
   bool on_connected_called{false};
 
-  auto stomp_client =
-      StompClientWithMock{url_, endpoint_, port_, io_context_, tls_context_};
+  StompClientWithMock stomp_client{url_, endpoint_, port_, io_context_,
+                                   tls_context_};
 
   auto on_connect_callback = [&on_connected_called,
                               &stomp_client](auto result) {
@@ -73,8 +73,8 @@ BOOST_AUTO_TEST_CASE(CallsOnConnectOnWebSocketConnectionFailure,
 
   bool on_connected_called{false};
 
-  auto stomp_client =
-      StompClientWithMock{url_, endpoint_, port_, io_context_, tls_context_};
+  StompClientWithMock stomp_client{url_, endpoint_, port_, io_context_,
+                                   tls_context_};
 
   auto on_connect_callback = [&on_connected_called,
                               &stomp_client](auto result) {
@@ -99,8 +99,8 @@ BOOST_AUTO_TEST_CASE(CallsOnDisconnectedAtStompAuthenticationFailure,
 
   bool on_disconnected_called{false};
 
-  auto stomp_client =
-      StompClientWithMock{url_, endpoint_, port_, io_context_, tls_context_};
+  StompClientWithMock stomp_client{url_, endpoint_, port_, io_context_,
+                                   tls_context_};
 
   auto on_connected_callback = [](auto /*result*/) { BOOST_CHECK(false); };
   auto on_disconnected_callback = [&on_disconnected_called,
@@ -118,8 +118,8 @@ BOOST_AUTO_TEST_CASE(CallsOnDisconnectedAtStompAuthenticationFailure,
 
 BOOST_AUTO_TEST_CASE(CallsOnCloseWhenClosed,
                      *timeout(kDefaultTestTimeoutInSeconds)) {
-  auto stomp_client =
-      StompClientWithMock{url_, endpoint_, port_, io_context_, tls_context_};
+  StompClientWithMock stomp_client{url_, endpoint_, port_, io_context_,
+                                   tls_context_};
 
   bool closed{false};
 
@@ -144,8 +144,8 @@ BOOST_AUTO_TEST_CASE(DoesNotNeedOnCloseCallbackToCloseConnection,
 
 BOOST_AUTO_TEST_CASE(CallsOnCloseWithErrorWhenCloseInvokedWhenNotConnected,
                      *timeout(kDefaultTestTimeoutInSeconds)) {
-  auto stomp_client =
-      StompClientWithMock{url_, endpoint_, port_, io_context_, tls_context_};
+  StompClientWithMock stomp_client{url_, endpoint_, port_, io_context_,
+                                   tls_context_};
 
   bool on_closed_called{false};
 
@@ -161,8 +161,8 @@ BOOST_AUTO_TEST_CASE(CallsOnCloseWithErrorWhenCloseInvokedWhenNotConnected,
 
 BOOST_AUTO_TEST_CASE(ReturnsSubscriptionIdOnSuccess,
                      *timeout(kDefaultTestTimeoutInSeconds)) {
-  auto stomp_client =
-      StompClientWithMock{url_, endpoint_, port_, io_context_, tls_context_};
+  StompClientWithMock stomp_client{url_, endpoint_, port_, io_context_,
+                                   tls_context_};
 
   bool on_subscribe_called{false};
 
