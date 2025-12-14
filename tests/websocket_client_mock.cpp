@@ -37,10 +37,9 @@ WebSocketClientMock::WebSocketClientMock(
       server_url_{std::move(url)} {}
 
 void WebSocketClientMock::Connect(
-    WebSocketClientMock::kOnConnectedCallback on_connected_callback,
-    WebSocketClientMock::kOnMessageReceivedCallback
-        on_message_received_callback,
-    kOnDisconnectedCallback on_disconnected_callback) {
+    WebSocketClientMock::OnConnectedCallback on_connected_callback,
+    WebSocketClientMock::OnMessageReceivedCallback on_message_received_callback,
+    OnDisconnectedCallback on_disconnected_callback) {
   connected_ = !Config::connect_error_code_.failed();
   on_message_received_callback_ = std::move(on_message_received_callback);
   on_disconnected_callback_ = std::move(on_disconnected_callback);
@@ -53,9 +52,8 @@ void WebSocketClientMock::Connect(
   }
 }
 
-void WebSocketClientMock::Send(
-    const std::string& message,
-    kOnMessageSentCallback on_message_sent_callback) {
+void WebSocketClientMock::Send(const std::string& message,
+                               OnMessageSentCallback on_message_sent_callback) {
   if (!connected_) {
     if (on_message_sent_callback) {
       boost::asio::post(async_context_,
@@ -77,7 +75,7 @@ void WebSocketClientMock::Send(
 }
 
 void WebSocketClientMock::Close(
-    kOnConnectionClosedCallback on_connection_closed_callback) {
+    OnConnectionClosedCallback on_connection_closed_callback) {
   connected_ = false;
 
   if (!on_connection_closed_callback) {

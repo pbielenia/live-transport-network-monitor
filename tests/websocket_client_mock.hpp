@@ -15,13 +15,12 @@ namespace network_monitor {
  */
 class WebSocketClientMock {
  public:
-  using kOnConnectedCallback = std::function<void(boost::system::error_code)>;
-  using kOnMessageReceivedCallback =
+  using OnConnectedCallback = std::function<void(boost::system::error_code)>;
+  using OnMessageReceivedCallback =
       std::function<void(boost::system::error_code, std::string&&)>;
-  using kOnMessageSentCallback = std::function<void(boost::system::error_code)>;
-  using kOnDisconnectedCallback =
-      std::function<void(boost::system::error_code)>;
-  using kOnConnectionClosedCallback =
+  using OnMessageSentCallback = std::function<void(boost::system::error_code)>;
+  using OnDisconnectedCallback = std::function<void(boost::system::error_code)>;
+  using OnConnectionClosedCallback =
       std::function<void(boost::system::error_code)>;
 
   struct Config {
@@ -38,13 +37,13 @@ class WebSocketClientMock {
                       boost::asio::io_context& io_context,
                       boost::asio::ssl::context& tls_context);
 
-  void Connect(kOnConnectedCallback on_connected_callback,
-               kOnMessageReceivedCallback on_message_received_callback,
-               kOnDisconnectedCallback on_disconnected_callback);
+  void Connect(OnConnectedCallback on_connected_callback,
+               OnMessageReceivedCallback on_message_received_callback,
+               OnDisconnectedCallback on_disconnected_callback);
   void Send(const std::string& message,
-            kOnMessageSentCallback on_message_sent_callback = nullptr);
+            OnMessageSentCallback on_message_sent_callback = nullptr);
   void Close(
-      kOnConnectionClosedCallback on_connection_closed_callback = nullptr);
+      OnConnectionClosedCallback on_connection_closed_callback = nullptr);
   const std::string& GetServerUrl() const;
 
  protected:
@@ -56,8 +55,8 @@ class WebSocketClientMock {
   std::string server_url_;
 
   bool connected_{false};
-  kOnMessageReceivedCallback on_message_received_callback_;
-  kOnDisconnectedCallback on_disconnected_callback_;
+  OnMessageReceivedCallback on_message_received_callback_;
+  OnDisconnectedCallback on_disconnected_callback_;
 };
 
 /*! \brief Mocks the network_monitor::WebSocketClient talking to a STOMP server.

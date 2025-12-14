@@ -23,13 +23,12 @@ namespace network_monitor {
 template <typename Resolver, typename WebSocketStream>
 class WebSocketClient {
  public:
-  using kOnConnectedCallback = std::function<void(boost::system::error_code)>;
-  using kOnMessageReceivedCallback =
+  using OnConnectedCallback = std::function<void(boost::system::error_code)>;
+  using OnMessageReceivedCallback =
       std::function<void(boost::system::error_code, std::string)>;
-  using kOnMessageSentCallback = std::function<void(boost::system::error_code)>;
-  using kOnDisconnectedCallback =
-      std::function<void(boost::system::error_code)>;
-  using kOnConnectionClosedCallback =
+  using OnMessageSentCallback = std::function<void(boost::system::error_code)>;
+  using OnDisconnectedCallback = std::function<void(boost::system::error_code)>;
+  using OnConnectionClosedCallback =
       std::function<void(boost::system::error_code)>;
 
   /*! \brief Construct a WebSocket client.
@@ -85,10 +84,9 @@ class WebSocketClient {
    *                                        by the server or due to a connection
    *                                        error.
    */
-  void Connect(
-      kOnConnectedCallback on_connected_callback = nullptr,
-      kOnMessageReceivedCallback on_message_received_callback = nullptr,
-      kOnDisconnectedCallback on_disconnected_callback = nullptr);
+  void Connect(OnConnectedCallback on_connected_callback = nullptr,
+               OnMessageReceivedCallback on_message_received_callback = nullptr,
+               OnDisconnectedCallback on_disconnected_callback = nullptr);
 
   /*! \brief Send a text message to the WebSocket server.
    *
@@ -98,7 +96,7 @@ class WebSocketClient {
    *                  failed to send.
    */
   void Send(const std::string& message,
-            kOnMessageSentCallback on_message_sent_callback = nullptr);
+            OnMessageSentCallback on_message_sent_callback = nullptr);
 
   /*! \brief Close the WebSocket connection.
    *
@@ -106,7 +104,7 @@ class WebSocketClient {
    *                                        closed, successfully or not.
    */
   void Close(
-      kOnConnectionClosedCallback on_connection_closed_callback = nullptr);
+      OnConnectionClosedCallback on_connection_closed_callback = nullptr);
 
   const std::string& GetServerUrl() const;
   const std::string& GetServerPort() const;
@@ -144,10 +142,10 @@ class WebSocketClient {
   boost::beast::flat_buffer response_buffer_;
   bool connection_is_open_{false};
 
-  kOnConnectedCallback on_connected_callback_;
-  kOnMessageReceivedCallback on_message_received_callback_;
-  kOnDisconnectedCallback on_disconnected_callback_;
-  kOnConnectionClosedCallback on_connection_closed_callback_;
+  OnConnectedCallback on_connected_callback_;
+  OnMessageReceivedCallback on_message_received_callback_;
+  OnDisconnectedCallback on_disconnected_callback_;
+  OnConnectionClosedCallback on_connection_closed_callback_;
 };
 
 template <typename Resolver, typename WebSocketStream>
@@ -168,9 +166,9 @@ WebSocketClient<Resolver, WebSocketStream>::~WebSocketClient() = default;
 
 template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::Connect(
-    WebSocketClient::kOnConnectedCallback on_connected_callback,
-    WebSocketClient::kOnMessageReceivedCallback on_message_received_callback,
-    WebSocketClient::kOnDisconnectedCallback on_disconnected_callback) {
+    WebSocketClient::OnConnectedCallback on_connected_callback,
+    WebSocketClient::OnMessageReceivedCallback on_message_received_callback,
+    WebSocketClient::OnDisconnectedCallback on_disconnected_callback) {
   on_connected_callback_ = std::move(on_connected_callback);
   on_message_received_callback_ = std::move(on_message_received_callback);
   on_disconnected_callback_ = std::move(on_disconnected_callback);
@@ -353,7 +351,7 @@ std::string WebSocketClient<Resolver, WebSocketStream>::ReadMessage(
 template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::Send(
     const std::string& message,
-    WebSocketClient::kOnMessageSentCallback on_message_sent_callback) {
+    WebSocketClient::OnMessageSentCallback on_message_sent_callback) {
   LOG_DEBUG("[{}:{}] Sending message", server_url_, server_port_);
 
   websocket_stream_.async_write(
@@ -368,8 +366,7 @@ void WebSocketClient<Resolver, WebSocketStream>::Send(
 
 template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::Close(
-    WebSocketClient::kOnConnectionClosedCallback
-        on_connection_closed_callback) {
+    WebSocketClient::OnConnectionClosedCallback on_connection_closed_callback) {
   LOG_DEBUG("[{}:{}] Closing connection", server_url_, server_port_);
 
   on_connection_closed_callback_ = std::move(on_connection_closed_callback);
