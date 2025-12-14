@@ -111,13 +111,11 @@ void WebSocketClientMock::SendToWebSocketClient(std::string message) {
     return;
   }
 
-  boost::asio::post(
-      async_context_, [this, message = std::move(message),
-                       callback = on_message_received_callback_]() mutable {
-        callback(
-            boost::system::errc::make_error_code(boost::system::errc::success),
-            std::move((message)));
-      });
+  boost::asio::post(async_context_,
+                    [this, message = std::move(message),
+                     callback = on_message_received_callback_]() mutable {
+                      callback(std::move((message)));
+                    });
 }
 
 WebSocketClientMockForStomp::WebSocketClientMockForStomp(

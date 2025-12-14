@@ -201,10 +201,9 @@ BOOST_AUTO_TEST_CASE(one_message, *timeout(kDefaultTestTimeoutInSeconds)) {
 
   bool called_on_message = false;
 
-  auto on_message = [&called_on_message, &expected_message, &client](
-                        auto error_code, auto received_message) {
+  auto on_message = [&called_on_message, &expected_message,
+                     &client](auto received_message) {
     called_on_message = true;
-    BOOST_CHECK(!error_code);
     BOOST_CHECK_EQUAL(expected_message, received_message);
 
     client.Close();
@@ -230,10 +229,8 @@ BOOST_AUTO_TEST_CASE(two_messages, *timeout(kDefaultTestTimeoutInSeconds)) {
 
   auto on_connecting_done = [](auto error_code) { BOOST_CHECK(!error_code); };
   auto on_message = [&called_on_message_count, &expected_message_1,
-                     &expected_message_2,
-                     &client](auto error_code, auto received_message) {
+                     &expected_message_2, &client](auto received_message) {
     called_on_message_count++;
-    BOOST_CHECK(!error_code);
 
     if (called_on_message_count == 1) {
       BOOST_CHECK_EQUAL(expected_message_1, received_message);
@@ -283,8 +280,7 @@ BOOST_AUTO_TEST_CASE(fail,
     called_on_connecting_done = true;
     BOOST_CHECK(!error_code);
   };
-  auto on_message = [&called_on_message](auto /*error_code*/,
-                                         auto /*received_message*/) {
+  auto on_message = [&called_on_message](auto /*received_message*/) {
     called_on_message = true;
     BOOST_CHECK(false);
   };
@@ -523,9 +519,9 @@ BOOST_AUTO_TEST_CASE(echo, *timeout{20}) {
   auto on_close = [&disconnected](auto error_code) {
     disconnected = !error_code.failed();
   };
-  auto on_receive = [&client, &on_close, &message_received, &message, &echo](
-                        auto error_code, auto /*received*/) {
-    message_received = !error_code.failed();
+  auto on_receive = [&client, &on_close, &message_received, &message,
+                     &echo](auto /*received*/) {
+    message_received = true;
     echo = message;
     client.Close(on_close);
   };
@@ -590,8 +586,8 @@ BOOST_AUTO_TEST_CASE(send_stomp_frame) {
   };
 
   auto on_receive_callback = [&client, &on_close_callback, &message_received,
-                              &response](auto error_code, auto received) {
-    message_received = !error_code;
+                              &response](auto received) {
+    message_received = true;
     response = std::move(received);
     client.Close(on_close_callback);
   };

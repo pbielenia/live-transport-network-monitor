@@ -150,8 +150,7 @@ class StompClient {
   void ConnectToStompServer();
   void OnStompConnectionInitStarted(boost::system::error_code result);
   void HandleStompFrame(StompFrame frame);
-  void OnWebSocketReceived(boost::system::error_code result,
-                           std::string message);
+  void OnWebSocketReceived(std::string message);
   void OnWebSocketSent(boost::system::error_code result);
   void OnWebSocketDisconnected(boost::system::error_code result);
   void OnWebSocketClosed(boost::system::error_code result,
@@ -209,9 +208,7 @@ void StompClient<WebSocketClient>::Connect(
 
   websocket_client_.Connect(
       [this](auto result) { OnWebSocketConnected(result); },
-      [this](auto result, auto message) {
-        OnWebSocketReceived(result, std::move(message));
-      },
+      [this](auto message) { OnWebSocketReceived(std::move(message)); },
       [this](auto result) { OnWebSocketDisconnected(result); });
 }
 
@@ -304,13 +301,7 @@ void StompClient<WebSocketClient>::OnStompConnectionInitStarted(
 }
 
 template <typename WebSocketClient>
-void StompClient<WebSocketClient>::OnWebSocketReceived(
-    boost::system::error_code result, std::string message) {
-  if (result.failed()) {
-    LOG_WARN("Receiving message failed");
-    return;
-  }
-
+void StompClient<WebSocketClient>::OnWebSocketReceived(std::string message) {
   const auto frame = StompFrame(std::move(message));
   if (frame.GetParseResultCode() != ParseResultCode::Ok) {
     LOG_WARN("Could not parse the message to STOMP frame: {}",

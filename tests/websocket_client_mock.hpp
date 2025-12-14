@@ -17,8 +17,7 @@ class WebSocketClientMock {
  public:
   using OnConnectingDoneCallback =
       std::function<void(boost::system::error_code)>;
-  using OnMessageReceivedCallback =
-      std::function<void(boost::system::error_code, std::string&&)>;
+  using OnMessageReceivedCallback = std::function<void(std::string)>;
   using OnMessageSentCallback = std::function<void(boost::system::error_code)>;
   using OnDisconnectedCallback = std::function<void(boost::system::error_code)>;
   using OnConnectionClosedCallback =

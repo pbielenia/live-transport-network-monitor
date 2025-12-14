@@ -25,8 +25,7 @@ class WebSocketClient {
  public:
   using OnConnectingDoneCallback =
       std::function<void(boost::system::error_code)>;
-  using OnMessageReceivedCallback =
-      std::function<void(boost::system::error_code, std::string)>;
+  using OnMessageReceivedCallback = std::function<void(std::string)>;
   using OnMessageSentCallback = std::function<void(boost::system::error_code)>;
   using OnDisconnectedCallback = std::function<void(boost::system::error_code)>;
   using OnConnectionClosedCallback =
@@ -78,9 +77,7 @@ class WebSocketClient {
    *  \param on_connecting_done_callback    Called when the connection fails or
    *                                        succeeds.
    *  \param on_message_received_callback   Called only when a message is
-   *                                        successfully received. The message
-   *                                        is an rvalue reference; ownership
-   *                                        is passed to the receiver.
+   *                                        successfully received.
    *  \param on_disconnected_callback       Called when the connection is closed
    *                                        by the server or due to a connection
    *                                        error.
@@ -335,7 +332,7 @@ void WebSocketClient<Resolver, WebSocketStream>::OnMessageReceived(
   }
 
   if (!error.failed() && on_message_received_callback_) {
-    on_message_received_callback_(error, ReadMessage(received_bytes_count));
+    on_message_received_callback_(ReadMessage(received_bytes_count));
   }
 
   ListenToIncomingMessage();
