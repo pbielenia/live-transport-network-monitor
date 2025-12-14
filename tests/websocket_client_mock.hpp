@@ -28,6 +28,7 @@ class WebSocketClientMock {
     static boost::system::error_code send_error_code_;
     static boost::system::error_code close_error_code_;
     static bool trigger_disconnection_;
+    static bool fail_sending_message_;
     static std::function<void(const std::string&)> on_message_sent_;
   };
 

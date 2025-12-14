@@ -148,7 +148,7 @@ class StompClient {
 
   void OnWebSocketConnected(boost::system::error_code result);
   void ConnectToStompServer();
-  void OnStompConnectionInitStarted(boost::system::error_code result);
+  void OnStompConnectSent(boost::system::error_code result);
   void HandleStompFrame(StompFrame frame);
   void OnWebSocketReceived(std::string message);
   void OnWebSocketSent(boost::system::error_code result);
@@ -286,13 +286,12 @@ void StompClient<WebSocketClient>::ConnectToStompServer() {
           .AddHeader(StompHeader::Passcode, user_password_)
           .BuildString();
 
-  websocket_client_.Send(connect_frame, [this](auto result) {
-    OnStompConnectionInitStarted(result);
-  });
+  websocket_client_.Send(connect_frame,
+                         [this](auto result) { OnStompConnectSent(result); });
 }
 
 template <typename WebSocketClient>
-void StompClient<WebSocketClient>::OnStompConnectionInitStarted(
+void StompClient<WebSocketClient>::OnStompConnectSent(
     boost::system::error_code result) {
   if (result.failed()) {
     LOG_ERROR("Could not send STOMP frame: {}", result.message());

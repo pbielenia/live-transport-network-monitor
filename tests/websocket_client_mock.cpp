@@ -20,6 +20,7 @@ inline boost::system::error_code
 inline boost::system::error_code
     WebSocketClientMock::Config::close_error_code_{};
 inline bool WebSocketClientMock::Config::trigger_disconnection_{false};
+inline bool WebSocketClientMock::Config::fail_sending_message_{false};
 inline std::function<void(const std::string&)>
     WebSocketClientMock::Config::on_message_sent_{
         [](auto /*message*/) { return; }};
@@ -65,7 +66,7 @@ void WebSocketClientMock::Connect(
 
 void WebSocketClientMock::Send(const std::string& message,
                                OnMessageSentCallback on_message_sent_callback) {
-  if (!connected_) {
+  if (!connected_ || Config::fail_sending_message_) {
     if (on_message_sent_callback) {
       boost::asio::post(async_context_,
                         [callback = std::move(on_message_sent_callback)]() {

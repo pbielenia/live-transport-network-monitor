@@ -50,6 +50,7 @@ StompClientTestFixture::StompClientTestFixture() {
   WebSocketClientMock::Config::connect_error_code_ = {};
   WebSocketClientMock::Config::send_error_code_ = {};
   WebSocketClientMock::Config::close_error_code_ = {};
+  WebSocketClientMock::Config::fail_sending_message_ = false;
   WebSocketClientMock::Results::url = {};
   WebSocketClientMock::Results::endpoint = {};
   WebSocketClientMock::Results::port = {};
@@ -113,6 +114,30 @@ BOOST_AUTO_TEST_CASE(CallsOnConnectingDoneOnWebSocketConnectionFailure,
   io_context_.run();
 
   BOOST_CHECK(on_connected_called);
+}
+
+// If could not connect to STOMP frame:
+// - `on_connecting_done_callback` is called
+//   - with error result
+BOOST_AUTO_TEST_CASE(OnWebSocketSendConnectFrameFailed,
+                     *timeout(kDefaultTestTimeoutInSeconds)) {
+  WebSocketClientMockForStomp::Config::fail_sending_message_ = true;
+
+  auto stomp_client = CreateStompClientWithMock();
+  bool callback_called{false};
+
+  auto on_connecting_done_callback = [&callback_called,
+                                      &stomp_client](auto result) {
+    callback_called = true;
+    BOOST_CHECK(result == StompClientResult::ErrorConnectingStomp);
+    stomp_client.Close();
+  };
+
+  stomp_client.Connect(stomp_username_, stomp_password_,
+                       on_connecting_done_callback);
+  io_context_.run();
+
+  BOOST_CHECK(callback_called);
 }
 
 BOOST_AUTO_TEST_CASE(DoesNotNeedOnConnectingDoneCallbackToMakeConnection,
