@@ -57,7 +57,7 @@ StompClientTestFixture::StompClientTestFixture() {
 
 BOOST_FIXTURE_TEST_SUITE(Connect, StompClientTestFixture);
 
-BOOST_AUTO_TEST_CASE(CallsOnConnectOnSuccess,
+BOOST_AUTO_TEST_CASE(CallsOnConnectingDoneOnSuccess,
                      *timeout(kDefaultTestTimeoutInSeconds)) {
   bool on_connected_called{false};
   auto stomp_client = CreateStompClientMock();
@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE(CallsOnConnectOnSuccess,
   BOOST_CHECK(on_connected_called);
 }
 
-BOOST_AUTO_TEST_CASE(CallsOnConnectOnWebSocketConnectionFailure,
+BOOST_AUTO_TEST_CASE(CallsOnConnectingDoneOnWebSocketConnectionFailure,
                      *timeout(kDefaultTestTimeoutInSeconds)) {
   WebSocketClientMock::Config::connect_error_code_ =
       boost::asio::ssl::error::stream_truncated;
@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE(CallsOnConnectOnWebSocketConnectionFailure,
   BOOST_CHECK(on_connected_called);
 }
 
-BOOST_AUTO_TEST_CASE(DoesNotNeedOnConnectedCallbackToMakeConnection,
+BOOST_AUTO_TEST_CASE(DoesNotNeedOnConnectingDoneCallbackToMakeConnection,
                      *boost::unit_test::disabled()) {
   // TODO: how does one verify it's actually connected?
 }

@@ -45,7 +45,7 @@ std::ostream& operator<<(std::ostream& os, StompClientResult result);
 template <typename WebSocketClient>
 class StompClient {
  public:
-  using OnConnectedCallback = std::function<void(StompClientResult)>;
+  using OnConnectingDoneCallback = std::function<void(StompClientResult)>;
   using OnDisconnectedCallback = std::function<void(StompClientResult)>;
   using OnClosedCallback = std::function<void(StompClientResult)>;
   using OnSubscribedCallback =
@@ -79,10 +79,11 @@ class StompClient {
    *
    *  \param user_name        User name.
    *  \param user_password    User password.
-   *  \param on_connected_callback  This handler is called when the STOMP
-   *                                connection is setup correctly. It will also
-   *                                be called with an error if there is any
-   *                                failure before a successful connection.
+   *  \param on_connecting_done_callback  This handler is called when the STOMP
+   *                                      connection is setup correctly. It will
+   *                                      also be called with an error if there
+   *                                      is any failure before a successful
+   *                                      connection.
    *  \param on_disconnected_callback  This handler is called when the STOMP
    *                                   or the WebSocket connection is suddenly
    *                                   closed. In the STOMP protocol, this may
@@ -94,7 +95,7 @@ class StompClient {
    */
   void Connect(const std::string& user_name,
                const std::string& user_password,
-               OnConnectedCallback on_connected_callback = nullptr,
+               OnConnectingDoneCallback on_connecting_done_callback = nullptr,
                OnDisconnectedCallback on_disconnected_callback = nullptr);
 
   /*! \brief Close the STOMP and WebSocket connection.
@@ -167,7 +168,7 @@ class StompClient {
   std::optional<std::reference_wrapper<Subscription>> FindSubscription(
       std::string_view subscription_id);
 
-  OnConnectedCallback on_connected_callback_;
+  OnConnectingDoneCallback on_connecting_done_callback_;
   OnDisconnectedCallback on_disconnected_callback_;
   OnClosedCallback on_closed_callback_;
   OnReceivedCallback on_received_callback_;
@@ -197,13 +198,13 @@ template <typename WebSocketClient>
 void StompClient<WebSocketClient>::Connect(
     const std::string& user_name,
     const std::string& user_password,
-    OnConnectedCallback on_connected_callback,
+    OnConnectingDoneCallback on_connecting_done_callback,
     OnDisconnectedCallback on_disconnected_callback) {
   LOG_INFO("Connecting to STOMP server");
 
   user_name_ = user_name;
   user_password_ = user_password;
-  on_connected_callback_ = std::move(on_connected_callback);
+  on_connecting_done_callback_ = std::move(on_connecting_done_callback);
   on_disconnected_callback_ = std::move(on_disconnected_callback);
 
   websocket_client_.Connect(
@@ -461,8 +462,8 @@ void StompClient<WebSocketClient>::HandleStompMessage(const StompFrame& frame) {
 
 template <typename WebSocketClient>
 void StompClient<WebSocketClient>::OnConnectingDone(StompClientResult result) {
-  if (on_connected_callback_) {
-    boost::asio::post(async_context_, [callback = on_connected_callback_,
+  if (on_connecting_done_callback_) {
+    boost::asio::post(async_context_, [callback = on_connecting_done_callback_,
                                        result]() { callback(result); });
   }
 }
