@@ -35,6 +35,7 @@ class WebSocketClientMock {
     static std::string url;
     static std::string endpoint;
     static std::string port;
+    static std::vector<std::string> messages_sent_to_websocket_client;
   };
 
   WebSocketClientMock(std::string url,

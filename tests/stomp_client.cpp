@@ -31,7 +31,7 @@ struct StompClientParams {
 struct StompClientTestFixture {
   StompClientTestFixture();
 
-  StompClientWithMock CreateStompClientMock(
+  StompClientWithMock CreateStompClientWithMock(
       const StompClientParams& params = {}) {
     return StompClientWithMock{params.url, params.endpoint, params.port,
                                io_context_, tls_context_};
@@ -53,6 +53,7 @@ StompClientTestFixture::StompClientTestFixture() {
   WebSocketClientMock::Results::url = {};
   WebSocketClientMock::Results::endpoint = {};
   WebSocketClientMock::Results::port = {};
+  WebSocketClientMock::Results::messages_sent_to_websocket_client = {};
   WebSocketClientMockForStomp::username = stomp_username_;
   WebSocketClientMockForStomp::password = stomp_password_;
   WebSocketClientMockForStomp::endpoint = stomp_endpoint_;
@@ -63,7 +64,7 @@ StompClientTestFixture::StompClientTestFixture() {
 BOOST_FIXTURE_TEST_SUITE(Constructor, StompClientTestFixture);
 
 BOOST_AUTO_TEST_CASE(SetsWebSocketConnectionData) {
-  auto stomp_client = CreateStompClientMock({
+  auto stomp_client = CreateStompClientWithMock({
       .url = "test url",
       .endpoint = "test endpoint",
       .port = "test port",
@@ -80,7 +81,7 @@ BOOST_FIXTURE_TEST_SUITE(Connect, StompClientTestFixture);
 BOOST_AUTO_TEST_CASE(CallsOnConnectingDoneOnSuccess,
                      *timeout(kDefaultTestTimeoutInSeconds)) {
   bool on_connected_called{false};
-  auto stomp_client = CreateStompClientMock();
+  auto stomp_client = CreateStompClientWithMock();
 
   auto on_connect_callback = [&on_connected_called,
                               &stomp_client](auto result) {
@@ -100,7 +101,7 @@ BOOST_AUTO_TEST_CASE(CallsOnConnectingDoneOnWebSocketConnectionFailure,
       boost::asio::ssl::error::stream_truncated;
 
   bool on_connected_called{false};
-  auto stomp_client = CreateStompClientMock();
+  auto stomp_client = CreateStompClientWithMock();
 
   auto on_connect_callback = [&on_connected_called,
                               &stomp_client](auto result) {
@@ -124,7 +125,7 @@ BOOST_AUTO_TEST_CASE(CallsOnDisconnectedAtStompAuthenticationFailure,
   const auto invalid_password = std::string{"invalid_password"};
 
   bool on_disconnected_called{false};
-  auto stomp_client = CreateStompClientMock();
+  auto stomp_client = CreateStompClientWithMock();
 
   auto on_connected_callback = [](auto /*result*/) { BOOST_CHECK(false); };
   auto on_disconnected_callback = [&on_disconnected_called,
@@ -140,13 +141,40 @@ BOOST_AUTO_TEST_CASE(CallsOnDisconnectedAtStompAuthenticationFailure,
   BOOST_CHECK(on_disconnected_called);
 }
 
+BOOST_AUTO_TEST_CASE(SendsCorrectConnectFrame,
+                     *timeout(kDefaultTestTimeoutInSeconds)) {
+  auto stomp_client = CreateStompClientWithMock();
+
+  bool callback_called{false};
+
+  auto on_connecting_done_callback = [&callback_called](auto /*result*/) {
+    callback_called = true;
+    BOOST_CHECK(WebSocketClientMock::Results::messages_sent_to_websocket_client
+                    .size() == 1);
+    BOOST_TEST(WebSocketClientMock::Results::messages_sent_to_websocket_client
+                       .front() == std::string{"CONNECT\n"
+                                               "passcode:correct_password\n"
+                                               "login:correct_username\n"
+                                               "host:some.echo-server.com\n"
+                                               "accept-version:1.2\n\n"} +
+                                       '\0',
+               boost::test_tools::per_element());
+  };
+
+  stomp_client.Connect(stomp_username_, stomp_password_,
+                       on_connecting_done_callback);
+  io_context_.run();
+
+  BOOST_CHECK(callback_called);
+}
+
 BOOST_AUTO_TEST_SUITE_END();  // Connect
 
 BOOST_FIXTURE_TEST_SUITE(Close, StompClientTestFixture);
 
 BOOST_AUTO_TEST_CASE(CallsOnCloseWhenClosed,
                      *timeout(kDefaultTestTimeoutInSeconds)) {
-  auto stomp_client = CreateStompClientMock();
+  auto stomp_client = CreateStompClientWithMock();
   bool on_closed_called{false};
 
   auto on_closed_callback{[&on_closed_called](auto result) {
@@ -170,7 +198,7 @@ BOOST_AUTO_TEST_CASE(DoesNotNeedOnCloseCallbackToCloseConnection,
 
 BOOST_AUTO_TEST_CASE(CallsOnCloseWithErrorWhenCloseInvokedWhenNotConnected,
                      *timeout(kDefaultTestTimeoutInSeconds)) {
-  auto stomp_client = CreateStompClientMock();
+  auto stomp_client = CreateStompClientWithMock();
   bool on_closed_called{false};
 
   auto on_closed_callback{[&on_closed_called](auto result) {
@@ -189,7 +217,7 @@ BOOST_FIXTURE_TEST_SUITE(Subscribe, StompClientTestFixture);
 
 BOOST_AUTO_TEST_CASE(ReturnsSubscriptionIdOnSuccess,
                      *timeout(kDefaultTestTimeoutInSeconds)) {
-  auto stomp_client = CreateStompClientMock();
+  auto stomp_client = CreateStompClientWithMock();
   bool on_subscribed_called{false};
 
   auto on_subscribe_callback{[&stomp_client, &on_subscribed_called](

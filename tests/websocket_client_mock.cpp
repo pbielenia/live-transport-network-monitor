@@ -27,6 +27,8 @@ inline std::function<void(const std::string&)>
 inline std::string WebSocketClientMock::Results::url{};
 inline std::string WebSocketClientMock::Results::endpoint{};
 inline std::string WebSocketClientMock::Results::port{};
+inline std::vector<std::string>
+    WebSocketClientMock::Results::messages_sent_to_websocket_client{};
 
 inline std::string WebSocketClientMockForStomp::username{};
 inline std::string WebSocketClientMockForStomp::password{};
@@ -72,6 +74,8 @@ void WebSocketClientMock::Send(const std::string& message,
     }
     return;
   }
+
+  Results::messages_sent_to_websocket_client.push_back(message);
 
   boost::asio::post(
       async_context_,
