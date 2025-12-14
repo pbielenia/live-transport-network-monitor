@@ -14,16 +14,18 @@
 namespace network_monitor {
 
 inline boost::system::error_code
-    WebSocketClientMock::Config::connect_error_code_{};
-inline boost::system::error_code
     WebSocketClientMock::Config::send_error_code_{};
 inline boost::system::error_code
     WebSocketClientMock::Config::close_error_code_{};
 inline bool WebSocketClientMock::Config::trigger_disconnection_{false};
+inline bool WebSocketClientMock::Config::fail_connecting_websocket_{false};
 inline bool WebSocketClientMock::Config::fail_sending_message_{false};
 inline std::function<void(const std::string&)>
     WebSocketClientMock::Config::on_message_sent_{
         [](auto /*message*/) { return; }};
+
+inline std::function<std::string()>
+    WebSocketClientMockForStomp::Responses::on_frame_connect{};
 
 inline std::string WebSocketClientMock::Results::url{};
 inline std::string WebSocketClientMock::Results::endpoint{};
@@ -51,16 +53,19 @@ void WebSocketClientMock::Connect(
     WebSocketClientMock::OnConnectingDoneCallback on_connecting_done_callback,
     WebSocketClientMock::OnMessageReceivedCallback on_message_received_callback,
     OnDisconnectedCallback on_disconnected_callback) {
-  connected_ = !Config::connect_error_code_.failed();
+  const auto error_code =
+      Config::fail_connecting_websocket_
+          ? boost::asio::ssl::error::stream_truncated
+          : boost::system::errc::make_error_code(boost::system::errc::success);
+
+  connected_ = !error_code.failed();
   on_message_received_callback_ = std::move(on_message_received_callback);
   on_disconnected_callback_ = std::move(on_disconnected_callback);
 
   if (on_connecting_done_callback) {
-    boost::asio::post(
-        async_context_,
-        [this, callback = std::move(on_connecting_done_callback)]() {
-          callback(Config::connect_error_code_);
-        });
+    boost::asio::post(async_context_,
+                      [this, callback = std::move(on_connecting_done_callback),
+                       error_code]() { callback(error_code); });
   }
 }
 
@@ -181,10 +186,13 @@ void WebSocketClientMockForStomp::HandleConnectMessage(
     return;
   }
 
-  SendToWebSocketClient(StompFrameBuilder()
-                            .SetCommand(StompCommand::Connected)
-                            .AddHeader(StompHeader::Version, stomp_version)
-                            .BuildString());
+  SendToWebSocketClient(
+      Responses::on_frame_connect
+          ? Responses::on_frame_connect()
+          : StompFrameBuilder()
+                .SetCommand(StompCommand::Connected)
+                .AddHeader(StompHeader::Version, stomp_version)
+                .BuildString());
 }
 
 void WebSocketClientMockForStomp::HandleSubscribeMessage(

@@ -24,10 +24,10 @@ class WebSocketClientMock {
       std::function<void(boost::system::error_code)>;
 
   struct Config {
-    static boost::system::error_code connect_error_code_;
     static boost::system::error_code send_error_code_;
     static boost::system::error_code close_error_code_;
     static bool trigger_disconnection_;
+    static bool fail_connecting_websocket_;
     static bool fail_sending_message_;
     static std::function<void(const std::string&)> on_message_sent_;
   };
@@ -71,6 +71,10 @@ class WebSocketClientMock {
  */
 class WebSocketClientMockForStomp : public WebSocketClientMock {
  public:
+  struct Responses {
+    static std::function<std::string()> on_frame_connect;
+  };
+
   /*! \brief Use `username` and `password` static members in a test to set STOMP
    * user credentials. Needed to test if StompClient passes credentials
    * correctly.

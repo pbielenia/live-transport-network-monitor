@@ -47,14 +47,15 @@ struct StompClientTestFixture {
 };
 
 StompClientTestFixture::StompClientTestFixture() {
-  WebSocketClientMock::Config::connect_error_code_ = {};
   WebSocketClientMock::Config::send_error_code_ = {};
   WebSocketClientMock::Config::close_error_code_ = {};
+  WebSocketClientMock::Config::fail_connecting_websocket_ = false;
   WebSocketClientMock::Config::fail_sending_message_ = false;
   WebSocketClientMock::Results::url = {};
   WebSocketClientMock::Results::endpoint = {};
   WebSocketClientMock::Results::port = {};
   WebSocketClientMock::Results::messages_sent_to_websocket_client = {};
+  WebSocketClientMockForStomp::Responses::on_frame_connect = {};
   WebSocketClientMockForStomp::username = stomp_username_;
   WebSocketClientMockForStomp::password = stomp_password_;
   WebSocketClientMockForStomp::endpoint = stomp_endpoint_;
@@ -79,27 +80,48 @@ BOOST_AUTO_TEST_SUITE_END();  // Constructor
 
 BOOST_FIXTURE_TEST_SUITE(Connect, StompClientTestFixture);
 
-BOOST_AUTO_TEST_CASE(CallsOnConnectingDoneOnSuccess,
+// If connected to server (WebSocket and STOMP) with success:
+// - `on_connecting_done_callback` is called
+//    - with ok result
+// - expected STOMP frame is passed to WebSocketClient
+//    - CONNECT
+//    - correct passcode and login
+BOOST_AUTO_TEST_CASE(OnConnectedToStompServer,
                      *timeout(kDefaultTestTimeoutInSeconds)) {
-  bool on_connected_called{false};
+  bool callback_called{false};
   auto stomp_client = CreateStompClientWithMock();
 
-  auto on_connect_callback = [&on_connected_called,
-                              &stomp_client](auto result) {
-    on_connected_called = true;
+  auto on_connecting_done_callback = [&callback_called,
+                                      &stomp_client](auto result) {
+    callback_called = true;
     BOOST_CHECK_EQUAL(result, StompClientResult::Ok);
+
+    BOOST_CHECK(WebSocketClientMock::Results::messages_sent_to_websocket_client
+                    .size() == 1);
+    BOOST_TEST(WebSocketClientMock::Results::messages_sent_to_websocket_client
+                       .front() == std::string{"CONNECT\n"
+                                               "passcode:correct_password\n"
+                                               "login:correct_username\n"
+                                               "host:some.echo-server.com\n"
+                                               "accept-version:1.2\n\n"} +
+                                       '\0',
+               boost::test_tools::per_element());
+
     stomp_client.Close();
   };
-  stomp_client.Connect(stomp_username_, stomp_password_, on_connect_callback);
+  stomp_client.Connect(stomp_username_, stomp_password_,
+                       on_connecting_done_callback);
   io_context_.run();
 
-  BOOST_CHECK(on_connected_called);
+  BOOST_CHECK(callback_called);
 }
 
-BOOST_AUTO_TEST_CASE(CallsOnConnectingDoneOnWebSocketConnectionFailure,
+// If could not connect to WebSocket server:
+// - `on_connecting_done_callback` is called
+//   - with error result
+BOOST_AUTO_TEST_CASE(OnWebSocketConnectFailure,
                      *timeout(kDefaultTestTimeoutInSeconds)) {
-  WebSocketClientMock::Config::connect_error_code_ =
-      boost::asio::ssl::error::stream_truncated;
+  WebSocketClientMock::Config::fail_connecting_websocket_ = true;
 
   bool on_connected_called{false};
   auto stomp_client = CreateStompClientWithMock();
@@ -139,6 +161,41 @@ BOOST_AUTO_TEST_CASE(OnWebSocketSendConnectFrameFailed,
 
   BOOST_CHECK(callback_called);
 }
+
+// If could not parse first received STOMP frame (CONNECTED expected)
+// - `on_connecting_done_callback` is called
+//   - with error result
+BOOST_AUTO_TEST_CASE(OnParsingFirstReceivedFrameFailed,
+                     *timeout(kDefaultTestTimeoutInSeconds)) {
+  auto stomp_client = CreateStompClientWithMock();
+  bool callback_called{false};
+
+  WebSocketClientMockForStomp::Responses::on_frame_connect = [] {
+    return std::string{"invalid frame"};
+  };
+
+  auto on_connecting_done_callback = [&callback_called,
+                                      &stomp_client](auto result) {
+    callback_called = true;
+    BOOST_CHECK(result == StompClientResult::ErrorConnectingStomp);
+    stomp_client.Close();
+  };
+
+  stomp_client.Connect(stomp_username_, stomp_password_,
+                       on_connecting_done_callback);
+  io_context_.run();
+
+  BOOST_CHECK(callback_called);
+}
+
+// If the first received STOMP frame is not CONNECTED
+// - `on_connecting_done_callback` is called
+//   - with error result
+
+// Server rejects connecting
+// send error frame
+// disconnects
+// call on_connecting_done, not on_disconnect
 
 BOOST_AUTO_TEST_CASE(DoesNotNeedOnConnectingDoneCallbackToMakeConnection,
                      *boost::unit_test::disabled()) {

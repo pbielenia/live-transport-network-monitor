@@ -181,6 +181,7 @@ class StompClient {
   boost::asio::strand<boost::asio::io_context::executor_type> async_context_;
 
   bool websocket_connected_{false};
+  bool stomp_connected_{false};
 };
 
 template <typename WebSocketClient>
@@ -305,6 +306,10 @@ void StompClient<WebSocketClient>::OnWebSocketReceived(std::string message) {
   if (frame.GetParseResultCode() != ParseResultCode::Ok) {
     LOG_WARN("Could not parse the message to STOMP frame: {}",
              ToString(frame.GetParseResultCode()));
+    if (!stomp_connected_) {
+      OnConnectingDone(StompClientResult::ErrorConnectingStomp);
+    }
+
     return;
   }
 
