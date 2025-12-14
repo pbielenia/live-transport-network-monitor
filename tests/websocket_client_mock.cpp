@@ -23,18 +23,26 @@ inline bool WebSocketClientMock::Config::trigger_disconnection_{false};
 inline std::function<void(const std::string&)>
     WebSocketClientMock::Config::on_message_sent_{
         [](auto /*message*/) { return; }};
+
+inline std::string WebSocketClientMock::Results::url{};
+inline std::string WebSocketClientMock::Results::endpoint{};
+inline std::string WebSocketClientMock::Results::port{};
+
 inline std::string WebSocketClientMockForStomp::username{};
 inline std::string WebSocketClientMockForStomp::password{};
 inline std::string WebSocketClientMockForStomp::endpoint{};
 
 WebSocketClientMock::WebSocketClientMock(
     std::string url,
-    std::string /*endpoint*/,
-    std::string /*port*/,
+    std::string endpoint,
+    std::string port,
     boost::asio::io_context& io_context,
     boost::asio::ssl::context& /*tls_context*/)
-    : async_context_{boost::asio::make_strand(io_context)},
-      server_url_{std::move(url)} {}
+    : async_context_{boost::asio::make_strand(io_context)} {
+  Results::url = std::move(url);
+  Results::endpoint = std::move(endpoint);
+  Results::port = std::move(port);
+}
 
 void WebSocketClientMock::Connect(
     WebSocketClientMock::OnConnectingDoneCallback on_connecting_done_callback,
@@ -93,7 +101,7 @@ void WebSocketClientMock::Close(
 }
 
 const std::string& WebSocketClientMock::GetServerUrl() const {
-  return server_url_;
+  return Results::url;
 }
 
 void WebSocketClientMock::Disconnect() {

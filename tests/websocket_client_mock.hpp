@@ -31,6 +31,12 @@ class WebSocketClientMock {
     static std::function<void(const std::string&)> on_message_sent_;
   };
 
+  struct Results {
+    static std::string url;
+    static std::string endpoint;
+    static std::string port;
+  };
+
   WebSocketClientMock(std::string url,
                       std::string endpoint,
                       std::string port,
@@ -52,7 +58,6 @@ class WebSocketClientMock {
 
  private:
   boost::asio::strand<boost::asio::io_context::executor_type> async_context_;
-  std::string server_url_;
 
   bool connected_{false};
   OnMessageReceivedCallback on_message_received_callback_;

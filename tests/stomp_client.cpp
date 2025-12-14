@@ -3,7 +3,9 @@
 #include <string>
 
 #include <boost/asio.hpp>
+#include <boost/test/tools/old/interface.hpp>
 #include <boost/test/unit_test.hpp>
+#include <boost/test/unit_test_suite.hpp>
 
 #include "websocket_client_mock.hpp"
 
@@ -48,12 +50,30 @@ StompClientTestFixture::StompClientTestFixture() {
   WebSocketClientMock::Config::connect_error_code_ = {};
   WebSocketClientMock::Config::send_error_code_ = {};
   WebSocketClientMock::Config::close_error_code_ = {};
+  WebSocketClientMock::Results::url = {};
+  WebSocketClientMock::Results::endpoint = {};
+  WebSocketClientMock::Results::port = {};
   WebSocketClientMockForStomp::username = stomp_username_;
   WebSocketClientMockForStomp::password = stomp_password_;
   WebSocketClientMockForStomp::endpoint = stomp_endpoint_;
 
   tls_context_.load_verify_file(TESTS_CACERT_PEM);
 }
+
+BOOST_FIXTURE_TEST_SUITE(Constructor, StompClientTestFixture);
+
+BOOST_AUTO_TEST_CASE(SetsWebSocketConnectionData) {
+  auto stomp_client = CreateStompClientMock({
+      .url = "test url",
+      .endpoint = "test endpoint",
+      .port = "test port",
+  });
+  BOOST_CHECK(WebSocketClientMock::Results::url == "test url");
+  BOOST_CHECK(WebSocketClientMock::Results::endpoint == "test endpoint");
+  BOOST_CHECK(WebSocketClientMock::Results::port == "test port");
+}
+
+BOOST_AUTO_TEST_SUITE_END();  // Constructor
 
 BOOST_FIXTURE_TEST_SUITE(Connect, StompClientTestFixture);
 
