@@ -218,35 +218,45 @@ BOOST_AUTO_TEST_CASE(OnFirstStompFrameIsNotConnected,
   BOOST_CHECK(callback_called);
 }
 
-// Server rejects connecting
-// send error frame
-// disconnects
+// If server rejects connecting
 // call on_connecting_done, not on_disconnect
+// - `on_connecting_done_callback` is called
+//   - with error result
+// - `on_disconnected_callback` is *NOT* called
+BOOST_AUTO_TEST_CASE(OnServerRejectedConnection,
+                     *timeout(kDefaultTestTimeoutInSeconds)) {
+  auto stomp_client = CreateStompClientWithMock();
+  bool connecting_done_called{false};
+  bool disconnected_called{false};
+
+  WebSocketClientMockForStomp::Responses::on_frame_connect = [] {
+    return std::string{
+               "ERROR\n"
+               "\n"
+               "\0"} +
+           '\0';
+  };
+
+  auto on_connecting_done_callback = [&connecting_done_called,
+                                      &stomp_client](auto result) {
+    connecting_done_called = true;
+    BOOST_CHECK(result == StompClientResult::ErrorConnectingStomp);
+  };
+  auto on_disconnected_callback = [&disconnected_called](auto result) {
+    disconnected_called = true;
+  };
+
+  stomp_client.Connect(stomp_username_, stomp_password_,
+                       on_connecting_done_callback, on_disconnected_callback);
+  io_context_.run();
+
+  BOOST_CHECK(connecting_done_called);
+  BOOST_CHECK(!disconnected_called);
+}
 
 BOOST_AUTO_TEST_CASE(DoesNotNeedOnConnectingDoneCallbackToMakeConnection,
                      *boost::unit_test::disabled()) {
   // TODO: how does one verify it's actually connected?
-}
-
-BOOST_AUTO_TEST_CASE(CallsOnDisconnectedAtStompAuthenticationFailure,
-                     *timeout(kDefaultTestTimeoutInSeconds)) {
-  const auto invalid_password = std::string{"invalid_password"};
-
-  bool on_disconnected_called{false};
-  auto stomp_client = CreateStompClientWithMock();
-
-  auto on_connected_callback = [](auto /*result*/) { BOOST_CHECK(false); };
-  auto on_disconnected_callback = [&on_disconnected_called,
-                                   &stomp_client](auto result) {
-    on_disconnected_called = true;
-    BOOST_CHECK_EQUAL(result, StompClientResult::WebSocketServerDisconnected);
-  };
-
-  stomp_client.Connect(stomp_username_, invalid_password, on_connected_callback,
-                       on_disconnected_callback);
-  io_context_.run();
-
-  BOOST_CHECK(on_disconnected_called);
 }
 
 BOOST_AUTO_TEST_CASE(SendsCorrectConnectFrame,

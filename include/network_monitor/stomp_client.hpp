@@ -161,6 +161,7 @@ class StompClient {
   void HandleStompConnected(const StompFrame& frame);
   void HandleStompReceipt(const StompFrame& frame);
   void HandleStompMessage(const StompFrame& frame);
+  void HandleStompError(const StompFrame& frame);
 
   void OnConnectingDone(StompClientResult result);
 
@@ -329,6 +330,10 @@ void StompClient<WebSocketClient>::HandleStompFrame(StompFrame frame) {
       break;
     case StompCommand::Message:
       HandleStompMessage(frame);
+      break;
+    case StompCommand::Error:
+      HandleStompError(frame);
+      break;
     default: {
       // TODO: handle the rest of commands
       LOG_ERROR("Unexpected STOMP command: '{}'", ToString(frame.GetCommand()));
@@ -349,6 +354,7 @@ void StompClient<WebSocketClient>::OnWebSocketDisconnected(
   LOG_INFO("WebSocket disconnected: {}", result.message());
 
   websocket_connected_ = false;
+  stomp_connected_ = false;
 
   if (on_disconnected_callback_) {
     auto error{result ? StompClientResult::WebSocketServerDisconnected
@@ -467,7 +473,19 @@ void StompClient<WebSocketClient>::HandleStompMessage(const StompFrame& frame) {
 }
 
 template <typename WebSocketClient>
+void StompClient<WebSocketClient>::HandleStompError(const StompFrame& frame) {
+  if (!stomp_connected_) {
+    OnConnectingDone(StompClientResult::ErrorConnectingStomp);
+    return;
+  }
+
+  websocket_client_.Close(
+      [this](auto result) { OnWebSocketDisconnected(result); });
+}
+
+template <typename WebSocketClient>
 void StompClient<WebSocketClient>::OnConnectingDone(StompClientResult result) {
+  LOG_DEBUG("result: {}", ToStringView(result));
   if (on_connecting_done_callback_) {
     boost::asio::post(async_context_, [callback = on_connecting_done_callback_,
                                        result]() { callback(result); });
