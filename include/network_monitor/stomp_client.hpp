@@ -395,11 +395,17 @@ template <typename WebSocketClient>
 void StompClient<WebSocketClient>::HandleStompConnected(
     const StompFrame& /*frame*/) {
   LOG_INFO("Connected to STOMP server");
+  stomp_connected_ = true;
   OnConnectingDone(StompClientResult::Ok);
 }
 
 template <typename WebSocketClient>
 void StompClient<WebSocketClient>::HandleStompReceipt(const StompFrame& frame) {
+  if (!stomp_connected_) {
+    OnConnectingDone(StompClientResult::ErrorConnectingStomp);
+    return;
+  }
+
   // Supports only SUBSCRIBE frame.
   const auto subscription_id = frame.GetHeaderValue(StompHeader::ReceiptId);
 
@@ -421,6 +427,11 @@ void StompClient<WebSocketClient>::HandleStompReceipt(const StompFrame& frame) {
 
 template <typename WebSocketClient>
 void StompClient<WebSocketClient>::HandleStompMessage(const StompFrame& frame) {
+  if (!stomp_connected_) {
+    OnConnectingDone(StompClientResult::ErrorConnectingStomp);
+    return;
+  }
+
   // Find the subscription
   auto destination = frame.GetHeaderValue(StompHeader::Destination);
   auto message_id = frame.GetHeaderValue(StompHeader::MessageId);

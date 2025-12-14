@@ -191,6 +191,32 @@ BOOST_AUTO_TEST_CASE(OnParsingFirstReceivedFrameFailed,
 // If the first received STOMP frame is not CONNECTED
 // - `on_connecting_done_callback` is called
 //   - with error result
+BOOST_AUTO_TEST_CASE(OnFirstStompFrameIsNotConnected,
+                     *timeout(kDefaultTestTimeoutInSeconds)) {
+  auto stomp_client = CreateStompClientWithMock();
+  bool callback_called{false};
+
+  WebSocketClientMockForStomp::Responses::on_frame_connect = [] {
+    return std::string{
+               "RECEIPT\n"
+               "receipt-id:77\n"
+               "\n"} +
+           '\0';
+  };
+
+  auto on_connecting_done_callback = [&callback_called,
+                                      &stomp_client](auto result) {
+    callback_called = true;
+    BOOST_CHECK(result == StompClientResult::ErrorConnectingStomp);
+    stomp_client.Close();
+  };
+
+  stomp_client.Connect(stomp_username_, stomp_password_,
+                       on_connecting_done_callback);
+  io_context_.run();
+
+  BOOST_CHECK(callback_called);
+}
 
 // Server rejects connecting
 // send error frame
