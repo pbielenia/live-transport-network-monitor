@@ -15,7 +15,8 @@ namespace network_monitor {
  */
 class WebSocketClientMock {
  public:
-  using OnConnectedCallback = std::function<void(boost::system::error_code)>;
+  using OnConnectingDoneCallback =
+      std::function<void(boost::system::error_code)>;
   using OnMessageReceivedCallback =
       std::function<void(boost::system::error_code, std::string&&)>;
   using OnMessageSentCallback = std::function<void(boost::system::error_code)>;
@@ -37,7 +38,7 @@ class WebSocketClientMock {
                       boost::asio::io_context& io_context,
                       boost::asio::ssl::context& tls_context);
 
-  void Connect(OnConnectedCallback on_connected_callback,
+  void Connect(OnConnectingDoneCallback on_connecting_done_callback,
                OnMessageReceivedCallback on_message_received_callback,
                OnDisconnectedCallback on_disconnected_callback);
   void Send(const std::string& message,

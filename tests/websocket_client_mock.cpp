@@ -37,18 +37,19 @@ WebSocketClientMock::WebSocketClientMock(
       server_url_{std::move(url)} {}
 
 void WebSocketClientMock::Connect(
-    WebSocketClientMock::OnConnectedCallback on_connected_callback,
+    WebSocketClientMock::OnConnectingDoneCallback on_connecting_done_callback,
     WebSocketClientMock::OnMessageReceivedCallback on_message_received_callback,
     OnDisconnectedCallback on_disconnected_callback) {
   connected_ = !Config::connect_error_code_.failed();
   on_message_received_callback_ = std::move(on_message_received_callback);
   on_disconnected_callback_ = std::move(on_disconnected_callback);
 
-  if (on_connected_callback) {
-    boost::asio::post(async_context_,
-                      [this, callback = std::move(on_connected_callback)]() {
-                        callback(Config::connect_error_code_);
-                      });
+  if (on_connecting_done_callback) {
+    boost::asio::post(
+        async_context_,
+        [this, callback = std::move(on_connecting_done_callback)]() {
+          callback(Config::connect_error_code_);
+        });
   }
 }
 

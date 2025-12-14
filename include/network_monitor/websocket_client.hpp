@@ -23,7 +23,8 @@ namespace network_monitor {
 template <typename Resolver, typename WebSocketStream>
 class WebSocketClient {
  public:
-  using OnConnectedCallback = std::function<void(boost::system::error_code)>;
+  using OnConnectingDoneCallback =
+      std::function<void(boost::system::error_code)>;
   using OnMessageReceivedCallback =
       std::function<void(boost::system::error_code, std::string)>;
   using OnMessageSentCallback = std::function<void(boost::system::error_code)>;
@@ -74,7 +75,7 @@ class WebSocketClient {
 
   /*! \brief Connect to the server.
    *
-   *  \param on_connected_callback          Called when the connection fails or
+   *  \param on_connecting_done_callback    Called when the connection fails or
    *                                        succeeds.
    *  \param on_message_received_callback   Called only when a message is
    *                                        successfully received. The message
@@ -84,7 +85,7 @@ class WebSocketClient {
    *                                        by the server or due to a connection
    *                                        error.
    */
-  void Connect(OnConnectedCallback on_connected_callback = nullptr,
+  void Connect(OnConnectingDoneCallback on_connecting_done_callback = nullptr,
                OnMessageReceivedCallback on_message_received_callback = nullptr,
                OnDisconnectedCallback on_disconnected_callback = nullptr);
 
@@ -124,8 +125,8 @@ class WebSocketClient {
   void OnServerUrlResolved(
       boost::system::error_code error,
       boost::asio::ip::tcp::resolver::results_type results);
-  void OnConnectedToServer(boost::system::error_code error);
-  void OnConnectingToServerCompleted(boost::system::error_code error);
+  void OnConnectingToServerDone(boost::system::error_code error);
+  void OnConnectingDone(boost::system::error_code error);
   void OnTlsHandshakeCompleted(boost::system::error_code error);
   void OnWebSocketHandshakeCompleted(boost::system::error_code error);
   void OnMessageReceived(boost::system::error_code error,
@@ -142,7 +143,7 @@ class WebSocketClient {
   boost::beast::flat_buffer response_buffer_;
   bool connection_is_open_{false};
 
-  OnConnectedCallback on_connected_callback_;
+  OnConnectingDoneCallback on_connecting_done_callback_;
   OnMessageReceivedCallback on_message_received_callback_;
   OnDisconnectedCallback on_disconnected_callback_;
   OnConnectionClosedCallback on_connection_closed_callback_;
@@ -166,10 +167,10 @@ WebSocketClient<Resolver, WebSocketStream>::~WebSocketClient() = default;
 
 template <typename Resolver, typename WebSocketStream>
 void WebSocketClient<Resolver, WebSocketStream>::Connect(
-    WebSocketClient::OnConnectedCallback on_connected_callback,
+    WebSocketClient::OnConnectingDoneCallback on_connecting_done_callback,
     WebSocketClient::OnMessageReceivedCallback on_message_received_callback,
     WebSocketClient::OnDisconnectedCallback on_disconnected_callback) {
-  on_connected_callback_ = std::move(on_connected_callback);
+  on_connecting_done_callback_ = std::move(on_connecting_done_callback);
   on_message_received_callback_ = std::move(on_message_received_callback);
   on_disconnected_callback_ = std::move(on_disconnected_callback);
 
@@ -197,7 +198,7 @@ void WebSocketClient<Resolver, WebSocketStream>::OnServerUrlResolved(
   if (error.failed()) {
     LOG_ERROR("[{}:{}] Could not resolve server URL", server_url_,
               server_port_);
-    OnConnectingToServerCompleted(error);
+    OnConnectingDone(error);
     return;
   }
 
@@ -211,16 +212,16 @@ void WebSocketClient<Resolver, WebSocketStream>::ConnectToServer(
     const boost::asio::ip::tcp::resolver::results_type& endpoint) {
   auto& tcp_stream = boost::beast::get_lowest_layer(websocket_stream_);
   tcp_stream.expires_after(kConnectToServerTimeout);
-  tcp_stream.async_connect(*endpoint,
-                           [this](auto error) { OnConnectedToServer(error); });
+  tcp_stream.async_connect(
+      *endpoint, [this](auto error) { OnConnectingToServerDone(error); });
 }
 
 template <typename Resolver, typename WebSocketStream>
-void WebSocketClient<Resolver, WebSocketStream>::OnConnectedToServer(
+void WebSocketClient<Resolver, WebSocketStream>::OnConnectingToServerDone(
     boost::system::error_code error) {
   if (error.failed()) {
     LOG_ERROR("[{}:{}] Could not connect to server", server_url_, server_port_);
-    OnConnectingToServerCompleted(error);
+    OnConnectingDone(error);
     return;
   }
 
@@ -237,13 +238,13 @@ void WebSocketClient<Resolver, WebSocketStream>::OnConnectedToServer(
 }
 
 template <typename Resolver, typename WebSocketStream>
-void WebSocketClient<Resolver, WebSocketStream>::OnConnectingToServerCompleted(
+void WebSocketClient<Resolver, WebSocketStream>::OnConnectingDone(
     boost::system::error_code error) {
-  LOG_DEBUG("[{}:{}] on_connected_callback_: {}", server_url_, server_port_,
-            static_cast<bool>(on_connected_callback_));
+  LOG_DEBUG("[{}:{}] on_connecting_done_callback_: {}", server_url_,
+            server_port_, static_cast<bool>(on_connecting_done_callback_));
 
-  if (on_connected_callback_) {
-    on_connected_callback_(error);
+  if (on_connecting_done_callback_) {
+    on_connecting_done_callback_(error);
   }
 }
 
@@ -270,7 +271,7 @@ void WebSocketClient<Resolver, WebSocketStream>::OnTlsHandshakeCompleted(
   if (error.failed()) {
     LOG_ERROR("[{}:{}] Could not complete TLS handshake with success",
               server_url_, server_port_);
-    OnConnectingToServerCompleted(error);
+    OnConnectingDone(error);
     return;
   }
 
@@ -294,7 +295,7 @@ void WebSocketClient<Resolver, WebSocketStream>::OnWebSocketHandshakeCompleted(
   if (error.failed()) {
     LOG_ERROR("[{}:{}] Could not complete WebSocket handshake with success",
               server_url_, server_port_);
-    OnConnectingToServerCompleted(error);
+    OnConnectingDone(error);
     return;
   }
 
@@ -303,7 +304,7 @@ void WebSocketClient<Resolver, WebSocketStream>::OnWebSocketHandshakeCompleted(
   LOG_INFO("[{}:{}] Connected to the server", server_url_, server_port_);
 
   connection_is_open_ = true;
-  OnConnectingToServerCompleted(error);
+  OnConnectingDone(error);
   ListenToIncomingMessage();
 }
 

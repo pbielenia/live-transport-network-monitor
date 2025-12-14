@@ -69,16 +69,16 @@ BOOST_AUTO_TEST_CASE(fail_resolve, *timeout(kDefaultTestTimeoutInSeconds)) {
   auto client =
       TestWebSocketClient(url_, endpoint_, port_, io_context_, tls_context_);
 
-  bool called_on_connect = false;
-  auto on_connect = [&called_on_connect](auto error_code) {
-    called_on_connect = true;
+  bool called_on_connecting_done = false;
+  auto on_connecting_done = [&called_on_connecting_done](auto error_code) {
+    called_on_connecting_done = true;
     BOOST_CHECK_EQUAL(error_code, MockResolver::resolve_error_code);
   };
 
-  client.Connect(on_connect);
+  client.Connect(on_connecting_done);
   io_context_.run();
 
-  BOOST_CHECK(called_on_connect);
+  BOOST_CHECK(called_on_connecting_done);
 }
 
 BOOST_AUTO_TEST_CASE(fail_socket_connection,
@@ -88,16 +88,16 @@ BOOST_AUTO_TEST_CASE(fail_socket_connection,
   auto client =
       TestWebSocketClient(url_, endpoint_, port_, io_context_, tls_context_);
 
-  bool called_on_connect = false;
-  auto on_connect = [&called_on_connect](auto error_code) {
-    called_on_connect = true;
+  bool called_on_connecting_done = false;
+  auto on_connecting_done = [&called_on_connecting_done](auto error_code) {
+    called_on_connecting_done = true;
     BOOST_CHECK_EQUAL(error_code, MockTcpStream::connect_error_code);
   };
 
-  client.Connect(on_connect);
+  client.Connect(on_connecting_done);
   io_context_.run();
 
-  BOOST_CHECK(called_on_connect);
+  BOOST_CHECK(called_on_connecting_done);
 }
 
 BOOST_AUTO_TEST_CASE(fail_socket_handshake,
@@ -108,17 +108,17 @@ BOOST_AUTO_TEST_CASE(fail_socket_handshake,
   auto client =
       TestWebSocketClient(url_, endpoint_, port_, io_context_, tls_context_);
 
-  bool called_on_connect = false;
-  auto on_connect = [&called_on_connect](auto error_code) {
-    called_on_connect = true;
+  bool called_on_connecting_done = false;
+  auto on_connecting_done = [&called_on_connecting_done](auto error_code) {
+    called_on_connecting_done = true;
     BOOST_CHECK_EQUAL(error_code,
                       MockSslStream<MockTcpStream>::handshake_error_code);
   };
 
-  client.Connect(on_connect);
+  client.Connect(on_connecting_done);
   io_context_.run();
 
-  BOOST_CHECK(called_on_connect);
+  BOOST_CHECK(called_on_connecting_done);
 }
 
 BOOST_AUTO_TEST_CASE(fail_websocket_handshake,
@@ -131,34 +131,35 @@ BOOST_AUTO_TEST_CASE(fail_websocket_handshake,
   auto client =
       TestWebSocketClient(url_, endpoint_, port_, io_context_, tls_context_);
 
-  bool called_on_connect = false;
-  auto on_connect = [&called_on_connect](auto error_code) {
-    called_on_connect = true;
+  bool called_on_connecting_done = false;
+  auto on_connecting_done = [&called_on_connecting_done](auto error_code) {
+    called_on_connecting_done = true;
     BOOST_CHECK_EQUAL(error_code,
                       MockWebSocketStream<MockTlsStream>::handshake_error_code);
   };
 
-  client.Connect(on_connect);
+  client.Connect(on_connecting_done);
   io_context_.run();
 
-  BOOST_CHECK(called_on_connect);
+  BOOST_CHECK(called_on_connecting_done);
 }
 
 BOOST_AUTO_TEST_CASE(successful_nothing_to_read, *timeout(1)) {
   auto client =
       TestWebSocketClient(url_, endpoint_, port_, io_context_, tls_context_);
 
-  bool called_on_connect = false;
-  auto on_connect = [&called_on_connect, &client](auto error_code) {
-    called_on_connect = true;
+  bool called_on_connecting_done = false;
+  auto on_connecting_done = [&called_on_connecting_done,
+                             &client](auto error_code) {
+    called_on_connecting_done = true;
     BOOST_CHECK(!error_code);
     client.Close();
   };
 
-  client.Connect(on_connect);
+  client.Connect(on_connecting_done);
   io_context_.run();
 
-  BOOST_CHECK(called_on_connect);
+  BOOST_CHECK(called_on_connecting_done);
 }
 
 BOOST_AUTO_TEST_CASE(successful_no_connecthandler,
@@ -227,7 +228,7 @@ BOOST_AUTO_TEST_CASE(two_messages, *timeout(kDefaultTestTimeoutInSeconds)) {
 
   unsigned called_on_message_count = 0;
 
-  auto on_connect = [](auto error_code) { BOOST_CHECK(!error_code); };
+  auto on_connecting_done = [](auto error_code) { BOOST_CHECK(!error_code); };
   auto on_message = [&called_on_message_count, &expected_message_1,
                      &expected_message_2,
                      &client](auto error_code, auto received_message) {
@@ -244,7 +245,7 @@ BOOST_AUTO_TEST_CASE(two_messages, *timeout(kDefaultTestTimeoutInSeconds)) {
   };
 
   WebsocketSocketStream::read_buffer = expected_message_1;
-  client.Connect(on_connect, on_message);
+  client.Connect(on_connecting_done, on_message);
   io_context_.run();
 
   BOOST_CHECK_EQUAL(called_on_message_count, 2);
@@ -267,7 +268,7 @@ BOOST_AUTO_TEST_CASE(fail,
       boost::beast::websocket::error::bad_data_frame;
   WebsocketSocketStream::read_buffer = expected_message;
 
-  bool called_on_connect = false;
+  bool called_on_connecting_done = false;
   bool called_on_message = false;
   bool timeout_occured = false;
 
@@ -278,8 +279,8 @@ BOOST_AUTO_TEST_CASE(fail,
     client.Close();
   });
 
-  auto on_connect = [&called_on_connect](auto error_code) {
-    called_on_connect = true;
+  auto on_connecting_done = [&called_on_connecting_done](auto error_code) {
+    called_on_connecting_done = true;
     BOOST_CHECK(!error_code);
   };
   auto on_message = [&called_on_message](auto /*error_code*/,
@@ -288,10 +289,10 @@ BOOST_AUTO_TEST_CASE(fail,
     BOOST_CHECK(false);
   };
 
-  client.Connect(on_connect, on_message);
+  client.Connect(on_connecting_done, on_message);
   io_context_.run();
 
-  BOOST_CHECK(called_on_connect);
+  BOOST_CHECK(called_on_connecting_done);
   BOOST_CHECK(!called_on_message);
   BOOST_CHECK(timeout_occured);
 }
@@ -304,7 +305,7 @@ BOOST_AUTO_TEST_CASE(no_handler, *timeout(kDefaultTestTimeoutInSeconds)) {
   auto client =
       TestWebSocketClient(url_, endpoint_, port_, io_context_, tls_context_);
 
-  bool called_on_connect = false;
+  bool called_on_connecting_done = false;
   bool timeout_occured = false;
 
   auto timer = boost::asio::high_resolution_timer(io_context_, kCallCloseDelay);
@@ -314,15 +315,15 @@ BOOST_AUTO_TEST_CASE(no_handler, *timeout(kDefaultTestTimeoutInSeconds)) {
     client.Close();
   });
 
-  auto on_connect = [&called_on_connect](auto error_code) {
-    called_on_connect = true;
+  auto on_connecting_done = [&called_on_connecting_done](auto error_code) {
+    called_on_connecting_done = true;
     BOOST_CHECK(!error_code);
   };
 
-  client.Connect(on_connect);
+  client.Connect(on_connecting_done);
   io_context_.run();
 
-  BOOST_CHECK(called_on_connect);
+  BOOST_CHECK(called_on_connecting_done);
   BOOST_CHECK(timeout_occured);
 }
 
@@ -336,7 +337,7 @@ BOOST_AUTO_TEST_CASE(one_message, *timeout(kDefaultTestTimeoutInSeconds)) {
   auto client =
       TestWebSocketClient(url_, endpoint_, port_, io_context_, tls_context_);
 
-  bool called_on_connect = false;
+  bool called_on_connecting_done = false;
   bool called_on_send = false;
 
   auto on_sent_callback = [&called_on_send, &client](auto error_code) {
@@ -344,19 +345,19 @@ BOOST_AUTO_TEST_CASE(one_message, *timeout(kDefaultTestTimeoutInSeconds)) {
     BOOST_CHECK(!error_code.failed());
     client.Close();
   };
-  auto on_connect = [&called_on_connect, &client, &message_to_send,
-                     on_sent_callback =
-                         std::move(on_sent_callback)](auto error_code) {
-    called_on_connect = true;
-    BOOST_CHECK(!error_code.failed());
+  auto on_connecting_done =
+      [&called_on_connecting_done, &client, &message_to_send,
+       on_sent_callback = std::move(on_sent_callback)](auto error_code) {
+        called_on_connecting_done = true;
+        BOOST_CHECK(!error_code.failed());
 
-    client.Send(message_to_send, std::move(on_sent_callback));
-  };
+        client.Send(message_to_send, std::move(on_sent_callback));
+      };
 
-  client.Connect(on_connect);
+  client.Connect(on_connecting_done);
   io_context_.run();
 
-  BOOST_CHECK(called_on_connect);
+  BOOST_CHECK(called_on_connecting_done);
   BOOST_CHECK(called_on_send);
 }
 
@@ -392,7 +393,7 @@ BOOST_AUTO_TEST_CASE(fail, *timeout(kDefaultTestTimeoutInSeconds)) {
   WebsocketSocketStream::write_error_code =
       boost::beast::websocket::error::bad_data_frame;
 
-  bool called_on_connect = false;
+  bool called_on_connecting_done = false;
   bool called_on_send = false;
 
   auto on_sent_callback = [&called_on_send, &client](auto error_code) {
@@ -400,19 +401,19 @@ BOOST_AUTO_TEST_CASE(fail, *timeout(kDefaultTestTimeoutInSeconds)) {
     BOOST_CHECK(error_code == boost::beast::websocket::error::bad_data_frame);
     client.Close();
   };
-  auto on_connect = [&called_on_connect, &client, &message_to_send,
-                     on_sent_callback =
-                         std::move(on_sent_callback)](auto error_code) {
-    called_on_connect = true;
-    BOOST_CHECK(!error_code.failed());
-    client.Send(message_to_send, std::move(on_sent_callback));
-  };
+  auto on_connecting_done =
+      [&called_on_connecting_done, &client, &message_to_send,
+       on_sent_callback = std::move(on_sent_callback)](auto error_code) {
+        called_on_connecting_done = true;
+        BOOST_CHECK(!error_code.failed());
+        client.Send(message_to_send, std::move(on_sent_callback));
+      };
 
-  client.Connect(on_connect);
+  client.Connect(on_connecting_done);
   io_context_.run();
 
   BOOST_CHECK(called_on_send);
-  BOOST_CHECK(called_on_connect);
+  BOOST_CHECK(called_on_connecting_done);
 }
 
 BOOST_AUTO_TEST_SUITE_END();  // Send
@@ -428,12 +429,12 @@ BOOST_AUTO_TEST_CASE(close, *timeout(kDefaultTestTimeoutInSeconds)) {
     BOOST_CHECK(!error_code);
     on_close_called = true;
   };
-  auto on_connect = [&client, &on_close](auto error_code) {
+  auto on_connecting_done = [&client, &on_close](auto error_code) {
     BOOST_CHECK(!error_code);
     client.Close(on_close);
   };
 
-  client.Connect(on_connect);
+  client.Connect(on_connecting_done);
   io_context_.run();
 
   BOOST_CHECK(on_close_called);
@@ -469,7 +470,7 @@ BOOST_AUTO_TEST_CASE(close_no_disconnect,
     on_close_called = true;
     BOOST_CHECK(!error_code.failed());
   };
-  auto on_connect = [&on_close, &client](auto error_code) {
+  auto on_connecting_done = [&on_close, &client](auto error_code) {
     BOOST_REQUIRE(!error_code.failed());
     client.Close(on_close);
   };
@@ -477,7 +478,7 @@ BOOST_AUTO_TEST_CASE(close_no_disconnect,
     on_disconnect_called = true;
   };
 
-  client.Connect(on_connect, nullptr, on_disconnect);
+  client.Connect(on_connecting_done, nullptr, on_disconnect);
   io_context_.run();
 
   BOOST_CHECK(on_close_called);
@@ -511,9 +512,9 @@ BOOST_AUTO_TEST_CASE(echo, *timeout{20}) {
   auto on_sent_callback = [&message_sent](auto error_code) {
     message_sent = !error_code.failed();
   };
-  auto on_connect = [&client, &connected,
-                     on_sent_callback = std::move(on_sent_callback),
-                     &message](auto error_code) {
+  auto on_connecting_done = [&client, &connected,
+                             on_sent_callback = std::move(on_sent_callback),
+                             &message](auto error_code) {
     connected = !error_code.failed();
     if (connected) {
       client.Send(message, std::move(on_sent_callback));
@@ -529,7 +530,7 @@ BOOST_AUTO_TEST_CASE(echo, *timeout{20}) {
     client.Close(on_close);
   };
 
-  client.Connect(on_connect, on_receive);
+  client.Connect(on_connecting_done, on_receive);
   io_context.run();
 
   BOOST_CHECK(connected);
@@ -575,14 +576,14 @@ BOOST_AUTO_TEST_CASE(send_stomp_frame) {
     message_sent = !error_code;
   };
 
-  auto on_connect_callback = [&client, &connected,
-                              on_sent_callback = std::move(on_sent_callback),
-                              &message](auto error_code) {
-    connected = !error_code;
-    if (connected) {
-      client.Send(message, std::move(on_sent_callback));
-    }
-  };
+  auto on_connecting_done_callback =
+      [&client, &connected, on_sent_callback = std::move(on_sent_callback),
+       &message](auto error_code) {
+        connected = !error_code;
+        if (connected) {
+          client.Send(message, std::move(on_sent_callback));
+        }
+      };
 
   auto on_close_callback = [&disconnected](auto error_code) {
     disconnected = !error_code;
@@ -595,7 +596,7 @@ BOOST_AUTO_TEST_CASE(send_stomp_frame) {
     client.Close(on_close_callback);
   };
 
-  client.Connect(on_connect_callback, on_receive_callback);
+  client.Connect(on_connecting_done_callback, on_receive_callback);
   io_context.run();
 
   BOOST_CHECK(connected);
